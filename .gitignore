@@ -1,0 +1,51 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.next/
+out/
+npm-debug.log*
+playwright-report/
+test-results/
+.npm-cache/
+*.tsbuildinfo
+
+# Go
+bin/
+coverage.out
+.cache/
+.tmp-go-cache/
+.tmp-go-mod/
+.tmp-backup-e2e/
+.tmp-media-e2e/
+.tmp-proxy-*
+.tmp-ops-*
+.tmp/
+.gocache/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Runtime data
+runtime/
+spool/
+backups/
+infra/monitoring/alertmanager.yml
+infra/monitoring/alertmanager_smtp_password
+
+# Unrelated local research (kept on disk, not part of this project)
+/agent-dashboard-research.html
+/assets/agent-dashboard-research/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

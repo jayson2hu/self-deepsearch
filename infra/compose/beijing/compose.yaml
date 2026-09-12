@@ -1,0 +1,78 @@
+name: self-deepsearch-beijing
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  platform-worker-beijing:
+    image: ${PLATFORM_WORKER_IMAGE:?set PLATFORM_WORKER_IMAGE}
+    environment:
+      BUILD_VERSION: ${BUILD_VERSION:?set BUILD_VERSION}
+      WORKER_ADDR: ${WORKER_ADDR:-:8081}
+      WORKER_REGION: beijing
+      WORKER_ID: ${WORKER_ID:-beijing-worker-1}
+      WORKER_POLL_INTERVAL: ${WORKER_POLL_INTERVAL:-2s}
+      WORKER_LEASE_DURATION: ${WORKER_LEASE_DURATION:-30s}
+      COLLECTION_ENABLED: "false"
+      # Beijing submits signed batches through the Japan ingest API. It has no DATABASE_URL.
+      INGEST_API_URL: ${INGEST_API_URL:?set INGEST_API_URL}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+    volumes:
+      - worker-spool:/var/lib/self-deepsearch/spool
+      - media-work:/var/lib/self-deepsearch/media
+    expose:
+      - "8081"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.20"
+          memory: 192m
+          pids: 128
+    logging: *default-logging
+    restart: unless-stopped
+
+  media-python:
+    image: ${MEDIA_PYTHON_IMAGE:?set MEDIA_PYTHON_IMAGE}
+    command: ["serve"]
+    environment:
+      MEDIA_HMAC_SECRET: ${MEDIA_HMAC_SECRET:?set MEDIA_HMAC_SECRET}
+      MEDIA_BACKUP_ROOT: /var/lib/self-deepsearch/media
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:?set S3_ENDPOINT_URL}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:?set S3_PRIVATE_BUCKET}
+      S3_PUBLIC_BUCKET: ${S3_PUBLIC_BUCKET:?set S3_PUBLIC_BUCKET}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:?set S3_PUBLIC_BASE_URL}
+      MEDIA_STORAGE_LIMIT_BYTES: ${MEDIA_STORAGE_LIMIT_BYTES:-10737418240}
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_UPLOAD_LOCK_FILE: ${MEDIA_UPLOAD_LOCK_FILE:-/var/lib/self-deepsearch/media-state/upload.lock}
+      MEDIA_UPLOAD_CONTROL_MODE: ${MEDIA_UPLOAD_CONTROL_MODE:-off}
+      MEDIA_UPLOAD_CONTROL_SECRET: ${MEDIA_UPLOAD_CONTROL_SECRET:-}
+      MEDIA_UPLOAD_ADMISSION_MODE: ${MEDIA_UPLOAD_ADMISSION_MODE:-off}
+      MEDIA_UPLOAD_ADMISSION_URL: ${MEDIA_UPLOAD_ADMISSION_URL:-}
+      MEDIA_UPLOAD_ADMISSION_SECRET: ${MEDIA_UPLOAD_ADMISSION_SECRET:-}
+      MEDIA_UPLOAD_ADMISSION_ALLOW_HTTP: ${MEDIA_UPLOAD_ADMISSION_ALLOW_HTTP:-false}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?set AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?set AWS_SECRET_ACCESS_KEY}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:?set CLOUDFLARE_ZONE_ID}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?set CLOUDFLARE_API_TOKEN}
+    volumes:
+      - media-work:/var/lib/self-deepsearch/media
+      - media-state:/var/lib/self-deepsearch/media-state
+    expose:
+      - "8090"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.25"
+          memory: 2048m
+          pids: 256
+    logging: *default-logging
+    restart: unless-stopped
+
+volumes:
+  worker-spool:
+  media-work:
+  media-state:

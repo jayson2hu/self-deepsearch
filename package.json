@@ -1,0 +1,51 @@
+{
+  "name": "self-deepsearch",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/api-contracts"
+  ],
+  "scripts": {
+    "dev:display": "npm run dev --workspace @self-deepsearch/display-web",
+    "dev:ops": "npm run dev --workspace @self-deepsearch/ops-web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "generate:api-types": "node scripts/run_python.mjs scripts/generate_openapi_types.py",
+    "check:api-types": "node scripts/run_python.mjs scripts/generate_openapi_types.py --check",
+    "check:markdown-links": "node scripts/check_markdown_links.mjs",
+    "check:release-a-env": "node scripts/run_python.mjs scripts/release_a_env_check.py",
+    "probe:release-a": "node scripts/run_python.mjs scripts/release_a_deployment_probe.py",
+    "preview:release-a": "node scripts/release_a_preview.mjs",
+    "preview:release-a:build": "node scripts/release_a_preview.mjs --build",
+    "capture:visual:release-a": "node scripts/release_a_visual_capture.mjs",
+    "capture:visual:release-a:build": "node scripts/release_a_visual_capture.mjs --build",
+    "probe:performance:release-a": "node scripts/release_a_performance_probe.mjs",
+    "probe:performance:release-a:build": "node scripts/release_a_performance_probe.mjs --build",
+    "probe:http-latency:release-a": "node scripts/release_a_http_latency_probe.mjs",
+    "probe:http-latency:release-a:build": "node scripts/release_a_http_latency_probe.mjs --build",
+    "test:frontend:smoke": "node --test scripts/tests/display_security_policy.test.mjs scripts/tests/release_a_frontend_smoke.test.mjs scripts/tests/work_csv_errors.test.mjs scripts/tests/media_policy.test.mjs scripts/tests/media_upload_client.test.mjs scripts/tests/media_edge_gateway.test.mjs scripts/tests/ops_security_policy.test.mjs",
+    "test:preview": "node --test scripts/tests/release_a_preview.test.mjs",
+    "test:visual-capture": "node --test scripts/tests/release_a_visual_capture.test.mjs",
+    "test:performance-probe": "node --test scripts/tests/release_a_performance_probe.test.mjs",
+    "test:http-latency-probe": "node --test scripts/tests/release_a_http_latency_probe.test.mjs",
+    "test:e2e:release-a": "playwright test",
+    "test:cache:release-a": "node scripts/release_a_cache_contract.mjs",
+    "test:preflight": "node --test scripts/tests/check_markdown_links.test.mjs scripts/tests/release_a_preflight.test.mjs scripts/tests/release_a_preview.test.mjs scripts/tests/release_a_visual_capture.test.mjs scripts/tests/release_a_performance_probe.test.mjs scripts/tests/release_a_http_latency_probe.test.mjs scripts/tests/release_a_cache_contract.test.mjs scripts/tests/run_python.test.mjs",
+    "smoke:frontend:release-a": "node scripts/release_a_frontend_smoke.mjs",
+    "smoke:frontend:release-a:build": "node scripts/release_a_frontend_smoke.mjs --build",
+    "preflight:release-a": "node scripts/release_a_preflight.mjs",
+    "audit:production": "npm audit --omit=dev --audit-level=high"
+  },
+  "overrides": {
+    "nanoid": "3.3.18"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

@@ -1,0 +1,266 @@
+name: self-deepsearch
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - log_parameter_max_length=0
+      - -c
+      - log_line_prefix=%m [%p] %q%u@%d 
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-self_deepsearch}
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform_dev_only}
+      PLATFORM_API_DB_PASSWORD: ${PLATFORM_API_DB_PASSWORD:-platform_api_dev_only}
+      PLATFORM_WORKER_DB_PASSWORD: ${PLATFORM_WORKER_DB_PASSWORD:-platform_worker_dev_only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/bootstrap:/docker-entrypoint-initdb.d:ro
+      - ./db/migrations:/migrations:ro
+      - ./db/seeds:/seeds:ro
+      - ./infra/database:/database-tools:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  platform-api:
+    build:
+      context: .
+      dockerfile: services/platform-api/Dockerfile
+    environment:
+      API_ADDR: ":8080"
+      BUILD_VERSION: ${BUILD_VERSION:-dev}
+      DATABASE_URL: postgres://platform_api_login:${PLATFORM_API_DB_PASSWORD:-platform_api_dev_only}@postgres:5432/${POSTGRES_DB:-self_deepsearch}?sslmode=disable
+      ALLOWED_ORIGINS: http://127.0.0.1:3000,http://127.0.0.1:3001
+      AUTH_HMAC_SECRET: ${AUTH_HMAC_SECRET:-development-only-auth-hmac-secret-change-me}
+      SMTP_URL: ${SMTP_URL:-smtp://mailpit:1025?from=no-reply@example.invalid&insecure=true}
+      EMAIL_DAILY_LIMIT: ${EMAIL_DAILY_LIMIT:-500}
+      EMAIL_FAILURE_THRESHOLD: ${EMAIL_FAILURE_THRESHOLD:-5}
+      EMAIL_CIRCUIT_COOLDOWN: ${EMAIL_CIRCUIT_COOLDOWN:-15m}
+      EMAIL_SEND_TIMEOUT: ${EMAIL_SEND_TIMEOUT:-10s}
+      TURNSTILE_BYPASS: ${TURNSTILE_BYPASS:-true}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      TURNSTILE_EXPECTED_HOSTNAME: ${TURNSTILE_EXPECTED_HOSTNAME:-127.0.0.1}
+      METRICS_TOKEN: ${METRICS_TOKEN:-development-only-metrics-token-change-me}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-https://media.example.invalid}
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_DELIVERY_DYNAMIC_MODE: ${MEDIA_DELIVERY_DYNAMIC_MODE:-off}
+      MEDIA_EDGE_POLICY_MODE: ${MEDIA_EDGE_POLICY_MODE:-off}
+      MEDIA_EDGE_POLICY_TOKEN: ${MEDIA_EDGE_POLICY_TOKEN:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  platform-worker-japan:
+    build:
+      context: .
+      dockerfile: services/platform-worker/Dockerfile
+    environment:
+      WORKER_ADDR: ":8081"
+      WORKER_REGION: japan
+      BUILD_VERSION: ${BUILD_VERSION:-dev}
+      COLLECTION_ENABLED: "false"
+      DATABASE_URL: postgres://platform_worker_login:${PLATFORM_WORKER_DB_PASSWORD:-platform_worker_dev_only}@postgres:5432/${POSTGRES_DB:-self_deepsearch}?sslmode=disable
+      METRICS_TOKEN: ${METRICS_TOKEN:-development-only-metrics-token-change-me}
+      DISPLAY_REVALIDATE_URL: http://display-web:3000/api/internal/revalidate
+      CACHE_HMAC_SECRET: ${CACHE_HMAC_SECRET:-development-only-cache-hmac-secret-change-me}
+      MEDIA_DELETE_URL: ${MEDIA_DELETE_URL:-http://media-python:8090/v1/delete}
+      MEDIA_HMAC_SECRET: ${MEDIA_HMAC_SECRET:-development-only-media-hmac-secret-change-me}
+      MEDIA_UPLOAD_CONTROL_URL: ${MEDIA_UPLOAD_CONTROL_URL:-http://media-python:8090}
+      MEDIA_UPLOAD_CONTROL_SECRET: ${MEDIA_UPLOAD_CONTROL_SECRET:-}
+      MEDIA_UPLOAD_QUEUE_MODE: ${MEDIA_UPLOAD_QUEUE_MODE:-off}
+      MEDIA_UPLOAD_CONTROL_ALLOW_HTTP: ${MEDIA_UPLOAD_CONTROL_ALLOW_HTTP:-false}
+      MEDIA_UPLOAD_ADMISSION_MODE: ${MEDIA_UPLOAD_ADMISSION_MODE:-off}
+      MEDIA_UPLOAD_ADMISSION_SECRET: ${MEDIA_UPLOAD_ADMISSION_SECRET:-}
+      MEDIA_RECONCILE_ENABLED: ${MEDIA_RECONCILE_ENABLED:-false}
+      MEDIA_RECONCILE_URL: ${MEDIA_RECONCILE_URL:-http://media-python:8090/v1/reconcile}
+      MEDIA_RECONCILE_INTERVAL: ${MEDIA_RECONCILE_INTERVAL:-24h}
+      MEDIA_INSPECT_ENABLED: ${MEDIA_INSPECT_ENABLED:-false}
+      MEDIA_INSPECT_DISPLAY_ORIGIN: ${MEDIA_INSPECT_DISPLAY_ORIGIN:-http://display-web:3000}
+      MEDIA_USAGE_MONITOR_MODE: ${MEDIA_USAGE_MONITOR_MODE:-off}
+      MEDIA_RECONCILE_USAGE_GUARD: ${MEDIA_RECONCILE_USAGE_GUARD:-off}
+      MEDIA_USAGE_PERIOD_START: ${MEDIA_USAGE_PERIOD_START:-}
+      MEDIA_USAGE_PERIOD_END: ${MEDIA_USAGE_PERIOD_END:-}
+      MEDIA_USAGE_INTERVAL: ${MEDIA_USAGE_INTERVAL:-15m}
+      R2_ANALYTICS_ACCOUNT_ID: ${R2_ANALYTICS_ACCOUNT_ID:-}
+      R2_ANALYTICS_API_TOKEN: ${R2_ANALYTICS_API_TOKEN:-}
+      HISTORY_ARCHIVE_ENABLED: ${HISTORY_ARCHIVE_ENABLED:-true}
+      HISTORY_ARCHIVE_DIR: /var/lib/self-deepsearch/history-archives
+      HISTORY_ARCHIVE_INTERVAL: ${HISTORY_ARCHIVE_INTERVAL:-1h}
+      HISTORY_ARCHIVE_MIN_AGE: ${HISTORY_ARCHIVE_MIN_AGE:-168h}
+      HISTORY_ARCHIVE_BATCH_SIZE: ${HISTORY_ARCHIVE_BATCH_SIZE:-1000}
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - history-archives:/var/lib/self-deepsearch/history-archives
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  media-python:
+    profiles: ["media"]
+    build:
+      context: .
+      dockerfile: workers/media-python/Dockerfile
+    command: ["serve"]
+    environment:
+      MEDIA_HMAC_SECRET: ${MEDIA_HMAC_SECRET:-development-only-media-hmac-secret-change-me}
+      MEDIA_BACKUP_ROOT: /var/lib/self-deepsearch/media
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-https://s3-not-configured.invalid}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-media-private-not-configured}
+      S3_PUBLIC_BUCKET: ${S3_PUBLIC_BUCKET:-media-public-not-configured}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-https://media-not-configured.invalid}
+      MEDIA_STORAGE_LIMIT_BYTES: ${MEDIA_STORAGE_LIMIT_BYTES:-10737418240}
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_UPLOAD_LOCK_FILE: ${MEDIA_UPLOAD_LOCK_FILE:-/var/lib/self-deepsearch/media-state/upload.lock}
+      MEDIA_UPLOAD_CONTROL_MODE: ${MEDIA_UPLOAD_CONTROL_MODE:-off}
+      MEDIA_UPLOAD_CONTROL_SECRET: ${MEDIA_UPLOAD_CONTROL_SECRET:-}
+      MEDIA_UPLOAD_ADMISSION_MODE: ${MEDIA_UPLOAD_ADMISSION_MODE:-off}
+      MEDIA_UPLOAD_ADMISSION_URL: ${MEDIA_UPLOAD_ADMISSION_URL:-}
+      MEDIA_UPLOAD_ADMISSION_SECRET: ${MEDIA_UPLOAD_ADMISSION_SECRET:-}
+      MEDIA_UPLOAD_ADMISSION_ALLOW_HTTP: ${MEDIA_UPLOAD_ADMISSION_ALLOW_HTTP:-false}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-media-not-configured}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-media-not-configured}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-zone-not-configured}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-token-not-configured-change-me}
+    volumes:
+      - media-backup:/var/lib/self-deepsearch/media
+      - media-state:/var/lib/self-deepsearch/media-state
+    expose:
+      - "8090"
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: ["monitoring"]
+    user: "65534:65534"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --data.retention=120h
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./infra/monitoring/alertmanager.dev.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    profiles: ["monitoring"]
+    user: "65534:65534"
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.disable-defaults
+      - --collector.cpu
+      - --collector.meminfo
+      - --collector.filesystem
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/docker/.+|var/lib/containers/storage/.+)($|/)
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["monitoring"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=512MB
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ${METRICS_TOKEN_FILE:-./infra/monitoring/dev-metrics-token.txt}:/run/secrets/metrics_token:ro
+    depends_on:
+      alertmanager:
+        condition: service_started
+      node-exporter:
+        condition: service_started
+      platform-api:
+        condition: service_healthy
+      platform-worker-japan:
+        condition: service_healthy
+    restart: unless-stopped
+
+  display-web:
+    build:
+      context: .
+      dockerfile: apps/display-web/Dockerfile
+    environment:
+      PLATFORM_API_URL: http://platform-api:8080
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_DELIVERY_DYNAMIC_MODE: ${MEDIA_DELIVERY_DYNAMIC_MODE:-off}
+      SITE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      RIGHTS_CONTACT_EMAIL: ${RIGHTS_CONTACT_EMAIL:-rights@example.invalid}
+      CACHE_HMAC_SECRET: ${CACHE_HMAC_SECRET:-development-only-cache-hmac-secret-change-me}
+      APP_ENV: ${APP_ENV:-development}
+      TURNSTILE_BYPASS: ${TURNSTILE_BYPASS:-true}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ops-web:
+    build:
+      context: .
+      dockerfile: apps/ops-web/Dockerfile
+    environment:
+      PLATFORM_API_URL: http://platform-api:8080
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  history-archives:
+  media-backup:
+  media-state:
+  alertmanager-data:

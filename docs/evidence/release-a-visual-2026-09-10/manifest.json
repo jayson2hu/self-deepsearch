@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "generated_at": "2026-09-10T07:45:31.636Z",
+  "timezone": "Asia/Shanghai",
+  "evidence_date": "2026-09-10",
+  "source": {
+    "frontend": "Next.js production standalone build",
+    "api": "stateful synthetic mock",
+    "browser": "local Playwright-controlled browser"
+  },
+  "synthetic_data": {
+    "fixtures": [
+      "TEST-001"
+    ],
+    "operations_account": "owner@example.test",
+    "persistence": "memory-only; cleared when capture exits"
+  },
+  "excluded_dependencies": [
+    "Docker",
+    "PostgreSQL",
+    "SMTP/Mailpit",
+    "S3/R2",
+    "Cloudflare",
+    "automatic collection",
+    "ad network scripts"
+  ],
+  "files": [
+    {
+      "file": "display-home-desktop.png",
+      "surface": "display",
+      "route": "/",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bytes": 165101,
+      "sha256": "849bdbf6a1c20b344a06a1e14f154ed641b77935c8864118d6d8d0c113c1f83b"
+    },
+    {
+      "file": "work-detail-desktop.png",
+      "surface": "display",
+      "route": "/works/test-001-00000002",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 97079,
+      "sha256": "af76378d12355461a0473c34132f519bbc22982b8f826c047cb3fe1c1bd9481a"
+    },
+    {
+      "file": "ops-login-desktop.png",
+      "surface": "ops",
+      "route": "/login",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bytes": 19322,
+      "sha256": "af1a3a300e55387f0d0807b7382459963ebbcd605573f308ad7fd0759a69a32f"
+    },
+    {
+      "file": "ops-dashboard-desktop.png",
+      "surface": "ops",
+      "route": "/",
+      "auth": "owner",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bytes": 78664,
+      "sha256": "22b2824f349f36155e2f4eafa6ebd498636139e17eb8ea1fe4bd27011a3fd1cb"
+    },
+    {
+      "file": "ops-users-desktop.png",
+      "surface": "ops",
+      "route": "/users",
+      "auth": "owner",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bytes": 78960,
+      "sha256": "5182b14b19c05bad5a8ba20379605adfa5170e9ac53a34b261d54de54232bae9"
+    },
+    {
+      "file": "ops-audit-desktop.png",
+      "surface": "ops",
+      "route": "/audit?request_id=release-a%3Apublish-42",
+      "auth": "owner",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bytes": 54134,
+      "sha256": "f362337f8897b8a669aab8e9b62994ba974f3e6a053347f364a9a0bfa898b73c"
+    },
+    {
+      "file": "display-home-mobile.png",
+      "surface": "display",
+      "route": "/",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 124342,
+      "sha256": "a44fdf52e4e2f7944853490045b849d8e99ad05ddf96f11f4d8f865db85af79a"
+    },
+    {
+      "file": "work-detail-mobile.png",
+      "surface": "display",
+      "route": "/works/test-001-00000002",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 69943,
+      "sha256": "0a1ed9d82730af0b33dcea24c5585d3091a9bdcb38a229e2eace4f1f58adea81"
+    },
+    {
+      "file": "ops-login-mobile.png",
+      "surface": "ops",
+      "route": "/login",
+      "auth": "anonymous",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 15107,
+      "sha256": "aadc9b9fa2c132b52c72dcad29b2ad992dcb8da5635cfd6329834736146e3220"
+    },
+    {
+      "file": "ops-dashboard-mobile.png",
+      "surface": "ops",
+      "route": "/",
+      "auth": "owner",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 67372,
+      "sha256": "c3f770ac95195901f178e8e89c99c9b68d82db769ce3675e13a1cd7fe2647538"
+    },
+    {
+      "file": "ops-users-mobile.png",
+      "surface": "ops",
+      "route": "/users",
+      "auth": "owner",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 69003,
+      "sha256": "b2d6b0379891dd68bbd86b939db091a13bbd041130b3a7b8ca158020c72bd44f"
+    },
+    {
+      "file": "ops-audit-mobile.png",
+      "surface": "ops",
+      "route": "/audit?request_id=release-a%3Apublish-42",
+      "auth": "owner",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 33860,
+      "sha256": "83d8fa30a95b90449809284fd796f1ce3d371dcb090f7931f8fe94379ac01b47"
+    }
+  ]
+}

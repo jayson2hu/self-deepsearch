@@ -1,0 +1,39 @@
+# Copy this file to the server-private ALERTMANAGER_CONFIG_FILE path and replace
+# every example.invalid address/host before enabling the monitoring profile.
+# Keep the SMTP password only in ALERTMANAGER_SMTP_PASSWORD_FILE.
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: smtp.example.invalid:587
+  smtp_from: alerts@example.invalid
+  smtp_auth_username: alerts@example.invalid
+  smtp_auth_password_file: /run/secrets/alertmanager_smtp_password
+  smtp_require_tls: true
+
+route:
+  receiver: release-a-warning-email
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - receiver: release-a-critical-email
+      matchers:
+        - severity="critical"
+      repeat_interval: 30m
+    - receiver: release-a-warning-email
+      matchers:
+        - severity=~"warning|info"
+
+receivers:
+  - name: release-a-critical-email
+    email_configs:
+      - to: oncall@example.invalid
+        send_resolved: true
+        headers:
+          Subject: "[Release A][critical] {{ .CommonLabels.alertname }}"
+  - name: release-a-warning-email
+    email_configs:
+      - to: operations@example.invalid
+        send_resolved: true
+        headers:
+          Subject: "[Release A][{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}"

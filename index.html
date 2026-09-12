@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="幕鉴是一个虚构的作品与人物公开资料检索原型，仅用于产品预览。">
+  <title>幕鉴 · 作品与人物资料库</title>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="preconnect" href="https://api.dicebear.com">
+  <style>
+    :root {
+      --ink: #17191c;
+      --muted: #676c73;
+      --faint: #9399a1;
+      --paper: #ffffff;
+      --canvas: #f3f4f6;
+      --line: #dfe2e6;
+      --accent: #c83e36;
+      --accent-dark: #9f2f29;
+      --teal: #147d73;
+      --yellow: #d49b19;
+      --night: #202226;
+      --success: #18794e;
+      --shadow: 0 8px 24px rgba(20, 24, 28, .09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+    }
+
+    button, input, select { font: inherit; }
+
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid rgba(20, 125, 115, .32);
+      outline-offset: 2px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    img { display: block; max-width: 100%; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .wrap {
+      width: min(1240px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .notice-bar {
+      color: #f5f6f7;
+      background: var(--night);
+      font-size: 12px;
+    }
+
+    .notice-inner {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .notice-copy,
+    .source-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .source-state { color: #b8ddd9; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 9px;
+      flex: 0 0 auto;
+    }
+
+    .brand-name {
+      font-family: Georgia, "Songti SC", serif;
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .brand-dot { color: var(--accent); }
+
+    .brand-tag {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .primary-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: auto;
+    }
+
+    .nav-link {
+      min-height: 38px;
+      padding: 9px 12px;
+      color: #484d53;
+      font-size: 14px;
+      border-bottom: 2px solid transparent;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--ink);
+      border-color: var(--accent);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-button,
+    .plain-button,
+    .primary-button,
+    .segment-button,
+    .chip {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      display: inline-grid;
+      place-items: center;
+      color: #3e4349;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+    }
+
+    .icon-button:hover {
+      background: #eef0f2;
+      border-color: var(--line);
+    }
+
+    .menu-button { display: none; }
+
+    .search-stage {
+      position: relative;
+      min-height: 346px;
+      color: #fff;
+      background-image: url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2000&q=85");
+      background-size: cover;
+      background-position: center 54%;
+      overflow: hidden;
+    }
+
+    .search-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(16, 17, 19, .77);
+    }
+
+    .search-stage-inner {
+      position: relative;
+      z-index: 1;
+      min-height: 346px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 42px 0 48px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #e6bcb8;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-family: Georgia, "Songti SC", serif;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+
+    .stage-subtitle {
+      max-width: 650px;
+      margin: 13px 0 24px;
+      color: #d8dadd;
+      font-size: 15px;
+    }
+
+    .search-shell {
+      width: min(820px, 100%);
+    }
+
+    .search-modes {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 8px;
+    }
+
+    .mode-button {
+      padding: 7px 12px;
+      color: #d8dadd;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .mode-button.active {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .search-form {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 112px;
+      background: var(--paper);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .search-input {
+      width: 100%;
+      min-width: 0;
+      padding: 0 18px;
+      color: var(--ink);
+      background: #fff;
+      border: 0;
+      outline: 0;
+    }
+
+    .search-submit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      color: #fff;
+      background: var(--accent);
+      border: 0;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .search-submit:hover { background: var(--accent-dark); }
+
+    .quick-links {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+      color: #c6c9cd;
+      font-size: 12px;
+    }
+
+    .quick-links button {
+      padding: 4px 8px;
+      color: #f1f2f3;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .quick-links button:hover { background: rgba(255,255,255,.16); }
+
+    .ad-strip {
+      margin: 24px auto;
+      min-height: 84px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding: 18px 24px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--yellow);
+      border-radius: 4px;
+    }
+
+    .ad-kicker {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--yellow);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .ad-title { margin: 0; font-size: 15px; font-weight: 700; }
+    .ad-copy { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+
+    .ad-cta {
+      padding: 9px 13px;
+      color: var(--ink);
+      background: #f4e6b9;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .ad-spec {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 7px;
+      color: #8a700f;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .content-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 30px;
+      align-items: start;
+      padding-bottom: 42px;
+    }
+
+    .section-heading {
+      min-height: 44px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 15px;
+      padding-bottom: 11px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .section-title-wrap { min-width: 0; }
+
+    .section-title {
+      margin: 0;
+      font-family: Georgia, "Songti SC", serif;
+      font-size: 23px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .section-caption {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .segments {
+      flex: 0 0 auto;
+      display: inline-flex;
+      padding: 3px;
+      background: #e7e9ec;
+      border-radius: 6px;
+    }
+
+    .segment-button {
+      min-height: 32px;
+      padding: 6px 10px;
+      color: #5f646b;
+      background: transparent;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .segment-button.active {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(20,24,28,.12);
+    }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .infeed-ad {
+      grid-column: 1 / -1;
+      min-height: 122px;
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      padding: 16px;
+      background: #e9efed;
+      border: 1px solid #cbd9d6;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .infeed-visual {
+      height: 88px;
+      display: grid;
+      place-items: center;
+      color: #dcece9;
+      background: var(--teal);
+      border-radius: 4px;
+    }
+
+    .infeed-copy { min-width: 0; }
+    .infeed-copy .ad-kicker { color: var(--teal); }
+    .infeed-copy h3 { margin: 0; font-size: 17px; }
+    .infeed-copy p { margin: 4px 0 0; color: #586460; font-size: 12px; }
+
+    .infeed-action {
+      min-height: 38px;
+      padding: 8px 13px;
+      color: #fff;
+      background: var(--teal);
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .infeed-action:hover { background: #0f665e; }
+
+    .work-card {
+      min-width: 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .work-card:hover {
+      transform: translateY(-3px);
+      border-color: #c7cbd0;
+      box-shadow: var(--shadow);
+    }
+
+    .work-card[hidden] { display: none; }
+
+    .work-image {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: #dfe2e5;
+      overflow: hidden;
+    }
+
+    .work-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .35s ease;
+    }
+
+    .work-card:hover .work-image img { transform: scale(1.035); }
+
+    .badge-row {
+      position: absolute;
+      left: 9px;
+      right: 9px;
+      bottom: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .badge {
+      padding: 4px 7px;
+      color: #fff;
+      background: rgba(23,25,28,.84);
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .badge.hot { background: var(--accent); }
+    .badge.new { background: var(--teal); }
+
+    .work-body { padding: 13px 13px 14px; }
+
+    .work-code {
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .work-title {
+      min-height: 44px;
+      margin: 0 0 10px;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .work-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .person-link { color: var(--teal); font-weight: 700; }
+
+    .empty-state {
+      display: none;
+      padding: 56px 20px;
+      text-align: center;
+      background: #fff;
+      border: 1px dashed #c5c9ce;
+      border-radius: 6px;
+    }
+
+    .empty-state.visible { display: block; }
+    .empty-state h3 { margin: 8px 0 4px; font-size: 17px; }
+    .empty-state p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .load-row { display: flex; justify-content: center; padding: 22px 0 10px; }
+
+    .plain-button {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 14px;
+      color: #363a3f;
+      background: #fff;
+      border: 1px solid #cfd3d7;
+      border-radius: 5px;
+    }
+
+    .plain-button:hover { border-color: #92989f; }
+
+    .sidebar-section {
+      margin-bottom: 26px;
+      padding-top: 2px;
+    }
+
+    .sidebar-title {
+      margin: 0 0 12px;
+      padding-bottom: 9px;
+      font-family: Georgia, "Songti SC", serif;
+      font-size: 18px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .trend-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .trend-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0,1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 50px;
+      padding: 8px 11px;
+      border-bottom: 1px solid #eceef0;
+      cursor: pointer;
+    }
+
+    .trend-item:last-child { border-bottom: 0; }
+    .trend-item:hover { background: #f7f8f9; }
+
+    .rank {
+      color: #9a9fa5;
+      font-family: Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .trend-item:nth-child(-n+3) .rank { color: var(--accent); }
+    .trend-name { min-width: 0; font-size: 13px; font-weight: 700; }
+    .trend-count { color: var(--muted); font-size: 10px; }
+
+    .side-ad {
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 18px;
+      color: #f5f5f5;
+      background: var(--night);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .side-ad .ad-kicker { color: #e6c66e; }
+    .side-ad p { margin: 4px 0 0; color: #bcc0c5; font-size: 12px; }
+
+    .person-strip {
+      margin-top: 8px;
+      padding: 36px 0 42px;
+      background: #fff;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .midpage-ad {
+      margin: 0 auto 34px;
+      min-height: 100px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      padding: 17px 22px;
+      color: #f5f6f7;
+      background: var(--night);
+      border: 1px solid #363a40;
+      border-radius: 5px;
+    }
+
+    .midpage-ad-mark {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      color: var(--night);
+      background: #e7c665;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .midpage-ad .ad-kicker { color: #e7c665; }
+    .midpage-ad h3 { margin: 0; font-size: 16px; }
+    .midpage-ad p { margin: 3px 0 0; color: #bfc3c8; font-size: 11px; }
+
+    .midpage-ad-button {
+      padding: 9px 13px;
+      color: var(--night);
+      background: #e7c665;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .sponsor-rail {
+      display: grid;
+      grid-template-columns: 150px repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .sponsor-label {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .sponsor-label strong { color: var(--ink); font-size: 13px; }
+
+    .sponsor-slot {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 10px;
+      color: #52575d;
+      background: #f5f6f7;
+      border: 1px dashed #c9cdd1;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sponsor-slot:hover { background: #fff; border-style: solid; }
+
+    .person-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .person-card {
+      min-width: 0;
+      padding: 12px;
+      background: #f5f6f7;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .person-card:hover { border-color: #c9cdd1; background: #fff; }
+
+    .person-avatar {
+      width: 100%;
+      aspect-ratio: 1;
+      margin-bottom: 10px;
+      object-fit: cover;
+      background: #e3e5e8;
+      border-radius: 4px;
+    }
+
+    .person-name { display: block; overflow-wrap: anywhere; font-size: 13px; font-weight: 800; }
+    .person-note { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+
+    .site-footer {
+      padding: 30px 0 36px;
+      color: #aeb2b7;
+      background: var(--night);
+      font-size: 12px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 30px;
+      align-items: start;
+    }
+
+    .footer-brand { margin-bottom: 8px; color: #fff; font-size: 20px; font-weight: 800; }
+    .footer-copy { margin: 0; color: #8f949a; line-height: 1.7; }
+
+    .footer-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+    .footer-badge {
+      padding: 4px 7px;
+      color: #dfe2e5;
+      background: #2d3035;
+      border: 1px solid #40444a;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .footer-disclosures {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid #3a3e44;
+      border-bottom: 1px solid #3a3e44;
+    }
+
+    .footer-disclosure { min-width: 0; padding: 15px 18px; border-left: 1px solid #3a3e44; }
+    .footer-disclosure:first-child { border-left: 0; }
+    .footer-disclosure h3 {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 7px;
+      color: #fff;
+      font-size: 12px;
+    }
+    .footer-disclosure p { margin: 0; color: #aeb2b7; line-height: 1.75; }
+
+    .footer-bottom {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 28px;
+      margin-top: 22px;
+    }
+
+    .footer-legal-note { max-width: 700px; margin: 0; color: #858a91; line-height: 1.7; }
+
+    .footer-links {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+    }
+
+    dialog {
+      width: min(920px, calc(100% - 28px));
+      max-height: min(86vh, 860px);
+      padding: 0;
+      background: #fff;
+      border: 0;
+      border-radius: 7px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.36);
+      overflow: auto;
+    }
+
+    dialog::backdrop { background: rgba(12,13,15,.72); }
+
+    .dialog-close {
+      position: sticky;
+      z-index: 3;
+      top: 10px;
+      float: right;
+      margin: 10px 10px -50px 0;
+      color: #fff;
+      background: rgba(20,22,24,.72);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .detail-visual {
+      position: relative;
+      aspect-ratio: 16 / 7;
+      background: #25272b;
+    }
+
+    .detail-visual img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-visual::after { content: ""; position: absolute; inset: 0; background: rgba(18,20,22,.16); }
+
+    .detail-body { padding: 24px; }
+
+    .detail-code { margin: 0 0 5px; color: var(--accent); font-weight: 800; font-size: 12px; }
+    .detail-title { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: 27px; line-height: 1.3; letter-spacing: 0; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 20px;
+    }
+
+    .meta-table { margin: 0; }
+    .meta-row { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eceef0; }
+    .meta-row dt { color: var(--muted); font-size: 12px; }
+    .meta-row dd { margin: 0; font-size: 13px; font-weight: 650; }
+
+    .detail-note {
+      padding: 14px 15px;
+      color: #4c4f54;
+      background: #f1f5f4;
+      border-left: 3px solid var(--teal);
+      font-size: 12px;
+    }
+
+    .detail-note strong { display: block; margin-bottom: 3px; color: #1c554f; }
+
+    .toast {
+      position: fixed;
+      z-index: 80;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 24px);
+      max-width: calc(100% - 32px);
+      padding: 11px 15px;
+      color: #fff;
+      background: #24272b;
+      border: 1px solid #3f444b;
+      border-radius: 5px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      font-size: 13px;
+    }
+
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 980px) {
+      .content-layout { grid-template-columns: 1fr; }
+      .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .sidebar-section { margin: 0; }
+      .person-grid { grid-template-columns: repeat(3, 1fr); }
+      .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sponsor-rail { grid-template-columns: repeat(3, 1fr); }
+      .sponsor-label { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 24px, 1240px); }
+      .notice-inner { justify-content: center; text-align: center; }
+      .source-state { display: none; }
+      .header-inner { height: 58px; gap: 10px; }
+      .brand-tag { display: none; }
+      .primary-nav {
+        position: absolute;
+        top: 58px;
+        left: 0;
+        right: 0;
+        display: none;
+        padding: 8px 12px 12px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+      .primary-nav.open { display: flex; }
+      .menu-button { display: inline-grid; }
+      .header-actions .icon-button:not(.menu-button) { display: none; }
+      .search-stage, .search-stage-inner { min-height: 360px; }
+      .search-stage-inner { padding: 34px 0 40px; }
+      h1 { font-size: 39px; }
+      .stage-subtitle { font-size: 13px; }
+      .search-form { grid-template-columns: minmax(0, 1fr) 54px; }
+      .search-submit span { display: none; }
+      .ad-strip { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+      .ad-cta { justify-self: start; }
+      .infeed-ad { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; }
+      .infeed-visual { height: 76px; }
+      .infeed-action { grid-column: 1 / -1; width: 100%; }
+      .midpage-ad { grid-template-columns: 48px minmax(0, 1fr); gap: 13px; padding: 15px; }
+      .midpage-ad-mark { width: 48px; height: 48px; }
+      .midpage-ad-button { grid-column: 1 / -1; width: 100%; }
+      .sponsor-rail { grid-template-columns: 1fr; }
+      .sponsor-label { grid-column: auto; }
+      .section-heading { align-items: flex-start; flex-direction: column; }
+      .segments { width: 100%; }
+      .segment-button { flex: 1; }
+      .sidebar { grid-template-columns: 1fr; }
+      .person-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr; gap: 20px; }
+      .footer-disclosures { grid-template-columns: 1fr; }
+      .footer-disclosure { border-left: 0; border-top: 1px solid #3a3e44; }
+      .footer-disclosure:first-child { border-top: 0; }
+      .footer-bottom { flex-direction: column; }
+      .footer-links { justify-content: flex-start; }
+      .detail-body { padding: 18px; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .detail-title { font-size: 23px; }
+    }
+
+    @media (max-width: 480px) {
+      .work-grid { grid-template-columns: 1fr; }
+      .work-title { min-height: auto; }
+      .quick-links .quick-label { width: 100%; }
+      .person-card { padding: 9px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/auth-prototype.css">
+</head>
+<body>
+  <div class="notice-bar">
+    <div class="wrap notice-inner">
+      <span class="notice-copy"><i data-lucide="shield-check" aria-hidden="true"></i> 仅展示公开资料，不提供播放、下载或资源跳转</span>
+      <span class="source-state"><i data-lucide="badge-check" aria-hidden="true"></i> 演示数据 · 来源待核验</span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="#top" aria-label="幕鉴首页">
+        <span class="brand-name">幕鉴<span class="brand-dot">.</span></span>
+        <span class="brand-tag">影像资料索引</span>
+      </a>
+      <nav class="primary-nav" id="primaryNav" aria-label="主导航">
+        <a class="nav-link active" href="#discover">发现</a>
+        <a class="nav-link" href="#people">人物</a>
+        <a class="nav-link" href="#ranking">榜单</a>
+        <a class="nav-link" href="#footer">关于</a>
+      </nav>
+      <div class="header-actions">
+        <div class="auth-mount" data-auth-mount></div>
+        <button class="icon-button menu-button" id="menuButton" type="button" aria-label="打开导航" aria-expanded="false" title="导航"><i data-lucide="menu"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="search-stage" aria-labelledby="pageTitle">
+      <div class="wrap search-stage-inner">
+        <p class="eyebrow">Public metadata archive · Prototype</p>
+        <h1 id="pageTitle">作品与人物资料库</h1>
+        <p class="stage-subtitle">检索作品编号、标题、艺名与别名。页面内容均为虚构演示，不关联真实人物或作品。</p>
+        <div class="search-shell">
+          <div class="search-modes" role="tablist" aria-label="搜索类型">
+            <button class="mode-button active" type="button" role="tab" aria-selected="true" data-mode="作品">作品</button>
+            <button class="mode-button" type="button" role="tab" aria-selected="false" data-mode="人物">人物</button>
+          </div>
+          <form class="search-form" id="searchForm" role="search">
+            <label class="sr-only" for="searchInput">搜索作品或人物</label>
+            <input class="search-input" id="searchInput" type="search" autocomplete="off" placeholder="输入作品编号、标题或人物名称">
+            <button class="search-submit" type="submit"><i data-lucide="search" aria-hidden="true"></i><span>搜索</span></button>
+          </form>
+          <div class="quick-links" aria-label="热门搜索">
+            <span class="quick-label">热搜：</span>
+            <button type="button" data-query="雾岛凛">雾岛凛</button>
+            <button type="button" data-query="MK-1042">MK-1042</button>
+            <button type="button" data-query="城市">城市</button>
+            <button type="button" data-query="星野">星野遥</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="wrap ad-strip" aria-label="广告位">
+      <div>
+        <span class="ad-kicker">AD · 品牌展示位</span>
+        <p class="ad-title">面向内容发现用户的品牌合作</p>
+        <p class="ad-copy">此处为 970 × 90 广告预览，不使用弹窗、遮挡或伪装下载按钮。</p>
+      </div>
+      <button class="ad-cta" type="button" data-toast="广告合作入口为原型占位">查看合作</button>
+    </aside>
+
+    <div class="wrap content-layout" id="discover">
+      <section aria-labelledby="discoverTitle">
+        <div class="section-heading">
+          <div class="section-title-wrap">
+            <h2 class="section-title" id="discoverTitle">本周发现</h2>
+            <p class="section-caption" id="resultCaption">根据站内有效浏览与搜索趋势整理</p>
+          </div>
+          <div class="segments" role="group" aria-label="内容排序">
+            <button class="segment-button active" type="button" data-filter="all">热度</button>
+            <button class="segment-button" type="button" data-filter="new">新收录</button>
+            <button class="segment-button" type="button" data-filter="verified">已核验</button>
+          </div>
+        </div>
+
+        <div class="work-grid" id="workGrid">
+          <article class="work-card" tabindex="0" role="link" data-filter="verified" data-search="MK-1042 雨后的银座 雾岛凛 城市 剧情 东京">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=900&q=82" alt="东京街景的虚构作品截图" loading="eager">
+              <div class="badge-row"><span class="badge hot">热搜 01</span><span class="badge">12 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1042 · 已核验</p>
+              <h3 class="work-title">雨后的银座：城市灯光下的偶遇</h3>
+              <div class="work-meta"><span class="person-link">雾岛凛</span><time datetime="2026-07-18">2026.07.18</time></div>
+            </div>
+          </article>
+
+          <article class="work-card" tabindex="0" role="link" data-filter="new verified" data-search="MK-1038 夏日来信 星野遥 清新 海边 最新">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=82" alt="海岸与蓝天的虚构作品截图" loading="eager">
+              <div class="badge-row"><span class="badge new">新收录</span><span class="badge">9 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1038 · 已核验</p>
+              <h3 class="work-title">夏日来信：沿海电车的最后一站</h3>
+              <div class="work-meta"><span class="person-link">星野遥</span><time datetime="2026-07-16">2026.07.16</time></div>
+            </div>
+          </article>
+
+          <article class="work-card" tabindex="0" role="link" data-filter="verified" data-search="MK-1029 午夜剧场 神谷澪 剧场 舞台 电影">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=900&q=82" alt="剧场舞台的虚构作品截图" loading="lazy">
+              <div class="badge-row"><span class="badge hot">上升 03</span><span class="badge">15 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1029 · 已核验</p>
+              <h3 class="work-title">午夜剧场：落幕后仍亮着的灯</h3>
+              <div class="work-meta"><span class="person-link">神谷澪</span><time datetime="2026-07-11">2026.07.11</time></div>
+            </div>
+          </article>
+
+          <aside class="infeed-ad" aria-label="信息流广告位" data-ad-slot="feed-01">
+            <div class="infeed-visual"><i data-lucide="sparkles" width="30" height="30" aria-hidden="true"></i></div>
+            <div class="infeed-copy">
+              <span class="ad-kicker">AD · 信息流原生广告</span>
+              <h3>新品影像季 · 品牌内容合作</h3>
+              <p>与作品列表自然衔接，但保持独立底色和明确广告标识。</p>
+              <span class="ad-spec"><i data-lucide="monitor" aria-hidden="true"></i>桌面 900 × 120 · 移动端自适应</span>
+            </div>
+            <button class="infeed-action" type="button" data-toast="信息流广告点击为原型占位">了解活动</button>
+          </aside>
+
+          <article class="work-card" tabindex="0" role="link" data-filter="new" data-search="MK-1023 花房日记 白石葵 花园 日常 最新">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=82" alt="花园植物的虚构作品截图" loading="lazy">
+              <div class="badge-row"><span class="badge new">新收录</span><span class="badge">8 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1023 · 待复核</p>
+              <h3 class="work-title">花房日记：午后三点的约定</h3>
+              <div class="work-meta"><span class="person-link">白石葵</span><time datetime="2026-07-08">2026.07.08</time></div>
+            </div>
+          </article>
+
+          <article class="work-card" tabindex="0" role="link" data-filter="verified" data-search="MK-1017 胶片之间 高桥纱月 摄影 胶片 工作室">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=900&q=82" alt="电影拍摄现场的虚构作品截图" loading="lazy">
+              <div class="badge-row"><span class="badge">编辑选</span><span class="badge">11 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1017 · 已核验</p>
+              <h3 class="work-title">胶片之间：工作室里未完成的肖像</h3>
+              <div class="work-meta"><span class="person-link">高桥纱月</span><time datetime="2026-06-29">2026.06.29</time></div>
+            </div>
+          </article>
+
+          <article class="work-card" tabindex="0" role="link" data-filter="verified" data-search="MK-1008 清晨列车 藤本澄香 电车 通勤 城市">
+            <div class="work-image">
+              <img src="https://images.unsplash.com/photo-1495542779398-9fec7dc7986c?auto=format&fit=crop&w=900&q=82" alt="城市列车的虚构作品截图" loading="lazy">
+              <div class="badge-row"><span class="badge">典藏</span><span class="badge">10 张图</span></div>
+            </div>
+            <div class="work-body">
+              <p class="work-code">MK-1008 · 已核验</p>
+              <h3 class="work-title">清晨列车：抵达之前的二十分钟</h3>
+              <div class="work-meta"><span class="person-link">藤本澄香</span><time datetime="2026-06-18">2026.06.18</time></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="empty-state" id="emptyState" aria-live="polite">
+          <i data-lucide="search-x" aria-hidden="true"></i>
+          <h3>没有匹配的演示资料</h3>
+          <p>请尝试人物名、作品编号或更短的关键词。</p>
+        </div>
+
+        <div class="load-row">
+          <button class="plain-button" type="button" data-toast="演示数据已全部加载"><i data-lucide="plus"></i>加载更多</button>
+        </div>
+      </section>
+
+      <aside class="sidebar" id="ranking" aria-label="趋势和广告">
+        <section class="sidebar-section">
+          <h2 class="sidebar-title">实时热搜</h2>
+          <ol class="trend-list">
+            <li class="trend-item" data-query="雾岛凛"><span class="rank">01</span><span class="trend-name">雾岛凛</span><span class="trend-count">8.4k</span></li>
+            <li class="trend-item" data-query="MK-1042"><span class="rank">02</span><span class="trend-name">MK-1042</span><span class="trend-count">6.9k</span></li>
+            <li class="trend-item" data-query="星野遥"><span class="rank">03</span><span class="trend-name">星野遥</span><span class="trend-count">5.7k</span></li>
+            <li class="trend-item" data-query="城市"><span class="rank">04</span><span class="trend-name">城市系列</span><span class="trend-count">4.1k</span></li>
+            <li class="trend-item" data-query="剧场"><span class="rank">05</span><span class="trend-name">剧场专题</span><span class="trend-count">3.6k</span></li>
+          </ol>
+        </section>
+
+        <section class="sidebar-section side-ad" aria-label="侧栏广告位">
+          <span class="ad-kicker">AD · 300 × 250</span>
+          <strong>品牌视觉展示位</strong>
+          <p>静态素材 · 无跳转劫持 · 清晰广告标识</p>
+        </section>
+      </aside>
+    </div>
+
+    <aside class="wrap midpage-ad" aria-label="内容中段广告位" data-ad-slot="midpage-01">
+      <div class="midpage-ad-mark">AD</div>
+      <div>
+        <span class="ad-kicker">970 × 90 · 内容中段通栏</span>
+        <h3>品牌专题、活动发布与新品曝光</h3>
+        <p>位于作品列表与人物发现之间，适合桌面通栏及移动端自适应创意。</p>
+      </div>
+      <button class="midpage-ad-button" type="button" data-toast="中段广告点击为原型占位">广告详情</button>
+    </aside>
+
+    <section class="person-strip" id="people" aria-labelledby="peopleTitle">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="section-title-wrap">
+            <h2 class="section-title" id="peopleTitle">热门人物</h2>
+            <p class="section-caption">头像为算法生成的虚构插画，不代表真实从业者</p>
+          </div>
+          <button class="plain-button" type="button" data-toast="人物索引页为原型占位">查看全部<i data-lucide="arrow-right"></i></button>
+        </div>
+        <div class="person-grid">
+          <button class="person-card" type="button" data-query="雾岛凛">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=KirishimaRin&size=480&backgroundColor=f8d8d5" alt="雾岛凛虚构头像" loading="lazy">
+            <span class="person-name">雾岛 凛</span><span class="person-note">きりしま りん · 18 部资料</span>
+          </button>
+          <button class="person-card" type="button" data-query="星野遥">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=HoshinoHaru&size=480&backgroundColor=d8ece7" alt="星野遥虚构头像" loading="lazy">
+            <span class="person-name">星野 遥</span><span class="person-note">ほしの はる · 14 部资料</span>
+          </button>
+          <button class="person-card" type="button" data-query="神谷澪">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=KamiyaMio&size=480&backgroundColor=f2e2bd" alt="神谷澪虚构头像" loading="lazy">
+            <span class="person-name">神谷 澪</span><span class="person-note">かみや みお · 21 部资料</span>
+          </button>
+          <button class="person-card" type="button" data-query="白石葵">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=ShiraishiAoi&size=480&backgroundColor=dce1ee" alt="白石葵虚构头像" loading="lazy">
+            <span class="person-name">白石 葵</span><span class="person-note">しらいし あおい · 9 部资料</span>
+          </button>
+          <button class="person-card" type="button" data-query="高桥纱月">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=TakahashiSatsuki&size=480&backgroundColor=ead8e8" alt="高桥纱月虚构头像" loading="lazy">
+            <span class="person-name">高桥 纱月</span><span class="person-note">たかはし さつき · 16 部资料</span>
+          </button>
+          <button class="person-card" type="button" data-query="藤本澄香">
+            <img class="person-avatar" src="https://api.dicebear.com/9.x/notionists/png?seed=FujimotoSumika&size=480&backgroundColor=d9e7ef" alt="藤本澄香虚构头像" loading="lazy">
+            <span class="person-name">藤本 澄香</span><span class="person-note">ふじもと すみか · 12 部资料</span>
+          </button>
+        </div>
+        <aside class="sponsor-rail" aria-label="合作品牌广告位" data-ad-slot="sponsors-01">
+          <div class="sponsor-label"><strong>合作品牌</strong><span>3 × 轻量展示位</span></div>
+          <button class="sponsor-slot" type="button" data-toast="合作品牌 A 为原型占位"><i data-lucide="aperture"></i>品牌 A</button>
+          <button class="sponsor-slot" type="button" data-toast="合作品牌 B 为原型占位"><i data-lucide="scan-line"></i>品牌 B</button>
+          <button class="sponsor-slot" type="button" data-toast="合作品牌 C 为原型占位"><i data-lucide="panels-top-left"></i>品牌 C</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">幕鉴.</div>
+          <p class="footer-copy">公开人物与作品资料索引</p>
+          <div class="footer-badges" aria-label="网站属性">
+            <span class="footer-badge">18+</span><span class="footer-badge">资料索引</span><span class="footer-badge">无视频资源</span>
+          </div>
+        </div>
+        <div class="footer-disclosures">
+          <section class="footer-disclosure"><h3><i data-lucide="book-open"></i>内容定位</h3><p>本站仅对公开人物及作品资料进行整理、索引与展示，不提供内容观看服务。</p></section>
+          <section class="footer-disclosure"><h3><i data-lucide="shield-ban"></i>资源边界</h3><p>本站不存储、不上传、不播放、不下载，也不代理转发任何视频、音频、磁力、种子、网盘地址或第三方资源。</p></section>
+          <section class="footer-disclosure"><h3><i data-lucide="scale"></i>数据与权利</h3><p>页面仅保存检索所需的结构化资料和经审核的公开派生图；本站不提供图片识别服务。相关权利归原权利人所有。</p></section>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-legal-note">资料如有错误、过期或涉及权利问题，请通过资料纠错或版权下架入口提交。经核验后将及时更正或移除。</p>
+        <nav class="footer-links" aria-label="页脚导航"><a href="#top">使用条款</a><a href="#top">版权与下架</a><a href="#top">资料纠错</a><a href="#top">广告合作</a></nav>
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="detailDialog" aria-labelledby="dialogTitle">
+    <button class="icon-button dialog-close" id="dialogClose" type="button" aria-label="关闭详情" title="关闭"><i data-lucide="x"></i></button>
+    <div class="detail-visual"><img id="dialogImage" src="" alt=""></div>
+    <div class="detail-body">
+      <p class="detail-code" id="dialogCode"></p>
+      <h2 class="detail-title" id="dialogTitle"></h2>
+      <div class="detail-grid">
+        <dl class="meta-table">
+          <div class="meta-row"><dt>出演</dt><dd id="dialogPerson"></dd></div>
+          <div class="meta-row"><dt>发布日期</dt><dd id="dialogDate"></dd></div>
+          <div class="meta-row"><dt>资料状态</dt><dd>已核验 · 2026.07.22</dd></div>
+          <div class="meta-row"><dt>图片</dt><dd>宣传截图 4 张</dd></div>
+        </dl>
+        <div class="detail-note">
+          <strong>资料页边界</strong>
+          仅展示编号、人物、日期和经许可的宣传图。页面不包含播放、下载、磁力、网盘或资源站跳转。
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="assets/auth-prototype.js"></script>
+  <script>
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const workCards = [...document.querySelectorAll('.work-card')];
+    const emptyState = document.getElementById('emptyState');
+    const resultCaption = document.getElementById('resultCaption');
+    const detailDialog = document.getElementById('detailDialog');
+    const toast = document.getElementById('toast');
+    let activeFilter = 'all';
+    let activeMode = '作品';
+    let toastTimer;
+
+    const DEFAULT_WORK_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600">
+        <rect width="960" height="600" fill="#e7eaed"/>
+        <rect x="330" y="205" width="300" height="190" rx="12" fill="#c5ccd2"/>
+        <circle cx="425" cy="275" r="34" fill="#f5f6f7"/>
+        <path d="M354 372l94-88 68 62 46-40 44 66z" fill="#f5f6f7"/>
+        <text x="480" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#646b72">NO IMAGE</text>
+      </svg>`);
+    const DEFAULT_PERSON_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480">
+        <rect width="480" height="480" fill="#e7eaed"/>
+        <circle cx="240" cy="176" r="82" fill="#c5ccd2"/>
+        <path d="M96 422c15-103 73-158 144-158s129 55 144 158z" fill="#c5ccd2"/>
+      </svg>`);
+
+    function bindImageFallback(img) {
+      const source = img.getAttribute('src');
+      if (!source) return;
+      const fallback = img.classList.contains('person-avatar') ? DEFAULT_PERSON_IMAGE : DEFAULT_WORK_IMAGE;
+      const useFallback = () => {
+        if (img.dataset.fallbackApplied === 'true') return;
+        img.dataset.fallbackApplied = 'true';
+        img.src = fallback;
+      };
+      img.addEventListener('error', useFallback);
+      if (img.complete && img.naturalWidth === 0 && !source.startsWith('data:')) useFallback();
+    }
+
+    function bindImageFallbacks(root = document) {
+      root.querySelectorAll('img').forEach(bindImageFallback);
+    }
+
+    function renderIcons() {
+      if (window.lucide) window.lucide.createIcons({ attrs: { width: 18, height: 18, 'stroke-width': 1.8 } });
+    }
+
+    function normalize(value) {
+      return value.trim().toLocaleLowerCase('zh-CN').replace(/\s+/g, '');
+    }
+
+    function applySearch(query = searchInput.value) {
+      const normalized = normalize(query);
+      let visibleCount = 0;
+
+      workCards.forEach((card) => {
+        const matchesText = !normalized || normalize(card.dataset.search).includes(normalized);
+        const matchesFilter = activeFilter === 'all' || card.dataset.filter.includes(activeFilter);
+        const visible = matchesText && matchesFilter;
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+
+      emptyState.classList.toggle('visible', visibleCount === 0);
+      resultCaption.textContent = normalized
+        ? `“${query.trim()}” · 找到 ${visibleCount} 条演示资料`
+        : '根据站内有效浏览与搜索趋势整理';
+
+      document.getElementById('discover').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('visible');
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
+    }
+
+    function openCard(card) {
+      const code = card.querySelector('.work-code').textContent.split('·')[0].trim();
+      window.location.href = `work-detail.html?code=${encodeURIComponent(code)}`;
+    }
+
+    searchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      applySearch();
+    });
+
+    document.querySelectorAll('[data-query]').forEach((button) => {
+      button.addEventListener('click', () => {
+        searchInput.value = button.dataset.query;
+        applySearch(button.dataset.query);
+      });
+    });
+
+    document.querySelectorAll('.mode-button').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.mode-button').forEach((item) => {
+          item.classList.toggle('active', item === button);
+          item.setAttribute('aria-selected', item === button ? 'true' : 'false');
+        });
+        activeMode = button.dataset.mode;
+        searchInput.placeholder = activeMode === '作品' ? '输入作品编号、标题或人物名称' : '输入艺名、别名或罗马字';
+        searchInput.focus();
+      });
+    });
+
+    document.querySelectorAll('.segment-button').forEach((button) => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter;
+        document.querySelectorAll('.segment-button').forEach((item) => item.classList.toggle('active', item === button));
+        applySearch();
+      });
+    });
+
+    workCards.forEach((card) => {
+      card.addEventListener('click', () => openCard(card));
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openCard(card);
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-toast]').forEach((button) => {
+      button.addEventListener('click', () => showToast(button.dataset.toast));
+    });
+
+    document.getElementById('dialogClose').addEventListener('click', () => detailDialog.close());
+    detailDialog.addEventListener('click', (event) => {
+      const rect = detailDialog.getBoundingClientRect();
+      const outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+      if (outside) detailDialog.close();
+    });
+
+    const menuButton = document.getElementById('menuButton');
+    const primaryNav = document.getElementById('primaryNav');
+    menuButton.addEventListener('click', () => {
+      const open = primaryNav.classList.toggle('open');
+      menuButton.setAttribute('aria-expanded', String(open));
+    });
+
+    primaryNav.addEventListener('click', () => {
+      primaryNav.classList.remove('open');
+      menuButton.setAttribute('aria-expanded', 'false');
+    });
+
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery) {
+      searchInput.value = initialQuery;
+      applySearch(initialQuery);
+    }
+
+    bindImageFallbacks();
+    renderIcons();
+  </script>
+</body>
+</html>

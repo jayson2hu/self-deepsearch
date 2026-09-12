@@ -1,0 +1,2672 @@
+openapi: 3.1.0
+info:
+  title: Self Deepsearch Platform API
+  version: 0.1.0
+  description: Release A contract baseline. Automatic collection is not enabled.
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Process health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /readyz:
+    get:
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+  /metrics:
+    get:
+      operationId: getPrometheusMetrics
+      description: Prometheus text exposition. Disabled with 404 when METRICS_TOKEN is empty.
+      security: [{ metricsBearer: [] }]
+      responses:
+        "200":
+          description: Aggregated service metrics without user or content identifiers
+          content:
+            text/plain:
+              schema: { type: string }
+        "401": { description: Missing or invalid metrics token }
+        "404": { description: Metrics are disabled }
+        "503":
+          description: A required dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+  /api/v1/site/home:
+    get:
+      operationId: getHome
+      responses:
+        "200":
+          description: Public homepage sections
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeResponse"
+  /api/v1/site/editorial:
+    get:
+      operationId: listEditorialWorks
+      description: Lists only currently effective recommendations whose works remain published.
+      responses:
+        "200":
+          description: Effective editorial recommendations in configured order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+  /api/v1/site/sitemap:
+    get:
+      operationId: getSitemapEntries
+      description: Returns only currently published URLs, optionally filtered for split sitemaps.
+      parameters:
+        - in: query
+          name: entity_type
+          schema: { enum: [all, work, performer, studio], default: all }
+      responses:
+        "200":
+          description: Published sitemap entries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SitemapResponse" }
+  /api/v1/site/redirect:
+    get:
+      operationId: resolvePublicRedirect
+      description: Resolves only active, internal, permanent catalog redirects.
+      parameters:
+        - in: query
+          name: path
+          required: true
+          schema: { type: string, maxLength: 300, pattern: "^/(works|performers|studios)/" }
+      responses:
+        "200":
+          description: Safe internal redirect target
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectTargetResponse" }
+        "400": { description: Invalid path }
+        "404": { description: No active redirect }
+  /api/v1/search/works:
+    get:
+      operationId: searchWorks
+      description: Searches published work documents by code first, then title, performer names and aliases, and studio name.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Published works matching the query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSearchResponse"
+        "400":
+          description: Invalid code query
+  /api/v1/works/popular:
+    get:
+      operationId: listPopularWorks
+      description: Lists published works ranked by hourly aggregate page views without storing anonymous identifiers.
+      parameters:
+        - in: query
+          name: range
+          schema: { enum: [7d, 30d, all], default: 30d }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Popular published works
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+        "400": { description: Invalid range }
+  /api/v1/works/latest:
+    get:
+      operationId: listLatestReleasedWorks
+      description: Lists published works by actual release date; records without a release date are excluded.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Latest released published works
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+        "400": { description: Invalid cursor }
+  /api/v1/works/recent:
+    get:
+      operationId: listRecentlyAddedWorks
+      description: Lists published works by their first public publication time rather than release date.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Recently published catalog entries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+  /api/v1/works/{slug}:
+    get:
+      operationId: getPublishedWork
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      responses:
+        "200":
+          description: Published work detail. This read is side-effect free.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkDetailResponse"
+        "404":
+          description: Work not found or not published
+  /api/v1/performers:
+    get:
+      operationId: listPublishedPerformers
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Recently published performer profiles
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+  /api/v1/performers/{slug}:
+    get:
+      operationId: getPublishedPerformer
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      responses:
+        "200":
+          description: Published, adult-verified performer profile and related published works
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PerformerDetailResponse" }
+        "404": { description: Performer not found or not published }
+  /api/v1/studios:
+    get:
+      operationId: listPublishedStudios
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Published studios
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioListResponse" }
+  /api/v1/studios/{slug}:
+    get:
+      operationId: getPublishedStudio
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      responses:
+        "200":
+          description: Published studio and related published works
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioDetailResponse" }
+        "404": { description: Studio not found or not published }
+  /api/v1/auth/signup/code:
+    post:
+      operationId: requestSignupCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCodeRequest"
+      responses:
+        "202":
+          description: Uniform response whether or not the email can be registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Email format or human verification is invalid
+  /api/v1/auth/signup/verify:
+    post:
+      operationId: verifySignup
+      description: Password work shares a process-wide bounded queue. Overload returns AUTH_BUSY with Retry-After, without consuming the code or creating a session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: Account and initial server-side session created atomically
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "503":
+          description: AUTH_BUSY when the password queue is full or times out; retry without credential changes
+          headers:
+            Retry-After:
+              schema: { type: string, enum: ["1"] }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/invitations/accept:
+    post:
+      operationId: acceptInvitation
+      description: Prechecks the single-use invitation code and daily quota before bounded password work, then rechecks and atomically consumes the code, creates the invited account and starts a session. Precheck does not consume quota.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationAcceptRequest"
+      responses:
+        "201":
+          description: Invited account and initial server-side session created atomically
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "400": { description: Invalid or expired invitation code or password }
+        "409": { description: Invitation was already accepted, revoked, expired or the email already has an account }
+        "429": { description: Invitation acceptance quota exceeded }
+        "503":
+          description: AUTH_BUSY when the password queue is full or times out; invitation remains unconsumed
+          headers:
+            Retry-After:
+              schema: { type: string, enum: ["1"] }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: Generic invalid credential response
+        "503":
+          description: AUTH_BUSY when the password queue is full or times out; no session issued and not a wrong-password result
+          headers:
+            Retry-After:
+              schema: { type: string, enum: ["1"] }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      description: Idempotently revokes the current session. Only confirmed revocation or an absent session clears the session and recent-auth cookies. Dependency failures leave cookies unchanged so the caller can retry; they never imply successful logout.
+      responses:
+        "204":
+          description: Current session revoked or already absent
+        "503":
+          description: Session revocation could not be confirmed; cookies remain unchanged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/reauth:
+    post:
+      operationId: reauthenticate
+      description: Verifies the current session password and issues a five-minute HttpOnly confirmation cookie for high-risk operator mutations. The token is bound to the current session and is never returned in JSON.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReauthenticateRequest"
+      responses:
+        "200":
+          description: Recent password confirmation accepted
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401": { description: Session absent or password invalid }
+        "429": { description: Reauthentication attempts are rate limited }
+        "503":
+          description: AUTH_BUSY when the password queue is full or times out; no confirmation cookie issued
+          headers:
+            Retry-After:
+              schema: { type: string, enum: ["1"] }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/password/code:
+    post:
+      operationId: requestPasswordResetCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCodeRequest"
+      responses:
+        "202":
+          description: Uniform response whether or not an active account exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /api/v1/auth/password/reset:
+    post:
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "200":
+          description: Password changed and all prior sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "503":
+          description: AUTH_BUSY when the password queue is full or times out; no password or session changes and reset code remains unconsumed
+          headers:
+            Retry-After:
+              schema: { type: string, enum: ["1"] }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/account/close/code:
+    post:
+      operationId: requestAccountCloseCode
+      security:
+        - sessionCookie: []
+      responses:
+        "202":
+          description: Account-close code queued for the authenticated email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /api/v1/account/close:
+    post:
+      operationId: closeAccount
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseAccountRequest"
+      responses:
+        "200":
+          description: Account closed, all sessions revoked, audit retained
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /api/v1/me:
+    get:
+      operationId: getCurrentUser
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Authenticated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: Session absent, expired or revoked
+  /api/v1/metrics/page-view:
+    post:
+      operationId: recordPageView
+      description: Writes one anonymous hourly aggregate; with a valid session also writes precise user history.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageViewRequest"
+      responses:
+        "204":
+          description: Page view recorded
+        "404":
+          description: Content is not published
+  /api/v1/me/favorites:
+    get:
+      operationId: listFavorites
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Visible favorite works
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemListResponse"
+  /api/v1/me/favorites/{work_id}:
+    parameters:
+      - in: path
+        name: work_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: addFavorite
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Favorite is visible }
+    delete:
+      operationId: removeFavorite
+      description: Soft deletes the favorite.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Favorite is no longer visible }
+  /api/v1/me/follows:
+    get:
+      operationId: listFollows
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Visible followed performers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemListResponse"
+  /api/v1/me/followed-works:
+    get:
+      operationId: listFollowedWorks
+      description: Published works from followed performers, excluding the user's active hidden preferences.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: New works from followed performers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+        "401": { description: Login required }
+  /api/v1/me/follows/{performer_id}:
+    parameters:
+      - in: path
+        name: performer_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: addFollow
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Follow is visible }
+    delete:
+      operationId: removeFollow
+      description: Soft deletes the follow.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Follow is no longer visible }
+  /api/v1/me/hidden-works:
+    get:
+      operationId: listHiddenWorks
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Published works hidden from this account's discovery surfaces
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemListResponse"
+  /api/v1/me/hidden-works/{work_id}:
+    parameters:
+      - in: path
+        name: work_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: hideWorkFromDiscovery
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Work is hidden from this account's discovery surfaces }
+        "404": { description: Work is not currently published }
+    delete:
+      operationId: restoreWorkToDiscovery
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: Hidden preference is removed or was already absent }
+  /api/v1/me/history:
+    get:
+      operationId: listHistory
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Visible precise history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryResponse"
+    delete:
+      operationId: clearVisibleHistory
+      description: Sets is_deleted; retained records are hidden and may be archived later.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Number of records hidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClearHistoryResponse"
+  /api/v1/feedback:
+    post:
+      operationId: createFeedback
+      description: Stores text and an optional URL without fetching the URL.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackRequest"
+      responses:
+        "201":
+          description: Feedback queued for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackItem"
+  /api/v1/me/feedback:
+    get:
+      operationId: listOwnFeedback
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Current user's feedback only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedbackListResponse" }
+  /admin/v1/feedback:
+    get:
+      operationId: adminListFeedback
+      description: Lists feedback for manual review. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [all, pending, reviewing, accepted, rejected, closed], default: all }
+      responses:
+        "200":
+          description: Feedback review queue
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminFeedbackListResponse" }
+        "403": { description: Role is not allowed }
+  /admin/v1/feedback/{feedback_id}/review:
+    parameters:
+      - in: path
+        name: feedback_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminReviewFeedback
+      description: Editors may move pending feedback to reviewing; admin or owner may finish review.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FeedbackReviewRequest" }
+      responses:
+        "200":
+          description: Updated feedback
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminFeedbackItem" }
+        "409": { description: Feedback state changed }
+  /admin/v1/editorial-recommendations:
+    get:
+      operationId: adminListEditorialRecommendations
+      description: Lists recommendation schedules, including paused and removed audit-visible entries. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [all, active, paused, removed], default: all }
+      responses:
+        "200":
+          description: Editorial recommendation schedules
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRecommendationListResponse" }
+        "403": { description: Role is not allowed }
+    post:
+      operationId: adminCreateEditorialRecommendation
+      description: Schedules a currently published work. Requires admin or owner and writes an audit record.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialRecommendationRequest" }
+      responses:
+        "201":
+          description: Recommendation created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRecommendation" }
+        "400": { description: Invalid schedule or work is not published }
+        "403": { description: Role is not allowed }
+        "409": { description: Work already has an overlapping active recommendation }
+  /admin/v1/editorial-recommendations/{recommendation_id}:
+    parameters:
+      - in: path
+        name: recommendation_id
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      operationId: adminUpdateEditorialRecommendation
+      description: Replaces the editable schedule fields. Removed entries are immutable. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditorialRecommendationRequest" }
+      responses:
+        "200":
+          description: Recommendation updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRecommendation" }
+        "400": { description: Invalid schedule or work is not published }
+        "403": { description: Role is not allowed }
+        "404": { description: Recommendation not found }
+        "409": { description: Recommendation state or active-work constraint changed }
+    delete:
+      operationId: adminRemoveEditorialRecommendation
+      description: Marks a recommendation removed and preserves its audit history. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RemoveEditorialRecommendationRequest" }
+      responses:
+        "200":
+          description: Recommendation marked removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorialRecommendation" }
+        "403": { description: Role is not allowed }
+        "404": { description: Recommendation not found }
+        "409": { description: Recommendation was already removed }
+  /admin/v1/site-settings/discovery-mix:
+    get:
+      operationId: adminGetDiscoveryMixRule
+      description: Reads the homepage work-to-performer discovery ratio. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Current discovery mix rule
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryMixRule" }
+        "403": { description: Role is not allowed }
+    put:
+      operationId: adminUpdateDiscoveryMixRule
+      description: Replaces the homepage discovery mix rule and writes audit and cache invalidation events.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DiscoveryMixRuleRequest" }
+      responses:
+        "200":
+          description: Updated discovery mix rule
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryMixRule" }
+        "400": { description: Invalid ratio, window or reason }
+        "403": { description: Role is not allowed }
+  /admin/v1/review-tasks:
+    get:
+      operationId: adminListReviewTasks
+      description: Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [open, pending, claimed, approved, rejected, cancelled], default: open }
+      responses:
+        "200":
+          description: Review queue ordered by priority and creation time
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewTaskListResponse" }
+        "403": { description: Role is not allowed }
+  /admin/v1/review-tasks/{task_id}/claim:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      operationId: adminClaimReviewTask
+      description: Atomically claims a pending task. Requires admin or owner; editors may submit revisions but cannot hold a decision lock.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Claimed task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewTask" }
+        "409": { description: Task is no longer pending }
+  /admin/v1/review-tasks/{task_id}/reassign:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      operationId: adminReassignReviewTask
+      description: Explicitly reassigns a claimed task to an active admin or owner and appends the prior and next assignee to the audit log. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewReassignmentRequest" }
+      responses:
+        "200":
+          description: Reassigned task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewTask" }
+        "400": { description: Invalid target or reason }
+        "403": { description: Target cannot review or actor is not allowed }
+        "404": { description: Task or target account not found }
+        "409": { description: Task is not claimed or already belongs to the target }
+  /admin/v1/review-tasks/{task_id}/approve:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      operationId: adminApproveReviewTask
+      description: Approves a claimed task's latest reviewing revision. Only the current task assignee may decide and the revision author cannot review their own revision. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewDecisionRequest" }
+      responses:
+        "200":
+          description: Approved task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewTask" }
+        "409": { description: Task or revision state changed }
+  /admin/v1/review-tasks/{task_id}/reject:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      operationId: adminRejectReviewTask
+      description: Rejects the latest reviewing revision. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewDecisionRequest" }
+      responses:
+        "200":
+          description: Rejected task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewTask" }
+        "409": { description: Task or revision state changed }
+  /admin/v1/conflicts:
+    get:
+      operationId: adminListConflicts
+      description: Lists field conflicts without mutating published data. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [open, resolved, all], default: open }
+      responses:
+        "200":
+          description: Conflict records ordered with unresolved items first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConflictReviewListResponse" }
+        "403": { description: Role is not allowed }
+  /admin/v1/conflicts/{conflict_id}/resolve:
+    parameters:
+      - in: path
+        name: conflict_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminResolveConflict
+      description: Records an audited human decision. It does not write the candidate into the entity; formal changes still require revision, review and publication. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResolveConflictRequest" }
+      responses:
+        "200":
+          description: Resolved conflict
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConflictReview" }
+        "403": { description: Role is not allowed }
+        "404": { description: Conflict not found }
+        "409": { description: Conflict was already resolved }
+  /admin/v1/imports/works/preflight:
+    post:
+      operationId: adminPreflightWorkCSV
+      description: Parses and validates a work CSV without writing catalog data. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: File-level and row-level validation report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkCSVPreflightResponse" }
+        "400": { description: Missing file or malformed multipart body }
+        "403": { description: Role is not allowed }
+        "413": { description: File is larger than 1 MiB }
+        "415": { description: Request is not multipart/form-data }
+  /admin/v1/imports/works:
+    get:
+      operationId: adminListWorkImports
+      description: Lists the latest 100 manual work CSV batches. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Manual work import batches
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkImportBatchListResponse" }
+    post:
+      operationId: adminImportWorkCSV
+      description: Atomically creates works, reviewing revisions, review tasks and provenance records. Repeating the same key and body returns the stored batch; a different body with the same key returns 409. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128, pattern: "^[A-Za-z0-9._:-]+$" }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, reason]
+              properties:
+                file: { type: string, format: binary }
+                reason: { type: string, minLength: 2, maxLength: 1000 }
+      responses:
+        "201":
+          description: Accepted batch or idempotent replay
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkImportBatchResponse" }
+        "409": { description: Database conflict or idempotency key reused with different content }
+        "413": { description: File is larger than 1 MiB }
+        "422":
+          description: CSV has file-level or row-level validation errors
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkCSVPreflightResponse" }
+  /admin/v1/works:
+    post:
+      operationId: adminCreateWork
+      description: Creates a work, an immutable reviewing revision and a review task in one transaction. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorkRequest" }
+      responses:
+        "201":
+          description: Work submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+        "409": { description: Work conflicts with an existing identity }
+  /admin/v1/performers:
+    post:
+      operationId: adminCreatePerformer
+      description: Creates a performer, reviewing revision and review task. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePerformerRequest" }
+      responses:
+        "201":
+          description: Performer submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+  /admin/v1/studios:
+    post:
+      operationId: adminCreateStudio
+      description: Creates a studio, reviewing revision and review task. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateStudioRequest" }
+      responses:
+        "201":
+          description: Studio submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+        "409": { description: Studio name or slug already exists }
+  /admin/v1/entities/{entity_id}/revisions:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: adminCreateRevision
+      description: Submits an immutable revision and creates a review task. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRevisionRequest" }
+      responses:
+        "201":
+          description: Revision submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+        "409": { description: Another revision is already under review }
+    get:
+      operationId: adminListEntityRevisions
+      description: Lists immutable revision snapshots and identifies the current publication. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: entity_type
+          required: true
+          schema: { enum: [work, performer, studio] }
+      responses:
+        "200":
+          description: Revision history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContentRevisionListResponse" }
+  /admin/v1/entities:
+    get:
+      operationId: adminListEntities
+      description: Lists operations catalog entities across publication states. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: entity_type
+          schema: { enum: [all, work, performer, studio], default: all }
+        - in: query
+          name: status
+          schema: { enum: [all, draft, reviewing, approved, published, hidden, takedown, merged], default: all }
+      responses:
+        "200":
+          description: Operations catalog
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogEntityListResponse" }
+  /admin/v1/entities/{entity_id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: adminPublishEntity
+      description: Applies an approved revision and atomically updates publication, search, outbox and audit state. Selecting an older revision appends a new approved rollback snapshot. Takedown entities cannot be republished. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublishEntityRequest" }
+      responses:
+        "200":
+          description: Entity published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+        "409": { description: No matching approved revision exists }
+  /admin/v1/entities/{entity_id}/hide:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: adminHideEntity
+      description: Hides a published entity and queues cache/search side effects. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HideEntityRequest" }
+      responses:
+        "200":
+          description: Entity hidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsEntity" }
+        "409": { description: Entity is not currently published }
+  /admin/v1/entities/{entity_id}/merge:
+    parameters:
+      - $ref: "#/components/parameters/EntityId"
+    post:
+      operationId: adminMergeEntity
+      description: Merges a published source into a published target of the same type, migrates relationships, creates a 301 redirect, and writes audit/cache events. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MergeEntityRequest" }
+      responses:
+        "200":
+          description: Completed entity merge
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EntityMerge" }
+        "400": { description: Invalid source, target, type or reason }
+        "403": { description: Role is not allowed }
+        "404": { description: Source or target entity not found }
+        "409": { description: Source or target is not published, or source was already merged }
+  /admin/v1/users:
+    get:
+      operationId: adminListUsers
+      description: Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: User accounts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsUserListResponse" }
+  /admin/v1/users/{user_id}/role:
+    parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminChangeUserRole
+      description: Requires owner and recent password confirmation. Cannot create or change an owner or change the actor's own role. A real role change atomically revokes all prior sessions and records an audit; the target must log in again. New user sessions last 30 days and operator sessions 8 hours. Submitting the unchanged role returns 409 without revocation or duplicate audit.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role: { enum: [admin, editor, user] }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsUser" }
+        "403": { description: Only owner may change non-owner roles, never their own role }
+        "409": { description: Role is already the requested value; no sessions revoked }
+        "503": { description: Role change could not be confirmed; no success may be inferred }
+  /admin/v1/users/{user_id}/status:
+    parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminChangeUserStatus
+      description: Admin may manage ordinary users; owner may manage any non-owner account. Disabling an account revokes active sessions.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status, reason]
+              properties:
+                status: { enum: [active, locked, suspended] }
+                reason: { type: string, minLength: 2, maxLength: 1000 }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsUser" }
+        "403": { description: Target account is outside the operator's authority }
+        "409": { description: Account already has the requested status }
+  /admin/v1/invitations:
+    get:
+      operationId: adminListInvitations
+      description: Lists invitation records including accepted, revoked and derived expired states. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [all, pending, accepted, revoked, expired], default: all }
+      responses:
+        "200":
+          description: Invitation records ordered by creation time
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvitationListResponse" }
+        "403": { description: Role is not allowed }
+    post:
+      operationId: adminCreateInvitation
+      description: Creates a 48-hour, single-use invitation and sends the code by email. Owner may invite admin, editor or user; admin may invite user only.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationCreateRequest" }
+      responses:
+        "201":
+          description: Invitation created; the plaintext code is never returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invitation" }
+        "400": { description: Invalid email, role or reason }
+        "403": { description: Role is not allowed }
+        "409": { description: A pending invitation already exists for this email }
+        "429": { description: Invitation rate limit exceeded }
+  /admin/v1/invitations/{invitation_id}/revoke:
+    parameters:
+      - in: path
+        name: invitation_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminRevokeInvitation
+      description: Revokes a pending invitation and records the operator reason in audit history. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RevokeInvitationRequest" }
+      responses:
+        "200":
+          description: Invitation revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invitation" }
+        "403": { description: Role is not allowed }
+        "404": { description: Invitation not found }
+        "409": { description: Invitation is no longer pending }
+  /admin/v1/system/health:
+    get:
+      operationId: adminSystemHealth
+      description: Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Database-backed operations health
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsSystemHealth" }
+  /admin/v1/audit-logs:
+    get:
+      operationId: adminListAuditLogs
+      description: Returns a bounded chronological audit timeline for one exact request ID. Requires admin or owner. Raw before/after payloads and metadata are not exposed.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: request_id
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128, pattern: "^[A-Za-z0-9._:-]+$" }
+      responses:
+        "200":
+          description: At most 200 matching audit events
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditLogListResponse" }
+        "400": { description: Request ID is missing or invalid }
+        "403": { description: Role is not allowed }
+  /admin/v1/media/manifests:
+    post:
+      operationId: adminRegisterMediaManifest
+      description: Registers already-uploaded S3 renditions only after Beijing backup and rights review. The immutable manifest, entity link, audit and durable cache refresh event commit in one transaction; delivery of cache refresh is asynchronous. Draft preparation is allowed, but takedown or merged targets are rejected. The server does not fetch source or public URLs. Requires admin or owner. This operation adds a new asset; it does not replace an existing primary image.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MediaManifestRequest" }
+      responses:
+        "201":
+          description: Immutable media manifest registered and linked, with a durable cache refresh event queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaManifestResponse" }
+        "409": { description: "Target is withdrawn or merged, or storage key, URL, rendition or primary image conflicts with an existing asset" }
+        "503": { description: Registration could not be confirmed. No success is returned when the transaction or cache-event enqueue fails; inspect the asset before retrying after an uncertain commit outcome. }
+  /admin/v1/media/usage:
+    get:
+      operationId: adminGetMediaUsage
+      description: Requires admin or owner. Returns nullable durable usage state and the latest ten review outcomes from one read snapshot. Counters are decimal strings. No token, raw account ID or audit snapshot is exposed. Analytics and review status do not prove delivery enforcement or billing headroom.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Durable state or null before observer initialization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUsageOverview" }
+        "401": { description: Login required }
+        "403": { description: Role is not allowed }
+        "503": { description: Snapshot unavailable }
+  /admin/v1/media/usage/reviews:
+    post:
+      operationId: adminSubmitMediaUsageReview
+      description: Requires admin or owner and recent password confirmation. Queues a five-minute review request against an exact config digest and updated timestamp. Same actor and key with identical payload returns the prior outcome; changed payload or concurrent pending review conflicts. Worker rechecks active operator role, freshness, configured account and policy before applying. Rotation requires an explicitly configured nonoverlapping current period and retains a hold until a fresh observation and another acknowledgement. This never resumes images or uploads.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MediaUsageReviewInput" }
+      responses:
+        "202":
+          description: Review durably queued, not yet applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUsageReviewResult" }
+        "200":
+          description: Identical idempotent replay of an existing review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUsageReviewResult" }
+        "400": { description: Invalid confirmation, identity, reason or period }
+        "401": { description: Login or recent password confirmation required }
+        "403": { description: Role is not allowed or actor is no longer active }
+        "404": { description: Observer has not initialized durable state }
+        "409": { description: State changed, observation busy, another request pending or key reused with different payload }
+        "503": { description: Commit unconfirmed; preserve the idempotency key and inspect or retry the identical request }
+  /admin/v1/media/upload-control:
+    get:
+      operationId: adminGetMediaUploadControl
+      description: Requires admin or owner. Returns nullable authenticated Beijing upload snapshot and latest ten durable command outcomes. A fresh snapshot is not permission to resume; pending/running/uncertain does not mean applied. No endpoint or signing secret is exposed.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Current execution snapshot and command history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUploadOverview" }
+        "401": { description: Login required }
+        "403": { description: Role is not allowed }
+        "503": { description: Snapshot unavailable }
+  /admin/v1/media/upload-control/commands:
+    post:
+      operationId: adminSubmitMediaUploadCommand
+      description: Requires admin or owner and recent password confirmation. Queues one explicit pause or resume against exact target, epoch, generation and observed timestamp. Confirmation is mandatory. Requests expire within five minutes. Same actor and idempotency key with identical content returns the previous outcome; conflicting or concurrently open requests are rejected. Worker checks operator authority and resume safety before dispatch. Network uncertainty remains visible until authenticated reconciliation; the API never claims remote application at enqueue time.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MediaUploadInput" }
+      responses:
+        "202":
+          description: Durable pending command, not yet executed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUploadResult" }
+        "200":
+          description: Identical idempotent replay of an existing command
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaUploadResult" }
+        "400": { description: Invalid snapshot, mode, identity, reason or confirmation }
+        "401": { description: Login or recent password confirmation required }
+        "403": { description: Operator role is not allowed or no longer active }
+        "404": { description: Upload executor has not initialized its durable snapshot }
+        "409": { description: Snapshot changed, unavailable or stale; executor busy; another command open; or changed idempotency payload }
+        "503": { description: Enqueue commit not confirmed; preserve the key and inspect or retry exactly }
+  /admin/v1/media/primary:
+    get:
+      operationId: adminGetPrimaryMedia
+      description: Reads the current primary association and parent status in one snapshot, including draft and hidden parents. Requires admin or owner. Does not expose private storage locations.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: entity_type
+          required: true
+          schema: { enum: [work, performer] }
+        - in: query
+          name: entity_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current primary, or null if none
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrimaryMediaStateResponse" }
+        "400": { description: Invalid entity identity }
+        "401": { description: Login required }
+        "403": { description: Role is not allowed }
+        "404": { description: Parent does not exist }
+        "503": { description: Read could not be completed }
+  /admin/v1/media/primary/replace:
+    post:
+      operationId: adminReplacePrimaryMedia
+      description: Requires admin or owner and recent password confirmation. Compares expected_asset_id under the parent lock and registers a different immutable primary manifest. New media, old link withdrawal, audit, cache refresh and retirement tasks commit in one transaction. Shared old assets remain available. Unshared old assets are hidden and public deletions are due immediately; private masters are retained for 30 days before deletion is due. Rights takedown overrides retention. Physical deletion and cache delivery are asynchronous, not confirmed by this response. No external URL is fetched.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReplacePrimaryMediaRequest" }
+      responses:
+        "201":
+          description: Primary switched; remote deletion is not yet confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReplacePrimaryMediaResponse" }
+        "400": { description: "Invalid manifest, missing expected asset, same asset, or not a primary image" }
+        "401": { description: Login or recent password confirmation required }
+        "403": { description: Role is not allowed }
+        "404": { description: Parent does not exist }
+        "409": { description: "Primary changed or disappeared, parent or old asset is withdrawn, or immutable new manifest conflicts. Reload the primary and explicitly confirm again; never automatically overwrite." }
+        "503": { description: Transaction could not be confirmed. Preserve the manifest and inspect the current primary before retrying an uncertain commit. }
+  /admin/v1/takedowns:
+    get:
+      operationId: adminListTakedowns
+      description: Lists rights requests. Requires editor, admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { enum: [all, received, validating, approved, rejected, completed], default: all }
+      responses:
+        "200":
+          description: Rights request queue
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TakedownListResponse" }
+    post:
+      operationId: adminCreateTakedown
+      description: Registers a rights request without fetching the evidence reference. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateTakedownRequest" }
+      responses:
+        "201":
+          description: Rights request registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TakedownRequest" }
+  /admin/v1/takedowns/{takedown_id}/complete:
+    parameters:
+      - in: path
+        name: takedown_id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: adminCompleteTakedown
+      description: Atomically removes publication and public media metadata, queues or reuses physical deletion tasks by immutable media object ID, and completes the rights request. Unpublished parent records can be withdrawn without creating a publication. Original public URLs are preserved from matching deletion payloads after withdrawal. A rights request may advance a pending private-retention deadline, but never postpones work or resets running/dead tasks. Physical deletion remains asynchronous; completed rights requests are not storage-deletion receipts. Requires admin or owner.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompleteTakedownRequest" }
+      responses:
+        "200":
+          description: Public metadata withdrawn and deletion tasks durably queued or reused; remote deletion is not yet confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TakedownRequest" }
+        "409": { description: Rights request is already completed or otherwise not in a takedown-compatible state }
+        "503": { description: Takedown could not be confirmed because the transaction, deletion identity or queue failed. No successful completion is returned; inspect the original rights request before retrying after an uncertain commit outcome. }
+components:
+  securitySchemes:
+    metricsBearer:
+      type: http
+      scheme: bearer
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sd_session
+    recentAuthCookie:
+      type: apiKey
+      in: cookie
+      name: sd_reauth
+  parameters:
+    Cursor:
+      in: query
+      name: cursor
+      required: false
+      description: Opaque keyset cursor returned by the same route and query.
+      schema: { type: string, maxLength: 256 }
+    TaskId:
+      in: path
+      name: task_id
+      required: true
+      schema: { type: string, format: uuid }
+    EntityId:
+      in: path
+      name: entity_id
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    MediaUploadReceipt:
+      type: object
+      additionalProperties: false
+      required: [status, epoch, generation, mode, command_id, applied_at]
+      properties:
+        status: { type: string, enum: [observed, applied, replayed] }
+        epoch: { type: string, description: Empty only for an uninitialized paused executor }
+        generation: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        mode: { type: string, enum: [paused, enabled] }
+        command_id: { type: string, description: Empty only for generation zero }
+        applied_at: { type: string, description: UTC whole seconds; empty only for generation zero }
+    MediaUploadState:
+      type: object
+      required: [target_ref, receipt, last_success_at, updated_at, error_code, fresh]
+      properties:
+        target_ref: { type: string, pattern: "^[a-f0-9]{64}$" }
+        receipt: { anyOf: [{ $ref: "#/components/schemas/MediaUploadReceipt" }, { type: "null" }] }
+        last_success_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: string, format: date-time }
+        error_code: { type: [string, "null"] }
+        fresh: { type: boolean }
+    MediaUploadCommand:
+      type: object
+      required: [command_id, actor_id, mode, reason, status, created_at, expires_at, first_dispatched_at, completed_at, dispatch_count, error_code, receipt, idempotent_replay]
+      properties:
+        command_id: { type: string, format: uuid }
+        actor_id: { type: string, format: uuid }
+        mode: { type: string, enum: [paused, enabled] }
+        reason: { type: string }
+        status: { type: string, enum: [pending, running, uncertain, applied, rejected, superseded] }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        first_dispatched_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        dispatch_count: { type: integer, minimum: 0 }
+        error_code: { type: [string, "null"] }
+        receipt: { anyOf: [{ $ref: "#/components/schemas/MediaUploadReceipt" }, { type: "null" }] }
+        idempotent_replay: { type: boolean }
+    MediaUploadOverview:
+      type: object
+      required: [state, commands]
+      properties:
+        state: { anyOf: [{ $ref: "#/components/schemas/MediaUploadState" }, { type: "null" }] }
+        commands: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/MediaUploadCommand" } }
+    MediaUploadInput:
+      type: object
+      additionalProperties: false
+      required: [idempotency_key, target_ref, expected_epoch, expected_generation, expected_observed_at, mode, reason, confirmed]
+      properties:
+        idempotency_key: { type: string, format: uuid, description: Canonical lowercase UUID v4 }
+        target_ref: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expected_epoch: { type: string }
+        expected_generation: { type: integer, minimum: 0, maximum: 9007199254740990 }
+        expected_observed_at: { type: string, format: date-time }
+        mode: { type: string, enum: [paused, enabled] }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+        confirmed: { type: boolean, enum: [true] }
+    MediaUploadResult:
+      type: object
+      required: [command]
+      properties:
+        command: { $ref: "#/components/schemas/MediaUploadCommand" }
+    MediaUsageState:
+      type: object
+      required: [config_digest, period_start, period_end, updated_at, last_success_at, last_until, class_a_highwater, class_b_highwater, review_required, review_reason, stop_recommended, last_status, active_run, last_review_id, observation_fresh]
+      properties:
+        config_digest: { type: string, pattern: "^[a-f0-9]{64}$" }
+        period_start: { type: string, format: date-time }
+        period_end: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_success_at: { type: [string, "null"], format: date-time }
+        last_until: { type: [string, "null"], format: date-time }
+        class_a_highwater: { type: string, pattern: "^[0-9]{1,20}$" }
+        class_b_highwater: { type: string, pattern: "^[0-9]{1,20}$" }
+        review_required: { type: boolean }
+        review_reason: { type: [string, "null"] }
+        stop_recommended: { type: boolean }
+        last_status: { type: string, enum: [unknown, low_estimate, warning, high, stop_recommended] }
+        active_run: { type: boolean }
+        last_review_id: { type: [string, "null"], format: uuid }
+        observation_fresh: { type: boolean }
+    MediaUsageReview:
+      type: object
+      required: [review_id, action, status, created_at, expires_at, completed_at, error_code, reason, next_period_start, next_period_end, idempotent_replay]
+      properties:
+        review_id: { type: string, format: uuid }
+        action: { type: string, enum: [acknowledge, rotate_period] }
+        status: { type: string, enum: [pending, applied, rejected] }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        error_code: { type: [string, "null"] }
+        reason: { type: string }
+        next_period_start: { type: [string, "null"], format: date-time }
+        next_period_end: { type: [string, "null"], format: date-time }
+        idempotent_replay: { type: boolean }
+    MediaUsageOverview:
+      type: object
+      required: [state, reviews, enforcement]
+      properties:
+        state: { anyOf: [{ $ref: "#/components/schemas/MediaUsageState" }, { type: "null" }] }
+        reviews: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/MediaUsageReview" } }
+        enforcement: { type: string, enum: [not_connected] }
+    MediaUsageReviewInput:
+      type: object
+      additionalProperties: false
+      required: [idempotency_key, action, expected_digest, expected_updated_at, reason, confirmed]
+      properties:
+        idempotency_key: { type: string, format: uuid }
+        action: { type: string, enum: [acknowledge, rotate_period] }
+        expected_digest: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expected_updated_at: { type: string, format: date-time }
+        next_period_start: { type: [string, "null"], format: date-time }
+        next_period_end: { type: [string, "null"], format: date-time }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+        confirmed: { type: boolean, enum: [true] }
+    MediaUsageReviewResult:
+      type: object
+      required: [review, enforcement]
+      properties:
+        review: { $ref: "#/components/schemas/MediaUsageReview" }
+        enforcement: { type: string, enum: [not_connected] }
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, request_id]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            request_id: { type: string }
+    HealthResponse:
+      type: object
+      required: [status, service, version, time]
+      properties:
+        status:
+          const: ok
+        service:
+          type: string
+        version:
+          type: string
+        time:
+          type: string
+          format: date-time
+    DependencyStatus:
+      type: object
+      required: [name, status]
+      properties:
+        name:
+          type: string
+        status:
+          enum: [ok, unavailable, not_configured, schema_mismatch]
+        detail:
+          type: string
+    ReadinessResponse:
+      type: object
+      required: [status, service, version, dependencies, time]
+      properties:
+        status:
+          enum: [ready, not_ready]
+        service:
+          type: string
+        version:
+          type: string
+        dependencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/DependencyStatus"
+        time:
+          type: string
+          format: date-time
+    HomeItem:
+      type: object
+      required: [id, type, title, subtitle, href, image_url, image]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          enum: [work, performer, studio]
+        code:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        href:
+          type: string
+        image_url:
+          type: [string, "null"]
+          description: Backward-compatible preferred rendition URL. New clients should use image.renditions.
+        image:
+          oneOf:
+            - $ref: "#/components/schemas/ResponsiveImage"
+            - type: "null"
+    HomeSection:
+      type: object
+      required: [key, title, items]
+      properties:
+        key:
+          enum: [discovery, latest, followed, performers, trending, most_viewed, editorial]
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HomeItem"
+    HomeResponse:
+      type: object
+      required: [generated_at, sections]
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/HomeSection"
+    SitemapEntry:
+      type: object
+      required: [entity_type, slug, updated_at]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        updated_at: { type: string, format: date-time }
+    SitemapResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, maxItems: 50000, items: { $ref: "#/components/schemas/SitemapEntry" } }
+    RedirectTargetResponse:
+      type: object
+      required: [target_path, status_code]
+      properties:
+        target_path: { type: string, pattern: "^/(works|performers|studios)/" }
+        status_code: { const: 301 }
+    WorkSearchResponse:
+      type: object
+      required: [query, items, next_cursor]
+      properties:
+        query:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HomeItem"
+        next_cursor: { type: [string, "null"], maxLength: 256 }
+    PerformerSummary:
+      type: object
+      required: [id, name, href, image_url, image]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        href:
+          type: string
+        image_url:
+          type: [string, "null"]
+          description: Backward-compatible preferred rendition URL. New clients should use image.renditions.
+        image:
+          oneOf:
+            - $ref: "#/components/schemas/ResponsiveImage"
+            - type: "null"
+    ImageRendition:
+      type: object
+      required: [url, rendition, width, height, mime_type]
+      properties:
+        url:
+          type: string
+          format: uri
+        rendition:
+          enum: [w320, w640, w960]
+        width:
+          type: integer
+        height:
+          type: integer
+        mime_type:
+          enum: [image/jpeg, image/png, image/webp]
+    ResponsiveImage:
+      allOf:
+        - $ref: "#/components/schemas/ImageRendition"
+        - type: object
+          required: [renditions]
+          properties:
+            renditions:
+              type: array
+              minItems: 1
+              maxItems: 3
+              uniqueItems: true
+              description: Available public derivatives for the same logical media asset; URLs are returned by the API and must not be inferred.
+              items:
+                $ref: "#/components/schemas/ImageRendition"
+    WorkImage:
+      allOf:
+        - $ref: "#/components/schemas/ResponsiveImage"
+    WorkDetailResponse:
+      type: object
+      required: [id, code, title, title_original, release_date, studio_name, summary, performers, images, related_works]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        title:
+          type: string
+        title_original:
+          type: [string, "null"]
+        release_date:
+          type: [string, "null"]
+          format: date
+        studio_name:
+          type: string
+        summary:
+          type: [string, "null"]
+        performers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PerformerSummary"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkImage"
+        related_works:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/HomeItem"
+    PerformerDetailResponse:
+      type: object
+      required: [id, name, name_original, romanized_name, aliases, activity_status, agency, birth_year, height_cm, measurements, debut_year, image_url, works, images]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        name_original: { type: [string, "null"] }
+        romanized_name: { type: [string, "null"] }
+        aliases:
+          type: array
+          maxItems: 30
+          uniqueItems: true
+          description: Values are whitespace-normalized and must be unique case-insensitively.
+          items: { type: string, minLength: 1, maxLength: 300 }
+        activity_status: { enum: [active, retired, unknown] }
+        agency: { type: [string, "null"] }
+        birth_year: { type: [integer, "null"] }
+        height_cm: { type: [integer, "null"] }
+        measurements: { type: [string, "null"] }
+        debut_year: { type: [integer, "null"] }
+        image_url: { type: [string, "null"] }
+        works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
+        images: { type: array, items: { $ref: "#/components/schemas/WorkImage" } }
+    StudioSummary:
+      type: object
+      required: [id, name, href]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        href: { type: string }
+    StudioListResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/StudioSummary" } }
+        next_cursor: { type: [string, "null"], maxLength: 256 }
+    StudioDetailResponse:
+      type: object
+      required: [id, name, works]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    AuthCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [email, turnstile_token]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        turnstile_token:
+          type: string
+    SignupRequest:
+      type: object
+      additionalProperties: false
+      required: [email, code, password]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    ReauthenticateRequest:
+      type: object
+      additionalProperties: false
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required: [email, code, password]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    CloseAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [code, notice_version]
+      properties:
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+        notice_version:
+          const: "2026-08-07"
+    InvitationAcceptRequest:
+      type: object
+      additionalProperties: false
+      required: [email, code, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    InvitationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [email, role, reason]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        role:
+          enum: [admin, editor, user]
+        reason:
+          type: string
+          minLength: 2
+          maxLength: 500
+    RevokeInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 2
+          maxLength: 500
+    Invitation:
+      type: object
+      required: [id, email, role, status, invited_by, inviter, sent_at, expires_at, consumed_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { enum: [admin, editor, user] }
+        status: { enum: [pending, accepted, revoked, expired] }
+        invited_by: { type: string, format: uuid }
+        inviter: { type: string }
+        sent_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        consumed_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+    InvitationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Invitation" }
+    UserSummary:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          enum: [owner, admin, editor, user]
+    SessionResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserSummary"
+    PageViewRequest:
+      type: object
+      additionalProperties: false
+      required: [content_type, content_id]
+      properties:
+        content_type:
+          enum: [work, performer, studio]
+        content_id:
+          type: string
+          format: uuid
+    ItemListResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/HomeItem" }
+        next_cursor: { type: [string, "null"], maxLength: 256 }
+    HistoryItem:
+      type: object
+      required: [item, viewed_at]
+      properties:
+        item: { $ref: "#/components/schemas/HomeItem" }
+        viewed_at: { type: string, format: date-time }
+    HistoryResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/HistoryItem" }
+    ClearHistoryResponse:
+      type: object
+      required: [hidden_count]
+      properties:
+        hidden_count: { type: integer, minimum: 0 }
+    FeedbackRequest:
+      type: object
+      additionalProperties: false
+      required: [feedback_type, message]
+      properties:
+        content_type: { type: [string, "null"], enum: [work, performer, studio, null] }
+        content_id: { type: [string, "null"], format: uuid }
+        feedback_type: { enum: [correction, source_suggestion, rights, other] }
+        message: { type: string, minLength: 1, maxLength: 4000 }
+        evidence_url: { type: [string, "null"], format: uri, maxLength: 2048 }
+    FeedbackItem:
+      allOf:
+        - $ref: "#/components/schemas/FeedbackRequest"
+        - type: object
+          required: [id, content_type, content_id, evidence_url, review_status, created_at]
+          properties:
+            id: { type: string, format: uuid }
+            review_status: { enum: [pending, reviewing, accepted, rejected, closed] }
+            created_at: { type: string, format: date-time }
+    FeedbackListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/FeedbackItem" } }
+    AdminFeedbackItem:
+      allOf:
+        - $ref: "#/components/schemas/FeedbackItem"
+        - type: object
+          required: [submitter, reviewer, reviewed_at]
+          properties:
+            submitter: { type: string, format: email }
+            reviewer: { type: [string, "null"], format: email }
+            reviewed_at: { type: [string, "null"], format: date-time }
+    AdminFeedbackListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdminFeedbackItem" } }
+    FeedbackReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [status, reason]
+      properties:
+        status: { enum: [reviewing, accepted, rejected, closed] }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    ReviewTask:
+      type: object
+      required: [id, task_type, entity_type, entity_id, priority, status, assignee_id, assignee, target_label, due_at, claimed_at, completed_at, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        task_type: { enum: [new_entity, field_review, duplicate, conflict, media, rights, publication] }
+        entity_type: { type: [string, "null"], enum: [work, performer, studio, media, null] }
+        entity_id: { type: [string, "null"], format: uuid }
+        priority: { type: integer, minimum: 1, maximum: 1000 }
+        status: { enum: [pending, claimed, approved, rejected, cancelled] }
+        assignee_id: { type: [string, "null"], format: uuid }
+        assignee: { type: [string, "null"] }
+        target_label: { type: string }
+        due_at: { type: [string, "null"], format: date-time }
+        claimed_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ReviewTaskListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ReviewTask" } }
+    ReviewDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    ReviewReassignmentRequest:
+      type: object
+      additionalProperties: false
+      required: [assignee_id, reason]
+      properties:
+        assignee_id: { type: string, format: uuid }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    ConflictResolution:
+      enum: [keep_current, accept_candidate, mark_unknown, merge, reject]
+    ConflictReview:
+      type: object
+      required: [id, review_task_id, entity_type, entity_id, field_name, current_value, candidate_value, source_id, source_name, source_priority, resolution, resolved_by, resolved_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        review_task_id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer, studio, media] }
+        entity_id: { type: string, format: uuid }
+        field_name: { type: string, minLength: 1, maxLength: 100 }
+        current_value: {}
+        candidate_value: {}
+        source_id: { type: [string, "null"], format: uuid }
+        source_name: { type: [string, "null"] }
+        source_priority: { type: [integer, "null"], minimum: 1, maximum: 1000 }
+        resolution:
+          oneOf:
+            - $ref: "#/components/schemas/ConflictResolution"
+            - type: "null"
+        resolved_by: { type: [string, "null"] }
+        resolved_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+    ConflictReviewListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ConflictReview" } }
+    ResolveConflictRequest:
+      type: object
+      additionalProperties: false
+      required: [resolution, reason]
+      properties:
+        resolution: { $ref: "#/components/schemas/ConflictResolution" }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    CSVValidationIssue:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    WorkCSVRow:
+      type: object
+      required: [row_number, code, title, issues]
+      properties:
+        row_number: { type: integer, minimum: 2 }
+        code: { type: string }
+        title: { type: string }
+        title_original: { type: string }
+        release_date: { type: string }
+        studio_id: { type: string }
+        performer_ids: { type: array, items: { type: string } }
+        summary: { type: string }
+        issues: { type: array, items: { $ref: "#/components/schemas/CSVValidationIssue" } }
+    WorkCSVPreflightResponse:
+      type: object
+      required: [rows, file_issues, total_count, valid_count, invalid_count]
+      properties:
+        rows: { type: array, maxItems: 500, items: { $ref: "#/components/schemas/WorkCSVRow" } }
+        file_issues: { type: array, items: { $ref: "#/components/schemas/CSVValidationIssue" } }
+        total_count: { type: integer, minimum: 0, maximum: 500 }
+        valid_count: { type: integer, minimum: 0, maximum: 500 }
+        invalid_count: { type: integer, minimum: 0, maximum: 500 }
+    WorkImportBatchResponse:
+      type: object
+      required: [id, status, input_count, accepted_count, rejected_count, entity_ids, idempotent_replay, received_at, completed_at]
+      properties:
+        id: { type: string, format: uuid }
+        status: { const: accepted }
+        input_count: { type: integer, minimum: 1, maximum: 500 }
+        accepted_count: { type: integer, minimum: 1, maximum: 500 }
+        rejected_count: { type: integer, minimum: 0, maximum: 500 }
+        entity_ids: { type: array, items: { type: string, format: uuid } }
+        idempotent_replay: { type: boolean }
+        received_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+    WorkImportBatchListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/WorkImportBatchResponse" } }
+    CreateWorkRequest:
+      type: object
+      additionalProperties: false
+      required: [code, title, sources, reason]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 100 }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        title_original: { type: [string, "null"], maxLength: 500 }
+        release_date: { type: [string, "null"], format: date }
+        studio_id: { type: [string, "null"], format: uuid }
+        summary: { type: [string, "null"], maxLength: 5000 }
+        performer_ids:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        sources:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/SourceEvidenceInput" }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    CreatePerformerRequest:
+      type: object
+      additionalProperties: false
+      required: [display_name, sources, reason]
+      properties:
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        name_original: { type: [string, "null"] }
+        romanized_name: { type: [string, "null"] }
+        aliases:
+          type: array
+          maxItems: 30
+          uniqueItems: true
+          description: Values are whitespace-normalized and must be unique case-insensitively.
+          items: { type: string, minLength: 1, maxLength: 300 }
+        adult_status: { enum: [unverified, verified, restricted], default: unverified }
+        activity_status: { enum: [active, retired, unknown], default: unknown }
+        agency: { type: [string, "null"] }
+        birth_year: { type: [integer, "null"], minimum: 1900, maximum: 2200 }
+        height_cm: { type: [integer, "null"], minimum: 100, maximum: 250 }
+        measurements: { type: [string, "null"] }
+        debut_year: { type: [integer, "null"], minimum: 1900, maximum: 2200 }
+        sources:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/SourceEvidenceInput" }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    CreateStudioRequest:
+      type: object
+      additionalProperties: false
+      required: [name, canonical_slug, sources, reason]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        canonical_slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", maxLength: 200 }
+        sources:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/SourceEvidenceInput" }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    CreateRevisionRequest:
+      type: object
+      additionalProperties: false
+      required: [entity_type, payload, sources, reason]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        payload: { type: object, minProperties: 1, maxProperties: 24 }
+        sources:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/SourceEvidenceInput" }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    SourceEvidenceInput:
+      type: object
+      additionalProperties: false
+      required: [source_type, checked_at]
+      properties:
+        source_type: { enum: [web_page, search_result, official, other] }
+        source_url: { type: [string, "null"], format: uri, maxLength: 2000 }
+        source_title: { type: [string, "null"], maxLength: 300 }
+        checked_at: { type: string, format: date-time }
+    PublishEntityRequest:
+      type: object
+      additionalProperties: false
+      required: [entity_type, canonical_slug, reason]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        revision_id: { type: string, format: uuid }
+        canonical_slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", maxLength: 200 }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    HideEntityRequest:
+      type: object
+      additionalProperties: false
+      required: [entity_type, reason]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    OperationsEntity:
+      type: object
+      required: [id, entity_type, status, revision_id, revision_status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer, studio] }
+        canonical_slug: { type: string }
+        status: { type: string }
+        revision_id: { type: string, format: uuid }
+        revision_status: { enum: [draft, reviewing, approved, rejected] }
+        created_at: { type: string, format: date-time }
+    CatalogEntity:
+      type: object
+      required: [id, entity_type, label, status, canonical_slug, current_revision_id, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer, studio] }
+        label: { type: string }
+        status: { enum: [draft, reviewing, approved, published, hidden, takedown, merged] }
+        canonical_slug: { type: [string, "null"] }
+        current_revision_id: { type: [string, "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+    CatalogEntityListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/CatalogEntity" } }
+    MergeEntityRequest:
+      type: object
+      additionalProperties: false
+      required: [entity_type, target_entity_id, reason]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        target_entity_id: { type: string, format: uuid }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    EntityMerge:
+      type: object
+      required: [id, entity_type, source_entity_id, target_entity_id, source_path, target_path, merged_at]
+      properties:
+        id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer, studio] }
+        source_entity_id: { type: string, format: uuid }
+        target_entity_id: { type: string, format: uuid }
+        source_path: { type: string }
+        target_path: { type: string }
+        merged_at: { type: string, format: date-time }
+    ContentRevision:
+      type: object
+      required: [id, entity_type, entity_id, version, payload, status, author, reviewer, reason, created_at, reviewed_at, sources, is_current, canonical_slug]
+      properties:
+        id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer, studio] }
+        entity_id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1 }
+        payload: { type: object }
+        status: { enum: [draft, reviewing, approved, rejected] }
+        author: { type: string, format: email }
+        reviewer: { type: [string, "null"], format: email }
+        reason: { type: string }
+        created_at: { type: string, format: date-time }
+        reviewed_at: { type: [string, "null"], format: date-time }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/SourceEvidence" }
+        is_current: { type: boolean }
+        canonical_slug: { type: [string, "null"] }
+    SourceEvidence:
+      type: object
+      required: [field_name, source_type, source_url, source_title, checked_at, operator, confidence, rights_status]
+      properties:
+        field_name: { type: string, minLength: 1, maxLength: 100 }
+        source_type: { enum: [web_page, search_result, official, other, manual_csv, legacy_record] }
+        source_url: { type: [string, "null"], format: uri }
+        source_title: { type: [string, "null"] }
+        checked_at: { type: string, format: date-time }
+        operator: { type: [string, "null"] }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        rights_status: { enum: [needs_review, allowed, restricted, takedown] }
+    ContentRevisionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ContentRevision" } }
+    OperationsUser:
+      type: object
+      required: [id, email, role, account_status, created_at, last_login_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { enum: [owner, admin, editor, user] }
+        account_status: { enum: [pending, active, locked, suspended, closed] }
+        created_at: { type: string, format: date-time }
+        last_login_at: { type: [string, "null"], format: date-time }
+    OperationsUserListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/OperationsUser" } }
+    EditorialRecommendation:
+      type: object
+      required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        work_id: { type: string, format: uuid }
+        work_code: { type: string }
+        work_title: { type: string }
+        work_href: { type: [string, "null"] }
+        position: { type: integer, minimum: 1, maximum: 100 }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: [string, "null"], format: date-time }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+        status: { enum: [active, paused, removed] }
+        created_by: { type: string, format: email }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    EditorialRecommendationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/EditorialRecommendation" } }
+    DiscoveryMixRule:
+      type: object
+      required: [work_slots, performer_slots, repeat_window, enabled, updated_at]
+      properties:
+        work_slots: { type: integer, minimum: 1, maximum: 8 }
+        performer_slots: { type: integer, minimum: 1, maximum: 4 }
+        repeat_window: { type: integer, minimum: 5, maximum: 40 }
+        enabled: { type: boolean }
+        updated_at: { type: string, format: date-time }
+    DiscoveryMixRuleRequest:
+      type: object
+      additionalProperties: false
+      required: [work_slots, performer_slots, repeat_window, enabled, reason]
+      properties:
+        work_slots: { type: integer, minimum: 1, maximum: 8 }
+        performer_slots: { type: integer, minimum: 1, maximum: 4 }
+        repeat_window: { type: integer, minimum: 5, maximum: 40 }
+        enabled: { type: boolean }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    EditorialRecommendationRequest:
+      type: object
+      additionalProperties: false
+      required: [work_id, position, starts_at, ends_at, reason, change_reason, status]
+      properties:
+        work_id: { type: string, format: uuid }
+        position: { type: integer, minimum: 1, maximum: 100 }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: [string, "null"], format: date-time }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+        change_reason: { type: string, minLength: 2, maxLength: 1000 }
+        status: { enum: [active, paused] }
+    RemoveEditorialRecommendationRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+    OperationsSystemHealth:
+      type: object
+      required: [status, schema_version, pending_review_tasks, reviewing_revisions, pending_outbox_events, failed_outbox_events, media_bytes, verified_backup_age_seconds, media_reconcile_age_seconds, media_reconcile_issues, failed_media_reconciles, media_inspection_age_seconds, media_publication_issues, default_image_failures, failed_media_inspections, search_requests_24h, search_zero_results_24h, checked_at]
+      properties:
+        status: { enum: [ok, degraded] }
+        schema_version: { type: integer, minimum: 1 }
+        pending_review_tasks: { type: integer, minimum: 0 }
+        reviewing_revisions: { type: integer, minimum: 0 }
+        pending_outbox_events: { type: integer, minimum: 0 }
+        failed_outbox_events: { type: integer, minimum: 0 }
+        media_bytes: { type: integer, minimum: 0 }
+        verified_backup_age_seconds: { type: [number, "null"], minimum: 0 }
+        media_reconcile_age_seconds: { type: [number, "null"], minimum: 0 }
+        media_reconcile_issues: { type: integer, minimum: 0 }
+        failed_media_reconciles: { type: integer, minimum: 0 }
+        media_inspection_age_seconds: { type: [number, "null"], minimum: 0, description: "距最近完成的每日发布状态与默认图检查的秒数；null 表示未检查，不能将问题数 0 当成通过。" }
+        media_publication_issues: { type: integer, minimum: 0, description: "最近完成检查中不一致的对象与关联数量之和，并非唯一资产数。" }
+        default_image_failures: { type: integer, minimum: 0, maximum: 2 }
+        failed_media_inspections: { type: integer, minimum: 0, description: "最近 24 小时失败或中断的每日检查次数。" }
+        search_requests_24h: { type: integer, minimum: 0 }
+        search_zero_results_24h: { type: integer, minimum: 0 }
+        checked_at: { type: string, format: date-time }
+    AuditLog:
+      type: object
+      additionalProperties: false
+      required: [id, actor_type, actor_id, actor, action, object_type, object_id, reason, request_id, occurred_at]
+      properties:
+        id: { type: string, pattern: "^[0-9]+$" }
+        actor_type: { enum: [user, worker, system] }
+        actor_id: { type: [string, "null"], format: uuid }
+        actor: { type: [string, "null"], maxLength: 254 }
+        action: { type: string, minLength: 1, maxLength: 150 }
+        object_type: { type: string, minLength: 1, maxLength: 100 }
+        object_id: { type: [string, "null"], format: uuid }
+        reason: { type: [string, "null"], maxLength: 1000 }
+        request_id: { type: string, minLength: 1, maxLength: 128 }
+        occurred_at: { type: string, format: date-time }
+    AuditLogListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, truncated]
+      properties:
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/AuditLog" } }
+        truncated: { type: boolean }
+    MediaManifestObject:
+      type: object
+      additionalProperties: false
+      required: [rendition, storage_scope, storage_key, backup_path, public_url, sha256, mime_type, width, height, byte_size]
+      properties:
+        rendition: { enum: [master, w320, w640, w960] }
+        storage_scope: { enum: [private, public] }
+        storage_key: { type: string, minLength: 1, maxLength: 1024 }
+        backup_path: { type: string, minLength: 1, maxLength: 2048 }
+        public_url: { type: [string, "null"], format: uri, pattern: "^https://" }
+        sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        mime_type: { const: image/webp }
+        width: { type: integer, minimum: 1, maximum: 20000 }
+        height: { type: integer, minimum: 1, maximum: 20000 }
+        byte_size: { type: integer, minimum: 1, maximum: 10485760 }
+    MediaManifestRequest:
+      type: object
+      additionalProperties: false
+      required: [asset_id, entity_type, entity_id, asset_type, source_type, checked_at, confidence, purpose, position, is_primary, reason, tool_version, objects]
+      properties:
+        asset_id: { type: string, format: uuid }
+        entity_type: { enum: [work, performer] }
+        entity_id: { type: string, format: uuid }
+        asset_type: { enum: [work_image, performer_avatar] }
+        source_type: { type: string, minLength: 1, maxLength: 100 }
+        source_url: { type: [string, "null"], format: uri }
+        checked_at: { type: string, format: date-time }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        purpose: { enum: [cover, gallery, avatar], description: "Work cover and performer avatar are the primary slot; work gallery is a secondary slot." }
+        position: { type: integer, minimum: 0, maximum: 3, description: "Primary cover/avatar must use 0; work gallery must use 1, 2 or 3." }
+        is_primary: { type: boolean, description: "Must be true for cover/avatar and false for gallery." }
+        reason: { type: string, minLength: 2, maxLength: 1000 }
+        tool_version: { const: media-python/1 }
+        objects:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { $ref: "#/components/schemas/MediaManifestObject" }
+    MediaManifestResponse:
+      type: object
+      required: [asset_id, entity_media_id, version, object_count, status, created_at]
+      properties:
+        asset_id: { type: string, format: uuid }
+        entity_media_id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1 }
+        object_count: { type: integer, minimum: 4, maximum: 4 }
+        status: { const: published }
+        created_at: { type: string, format: date-time }
+    PrimaryMedia:
+      type: object
+      required: [asset_id, entity_media_id, purpose]
+      properties:
+        asset_id: { type: string, format: uuid }
+        entity_media_id: { type: string, format: uuid }
+        purpose: { enum: [cover, gallery, avatar] }
+    PrimaryMediaStateResponse:
+      type: object
+      required: [entity_type, entity_id, entity_status, primary]
+      properties:
+        entity_type: { enum: [work, performer] }
+        entity_id: { type: string, format: uuid }
+        entity_status: { enum: [draft, reviewing, approved, published, hidden, takedown, merged] }
+        primary:
+          anyOf:
+            - { $ref: "#/components/schemas/PrimaryMedia" }
+            - { type: "null" }
+    ReplacePrimaryMediaRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_asset_id, manifest]
+      properties:
+        expected_asset_id: { type: string, format: uuid }
+        manifest: { $ref: "#/components/schemas/MediaManifestRequest" }
+    ReplacePrimaryMediaResponse:
+      type: object
+      required: [media, previous_asset_id, old_asset_retired, private_retained_until]
+      properties:
+        media: { $ref: "#/components/schemas/MediaManifestResponse" }
+        previous_asset_id: { type: string, format: uuid }
+        old_asset_retired: { type: boolean }
+        private_retained_until: { type: [string, "null"], format: date-time }
+    CreateTakedownRequest:
+      type: object
+      additionalProperties: false
+      required: [requester_reference, entity_type, entity_id]
+      properties:
+        requester_reference: { type: string, minLength: 1, maxLength: 500 }
+        entity_type: { enum: [work, performer, studio, media] }
+        entity_id: { type: string, format: uuid }
+        evidence_reference: { type: [string, "null"], maxLength: 2000 }
+    CompleteTakedownRequest:
+      type: object
+      additionalProperties: false
+      required: [result_summary]
+      properties:
+        result_summary: { type: string, minLength: 2, maxLength: 2000 }
+    TakedownRequest:
+      type: object
+      required: [id, requester_reference, entity_type, entity_id, evidence_reference, status, assigned_to, received_at, decided_at, completed_at, result_summary, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        requester_reference: { type: string }
+        entity_type: { enum: [work, performer, studio, media] }
+        entity_id: { type: string, format: uuid }
+        evidence_reference: { type: [string, "null"] }
+        status: { enum: [received, validating, approved, rejected, completed] }
+        assigned_to: { type: [string, "null"], format: uuid }
+        received_at: { type: string, format: date-time }
+        decided_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        result_summary: { type: [string, "null"] }
+        updated_at: { type: string, format: date-time }
+    TakedownListResponse:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/TakedownRequest" } }

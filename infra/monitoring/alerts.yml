@@ -1,0 +1,338 @@
+groups:
+  - name: self-deepsearch-release-a
+    rules:
+      - alert: PlatformTargetDown
+        expr: up{job=~"platform-api|platform-worker-japan"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Release A service target is down"
+
+      - alert: PlatformWorkerHeartbeatStale
+        expr: self_deepsearch_worker_last_heartbeat_age_seconds > self_deepsearch_worker_heartbeat_max_age_seconds
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Japan worker dispatcher heartbeat is stale"
+
+      - alert: PlatformWorkerPollFailures
+        expr: self_deepsearch_worker_consecutive_poll_failures >= 3
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Japan worker dispatcher cannot complete polling cycles"
+
+      - alert: PlatformDatabaseUnavailable
+        expr: self_deepsearch_database_ready == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Platform API cannot reach PostgreSQL"
+
+      - alert: PlatformDatabasePoolUtilizationHigh
+        expr: self_deepsearch_database_pool_utilization_ratio >= 0.8
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Platform API PostgreSQL pool utilization is at or above 80%"
+
+      - alert: PlatformNodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Japan host saturation metrics are unavailable"
+
+      - alert: PlatformHostDiskUsageHigh
+        expr: |
+          (
+            1 - (
+              node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
+              /
+              node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}
+            )
+          ) >= 0.8
+          and
+          (
+            1 - (
+              node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
+              /
+              node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}
+            )
+          ) < 0.9
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Japan host root filesystem usage is at or above 80%"
+
+      - alert: PlatformHostDiskUsageCritical
+        expr: |
+          (
+            1 - (
+              node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
+              /
+              node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}
+            )
+          ) >= 0.9
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Japan host root filesystem usage is at or above 90%"
+
+      - alert: PlatformHostMemoryPressure
+        expr: (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) >= 0.8
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Japan host memory usage is at or above 80%"
+
+      - alert: PlatformHostCPUSaturation
+        expr: (1 - avg without (cpu, mode) (rate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m]))) >= 0.85
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Japan host CPU usage is at or above 85%"
+
+      - alert: PlatformHTTP5xxRatioHigh
+        expr: sum(rate(self_deepsearch_http_requests_total{status_class="5xx"}[5m])) / clamp_min(sum(rate(self_deepsearch_http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Platform API 5xx ratio is above 5%"
+
+      - alert: PlatformPublicAPIP95LatencyHigh
+        expr: |
+          (
+            histogram_quantile(
+              0.95,
+              sum by (le) (
+                rate(self_deepsearch_http_request_duration_seconds_bucket{
+                  method=~"GET|HEAD",
+                  status_class=~"2xx|3xx",
+                  route=~"/api/v1/(site/.*|works(/.*)?|performers(/.*)?|studios(/.*)?)"
+                }[10m])
+              )
+            ) >= 0.3
+          )
+          and
+          (
+            sum(increase(self_deepsearch_http_requests_total{
+              method=~"GET|HEAD",
+              status_class=~"2xx|3xx",
+              route=~"/api/v1/(site/.*|works(/.*)?|performers(/.*)?|studios(/.*)?)"
+            }[10m])) >= 20
+          )
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Public catalog API P95 latency is at or above 300 ms"
+
+      - alert: PlatformSearchP95LatencyHigh
+        expr: |
+          (
+            histogram_quantile(
+              0.95,
+              sum by (le) (
+                rate(self_deepsearch_http_request_duration_seconds_bucket{
+                  method=~"GET|HEAD",
+                  status_class=~"2xx|3xx",
+                  route="/api/v1/search/works"
+                }[10m])
+              )
+            ) >= 0.5
+          )
+          and
+          (
+            sum(increase(self_deepsearch_http_requests_total{
+              method=~"GET|HEAD",
+              status_class=~"2xx|3xx",
+              route="/api/v1/search/works"
+            }[10m])) >= 10
+          )
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Work search API P95 latency is at or above 500 ms"
+
+      - alert: PlatformEmailQuotaHigh
+        expr: self_deepsearch_email_daily_usage_ratio >= 0.8 and self_deepsearch_email_daily_usage_ratio < 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Daily email quota usage is above 80%"
+
+      - alert: PlatformEmailQuotaExhausted
+        expr: self_deepsearch_email_daily_usage_ratio >= 1
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Daily email quota is exhausted; new sends are suppressed"
+
+      - alert: PlatformEmailCircuitOpen
+        expr: self_deepsearch_email_circuit_open == 1
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Email delivery circuit breaker is open"
+
+      - alert: PlatformOutboxDead
+        expr: self_deepsearch_outbox_dead > 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Outbox contains dead events"
+
+      - alert: PlatformOutboxBacklog
+        expr: self_deepsearch_outbox_pending > 100
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Outbox backlog is above 100 events"
+
+      - alert: PlatformBackupTooOld
+        expr: self_deepsearch_verified_backup_age_seconds > 691200
+        for: 30m
+        labels: { severity: critical }
+        annotations:
+          summary: "Last verified backup is older than 8 days"
+
+      - alert: PlatformBackupNeverVerified
+        expr: absent(self_deepsearch_verified_backup_age_seconds) == 1
+        for: 30m
+        labels: { severity: critical }
+        annotations:
+          summary: "No verified backup has been recorded"
+
+      - alert: PlatformSchemaVersionMismatch
+        expr: self_deepsearch_schema_version != 21
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Database schema version does not match Release A"
+
+      - alert: PlatformMediaStorageReview
+        expr: (self_deepsearch_media_bytes > 7516192768) and (self_deepsearch_media_bytes <= 9126805504)
+        for: 30m
+        labels: { severity: info }
+        annotations:
+          summary: "Non-deleted media exceeds 70% of the 10 GiB budget; review orphan and duplicate objects"
+
+      - alert: PlatformMediaStorageConstrained
+        expr: (self_deepsearch_media_bytes > 9126805504) and (self_deepsearch_media_bytes <= 10200547328)
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: "Non-deleted media exceeds 85% of the 10 GiB budget; pause non-essential processing"
+
+      - alert: PlatformMediaStorageCritical
+        expr: self_deepsearch_media_bytes > 10200547328
+        for: 30m
+        labels: { severity: critical }
+        annotations:
+          summary: "Non-deleted media exceeds 95% of the 10 GiB budget; preserve capacity for critical replacements"
+
+      - alert: PlatformMediaReconciliationTooOld
+        expr: self_deepsearch_media_reconcile_age_seconds > 172800
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: "Last completed media reconciliation is older than 2 days"
+
+      - alert: PlatformMediaInspectionTooOld
+        expr: self_deepsearch_media_inspection_age_seconds > 172800
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: "Daily publication/default image inspection is older than 2 days"
+
+      - alert: PlatformMediaInspectionNeverCompleted
+        expr: absent(self_deepsearch_media_inspection_age_seconds) == 1
+        for: 2h
+        labels: { severity: warning }
+        annotations:
+          summary: "No completed daily image inspection; zero issue counters are not proof of health"
+
+      - alert: PlatformMediaPublicationOrDefaultImageIssue
+        expr: self_deepsearch_media_publication_issues > 0 or self_deepsearch_default_image_failures > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Registered public image state is inconsistent or a fixed default image cannot be read"
+
+      - alert: PlatformMediaInspectionFailed
+        expr: self_deepsearch_media_inspection_failures_24h > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Daily image inspection failed or was interrupted; inspect audit.media_inspection_runs"
+
+      - alert: PlatformMediaReconciliationNeverCompleted
+        expr: absent(self_deepsearch_media_reconcile_age_seconds) == 1
+        for: 2h
+        labels: { severity: warning }
+        annotations:
+          summary: "No completed media reconciliation has been recorded"
+
+      - alert: PlatformMediaReconciliationIssues
+        expr: self_deepsearch_media_reconcile_issues > 0 or self_deepsearch_media_reconcile_failures_24h > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Media reconciliation found missing, corrupt or orphaned objects"
+
+      - alert: PlatformMediaUsageStateUnavailable
+        expr: self_deepsearch_media_usage_monitor_enabled == 1 and self_deepsearch_media_usage_state_available == 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Account analytics observer cannot read durable state; not evidence of zero usage"
+
+      - alert: PlatformMediaUsageReviewRequired
+        expr: self_deepsearch_media_usage_monitor_enabled == 1 and self_deepsearch_media_usage_hold_recommended == 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Account usage observation is missing/stale or latched for review; recovery is not automatic"
+
+      - alert: PlatformMediaUsageStopRecommended
+        expr: self_deepsearch_media_usage_monitor_enabled == 1 and self_deepsearch_media_usage_stop_recommended == 1
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "Account analytics reached the operation reserve; stop is recommended, NOT confirmed executed"
+
+      - alert: PlatformMediaDeliveryPolicyUnavailable
+        expr: self_deepsearch_media_delivery_dynamic_enabled == 1 and self_deepsearch_media_delivery_policy_available == 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Dynamic media policy cannot read its inputs; public delivery is fail-closed to default images"
+
+      - alert: PlatformMediaReconciliationAdmissionPaused
+        expr: self_deepsearch_media_reconcile_usage_guard_enabled == 1 and self_deepsearch_media_reconcile_usage_guard_blocked == 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "New full reconciliation scans are deferred or admission is stale; not a confirmed stop of uploads or image delivery"
+
+      - alert: PlatformMediaUploadControlUnavailable
+        expr: self_deepsearch_media_upload_queue_enabled == 1 and (self_deepsearch_media_upload_queue_state_readable == 0 or self_deepsearch_media_upload_queue_snapshot_fresh == 0)
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Upload executor snapshot is unavailable or stale; no remote pause/resume success is confirmed"
+
+      - alert: PlatformMediaUploadControlUncertain
+        expr: self_deepsearch_media_upload_queue_uncertain_commands > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Upload control command remains unconfirmed; inspect signed remote state and do not force completed"
+
+      - alert: PlatformMediaUploadAdmissionDenied
+        expr: sum by (job, instance) (increase(self_deepsearch_media_upload_admission_checks_total{outcome=~"denied|busy"}[10m])) > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Japan rejected upload admission; inspect Beijing durable pause evidence, not proof that all image delivery stopped"
+          description: "This counter cannot detect requests that never reached Japan. Check queue snapshot freshness, Beijing private ledger and the trusted network route; recovery requires explicit review and resume."

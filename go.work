@@ -1,0 +1,6 @@
+go 1.22.0
+
+use (
+	./services/platform-api
+	./services/platform-worker
+)

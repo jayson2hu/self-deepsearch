@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "status": "passed",
+  "generated_at": "2026-09-10T03:37:55.743Z",
+  "timezone": "Asia/Shanghai",
+  "evidence_date": "2026-09-10",
+  "mode": "local-synthetic",
+  "target_origin": "local-random-loopback",
+  "sampling": {
+    "concurrency": 1,
+    "warmup_per_endpoint": 3,
+    "samples_per_endpoint": 20
+  },
+  "thresholds": {
+    "public_api_p95_ms_strictly_less_than": 300,
+    "search_p95_ms_strictly_less_than": 500
+  },
+  "privacy": {
+    "response_bodies_stored": false,
+    "search_code_stored": false,
+    "search_code_sha256": "d16625aea1b224c4a75015b16591b03db85083f199e39b78a3f507fc3420605d"
+  },
+  "synthetic_boundary": "Next.js standalone proxy with memory-only synthetic API; no Docker/PostgreSQL/Cloudflare/network latency",
+  "failures": [],
+  "results": [
+    {
+      "endpoint": {
+        "key": "public-home-api",
+        "path": "/api/v1/site/home"
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "duration_ms": 9.68,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 2,
+          "duration_ms": 11.89,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 3,
+          "duration_ms": 7.06,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 4,
+          "duration_ms": 7.9,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 5,
+          "duration_ms": 10.19,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 6,
+          "duration_ms": 11.35,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 7,
+          "duration_ms": 9.02,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 8,
+          "duration_ms": 6.64,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 9,
+          "duration_ms": 8.16,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 10,
+          "duration_ms": 6.5,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 11,
+          "duration_ms": 5.37,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 12,
+          "duration_ms": 5.13,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 13,
+          "duration_ms": 5.17,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 14,
+          "duration_ms": 5.15,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 15,
+          "duration_ms": 5.58,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 16,
+          "duration_ms": 5.26,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 17,
+          "duration_ms": 5.17,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 18,
+          "duration_ms": 4.59,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 19,
+          "duration_ms": 4.31,
+          "response_bytes": 1220
+        },
+        {
+          "sample": 20,
+          "duration_ms": 5.31,
+          "response_bytes": 1220
+        }
+      ],
+      "summary": {
+        "duration_ms": {
+          "p50": 5.58,
+          "p95": 11.35,
+          "min": 4.31,
+          "max": 11.89
+        },
+        "response_bytes": {
+          "p50": 1220,
+          "min": 1220,
+          "max": 1220
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    },
+    {
+      "endpoint": {
+        "key": "search-api",
+        "path": "/api/v1/search/works"
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "duration_ms": 5.02,
+          "response_bytes": 275
+        },
+        {
+          "sample": 2,
+          "duration_ms": 5.1,
+          "response_bytes": 275
+        },
+        {
+          "sample": 3,
+          "duration_ms": 5.1,
+          "response_bytes": 275
+        },
+        {
+          "sample": 4,
+          "duration_ms": 6.67,
+          "response_bytes": 275
+        },
+        {
+          "sample": 5,
+          "duration_ms": 6.3,
+          "response_bytes": 275
+        },
+        {
+          "sample": 6,
+          "duration_ms": 5.09,
+          "response_bytes": 275
+        },
+        {
+          "sample": 7,
+          "duration_ms": 4.4,
+          "response_bytes": 275
+        },
+        {
+          "sample": 8,
+          "duration_ms": 4.91,
+          "response_bytes": 275
+        },
+        {
+          "sample": 9,
+          "duration_ms": 4.51,
+          "response_bytes": 275
+        },
+        {
+          "sample": 10,
+          "duration_ms": 4.32,
+          "response_bytes": 275
+        },
+        {
+          "sample": 11,
+          "duration_ms": 4.64,
+          "response_bytes": 275
+        },
+        {
+          "sample": 12,
+          "duration_ms": 5.1,
+          "response_bytes": 275
+        },
+        {
+          "sample": 13,
+          "duration_ms": 4.33,
+          "response_bytes": 275
+        },
+        {
+          "sample": 14,
+          "duration_ms": 5.18,
+          "response_bytes": 275
+        },
+        {
+          "sample": 15,
+          "duration_ms": 5.23,
+          "response_bytes": 275
+        },
+        {
+          "sample": 16,
+          "duration_ms": 4.35,
+          "response_bytes": 275
+        },
+        {
+          "sample": 17,
+          "duration_ms": 4.28,
+          "response_bytes": 275
+        },
+        {
+          "sample": 18,
+          "duration_ms": 4.15,
+          "response_bytes": 275
+        },
+        {
+          "sample": 19,
+          "duration_ms": 4.46,
+          "response_bytes": 275
+        },
+        {
+          "sample": 20,
+          "duration_ms": 4.01,
+          "response_bytes": 275
+        }
+      ],
+      "summary": {
+        "duration_ms": {
+          "p50": 4.64,
+          "p95": 6.3,
+          "min": 4.01,
+          "max": 6.67
+        },
+        "response_bytes": {
+          "p50": 275,
+          "min": 275,
+          "max": 275
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    }
+  ]
+}

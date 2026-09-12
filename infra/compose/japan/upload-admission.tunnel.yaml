@@ -1,0 +1,8 @@
+# Optional host tunnel/TLS-proxy target. Never part of the default public edge.
+# Merge only after establishing a private route from the Beijing media container.
+# The proxy must expose only POST /v1/upload-admission to the authorized peer.
+# See docs/MEDIA_UPLOAD_ADMISSION.md; no service is started by this file alone.
+services:
+  platform-worker-japan:
+    ports:
+      - "127.0.0.1:18081:8081"

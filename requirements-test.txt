@@ -1,0 +1,6 @@
+-e ./workers/collector-python
+-e ./workers/media-python
+PyYAML>=6.0.2,<7
+mypy>=1.17,<3
+pytest>=9,<10
+ruff==0.16.6

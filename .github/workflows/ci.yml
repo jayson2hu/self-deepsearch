@@ -1,0 +1,335 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    env:
+      MEDIA_CONTRACT_PYTHON: python3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install media dependencies for Go-Python HTTP contracts
+        run: python -m pip install --disable-pip-version-check ./workers/media-python
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: |
+            services/platform-api/go.sum
+            services/platform-worker/go.sum
+      - name: Check Go formatting
+        run: |
+          files=$(find services/platform-api services/platform-worker -type f -name '*.go' -print)
+          test -n "$files"
+          gofmt -w $files
+      - run: git diff --exit-code
+      - run: go vet ./services/platform-api/... ./services/platform-worker/...
+      - run: go test ./services/platform-api/... ./services/platform-worker/...
+      - name: Run Go race tests
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race ./services/platform-api/... ./services/platform-worker/...
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+      - name: Install Python test dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-test.txt
+      - name: Lint Python sources
+        run: ruff check workers/collector-python workers/media-python db/tests infra/backup infra/reverse-proxy infra/security scripts
+      - name: Type check Python production tools
+        run: >-
+          mypy
+          workers/collector-python/collector
+          workers/media-python/media_worker
+          scripts/generate_openapi_types.py
+          scripts/release_a_deployment_probe.py
+          scripts/release_a_env_check.py
+          scripts/release_a_email_e2e.py
+          scripts/release_a_catalog_e2e.py
+          scripts/release_a_core_e2e.py
+      - name: Verify generated OpenAPI TypeScript types
+        run: python scripts/generate_openapi_types.py --check
+      - name: Run Python tests
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+        run: pytest -q
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: self_deepsearch_test
+          POSTGRES_USER: platform
+          POSTGRES_PASSWORD: platform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U platform -d self_deepsearch_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_test
+      PLATFORM_API_DATABASE_URL: postgres://platform_api_login:platform_api_test_password@127.0.0.1:5432/self_deepsearch_test
+      PLATFORM_WORKER_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_test
+      PLATFORM_API_DB_PASSWORD: platform_api_test_password
+      PLATFORM_WORKER_DB_PASSWORD: platform_worker_test_password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: |
+            services/platform-api/go.sum
+            services/platform-worker/go.sum
+      - run: sh db/tests/postgres_roundtrip.sh
+      - name: Validate production migration runner
+        run: |
+          psql postgres://platform:platform_test@127.0.0.1:5432/postgres \
+            -v ON_ERROR_STOP=1 -c 'CREATE DATABASE self_deepsearch_migrate_test'
+          ADMIN_DATABASE_URL=postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_migrate_test \
+            MIGRATION_DIR=db/migrations sh infra/database/migrate.sh
+          ADMIN_DATABASE_URL=postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_migrate_test \
+            MIGRATION_DIR=db/migrations sh infra/database/migrate.sh | tee migration-rerun.txt
+          grep -Fx 'schema_version=21' migration-rerun.txt
+          grep -Fx 'applied=0' migration-rerun.txt
+      - name: Run API repository contracts against PostgreSQL 16
+        env:
+          CONTRACT_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_migrate_test
+          PLATFORM_API_TEST_DATABASE_URL: postgres://platform_api_login:platform_api_test_password@127.0.0.1:5432/self_deepsearch_migrate_test
+          CONFIRM_MEDIA_USAGE_API_CONTRACT: disposable-database
+          CONFIRM_MEDIA_UPLOAD_API_CONTRACT: disposable-database
+        run: |
+          ADMIN_DATABASE_URL="$CONTRACT_DATABASE_URL" \
+            PLATFORM_API_DB_PASSWORD="$PLATFORM_API_DB_PASSWORD" \
+            PLATFORM_WORKER_DB_PASSWORD="$PLATFORM_WORKER_DB_PASSWORD" \
+            sh infra/database/provision_runtime_logins.sh
+          ALLOW_SYNTHETIC_FIXTURES=true \
+            CONFIRM_SYNTHETIC_FIXTURES=release-a-test-only \
+            ADMIN_DATABASE_URL="$CONTRACT_DATABASE_URL" \
+            SEED_FILE=db/seeds/development.sql \
+            sh infra/database/load_release_a_fixtures.sh
+          go test -count=1 ./services/platform-api/internal/database
+      - name: Run Worker lease and retry contracts against isolated PostgreSQL 16
+        env:
+          WORKER_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          WORKER_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_WORKER_OUTBOX_CONTRACT: disposable-database
+          MEDIA_RECONCILE_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          MEDIA_RECONCILE_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_MEDIA_RECONCILE_CONTRACT: disposable-database
+          MEDIA_INSPECT_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          MEDIA_INSPECT_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_MEDIA_INSPECT_CONTRACT: disposable-database
+          MEDIA_USAGE_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          MEDIA_USAGE_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_MEDIA_USAGE_CONTRACT: disposable-database
+          MEDIA_UPLOAD_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          MEDIA_UPLOAD_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_MEDIA_UPLOAD_CONTRACT: disposable-database
+        run: |
+          psql postgres://platform:platform_test@127.0.0.1:5432/postgres \
+            -v ON_ERROR_STOP=1 -c 'CREATE DATABASE self_deepsearch_worker_test'
+          ADMIN_DATABASE_URL="$WORKER_CONTRACT_ADMIN_DATABASE_URL" \
+            MIGRATION_DIR=db/migrations sh infra/database/migrate.sh
+          ADMIN_DATABASE_URL="$WORKER_CONTRACT_ADMIN_DATABASE_URL" \
+            sh infra/database/provision_runtime_logins.sh
+          go test -count=1 -timeout=90s -v ./services/platform-worker/internal/outbox \
+            -run '^TestPostgresOutboxLeaseContract$'
+          go test -count=1 -timeout=60s -v ./services/platform-worker/internal/mediareconcile \
+            -run '^TestPostgresReconciliationScheduleContract$'
+          go test -count=1 -timeout=90s -v ./services/platform-worker/internal/mediainspect \
+            -run '^TestPostgresInspection.*Contract$'
+          go test -count=1 -timeout=90s -v ./services/platform-worker/internal/mediausage \
+            -run '^TestPostgresMediaUsage.*Contract$'
+          go test -count=1 -timeout=90s -v ./services/platform-worker/internal/mediauploadcontrol \
+            -run '^TestPostgresMediaUploadQueueContract$'
+
+  core-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: self_deepsearch_core_e2e_test
+          POSTGRES_USER: platform
+          POSTGRES_PASSWORD: platform_core_e2e_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U platform -d self_deepsearch_core_e2e_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+      mailpit:
+        image: axllent/mailpit:v1.27
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      ADMIN_DATABASE_URL: postgres://platform:platform_core_e2e_test@127.0.0.1:5432/self_deepsearch_core_e2e_test?sslmode=disable
+      CORE_E2E_DATABASE_URL: postgres://platform_api_login:core_e2e_api_test_password@127.0.0.1:5432/self_deepsearch_core_e2e_test?sslmode=disable
+      MIGRATION_DIR: db/migrations
+      PLATFORM_API_DB_PASSWORD: core_e2e_api_test_password
+      PLATFORM_WORKER_DB_PASSWORD: core_e2e_worker_test_password
+      CONFIRM_RELEASE_A_CORE_E2E: disposable-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: services/platform-api/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Migrate disposable core database and provision restricted runtime logins
+        run: |
+          sh infra/database/migrate.sh
+          sh infra/database/provision_runtime_logins.sh
+      - name: Build real API and owner bootstrap binaries
+        run: |
+          mkdir -p .cache/core-e2e
+          go build -trimpath -o .cache/core-e2e/platform-api ./services/platform-api/cmd/api
+          go build -trimpath -o .cache/core-e2e/create-owner ./services/platform-api/cmd/create-owner
+      - name: Verify real account mail and catalog publication flows
+        run: python scripts/release_a_core_e2e.py
+      - name: Upload sanitized core integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-core-e2e-${{ github.sha }}
+          path: docs/evidence/release-a-core-e2e-ci.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: |
+            services/platform-api/go.sum
+            services/platform-worker/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Reject high or critical production dependency vulnerabilities
+        run: npm run audit:production
+      - name: Reject broken repository documentation links
+        run: npm run check:markdown-links
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:preflight
+      - run: npm run build
+      - run: npm run test:frontend:smoke
+      - run: npm run smoke:frontend:release-a
+      - name: Verify real Go to Next cache invalidation
+        run: npm run test:cache:release-a -- --output docs/evidence/release-a-cache-contract-ci.json
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture Release A visual evidence
+        run: >-
+          npm run capture:visual:release-a --
+          --browser-channel chromium
+          --output-dir docs/evidence/release-a-visual-ci
+      - name: Enforce Release A synthetic performance gates
+        run: |
+          npm run probe:performance:release-a -- \
+            --browser-channel chromium \
+            --output docs/evidence/release-a-performance-ci.json
+          npm run probe:http-latency:release-a -- \
+            --output docs/evidence/release-a-http-latency-ci.json
+      - run: npm run test:e2e:release-a
+      - name: Upload Release A web evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-web-evidence-${{ github.sha }}
+          path: |
+            docs/evidence/release-a-visual-ci
+            docs/evidence/release-a-performance-ci.json
+            docs/evidence/release-a-http-latency-ci.json
+            docs/evidence/release-a-cache-contract-ci.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config
+      - name: Validate Japan edge and monitoring compose
+        run: |
+          docker compose --env-file infra/compose/japan/.env.example \
+            -f infra/compose/japan/compose.yaml \
+            --profile edge --profile monitoring --profile tools config --quiet
+      - name: Validate Beijing compose
+        run: |
+          docker compose --env-file infra/compose/beijing/.env.example \
+            -f infra/compose/beijing/compose.yaml config --quiet
+      - name: Validate Nginx edge configuration
+        run: |
+          mkdir -p .ci-tls
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=display.example.invalid' \
+            -keyout .ci-tls/tls.key -out .ci-tls/tls.crt
+          ORIGIN_CERT_FILE="$PWD/.ci-tls/tls.crt" \
+          ORIGIN_KEY_FILE="$PWD/.ci-tls/tls.key" \
+          docker compose --env-file infra/compose/japan/.env.example \
+            -f infra/compose/japan/compose.yaml --profile edge \
+            run --rm --no-deps edge nginx -t
+
+  images:
+    needs: [go, python, migrations, core-e2e, web, compose]
+    runs-on: ubuntu-latest
+    env:
+      BUILD_VERSION: ci-${{ github.sha }}
+      BUILD_REVISION: ${{ github.sha }}
+      IMAGE_PREFIX: self-deepsearch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build all Release A runtime images
+        run: docker buildx bake release-a --load
+      - name: Verify image version labels and write manifest
+        run: |
+          images=(
+            "${IMAGE_PREFIX}/platform-api:${BUILD_VERSION}"
+            "${IMAGE_PREFIX}/platform-worker:${BUILD_VERSION}"
+            "${IMAGE_PREFIX}/display-web:${BUILD_VERSION}"
+            "${IMAGE_PREFIX}/ops-web:${BUILD_VERSION}"
+            "${IMAGE_PREFIX}/media-python:${BUILD_VERSION}"
+          )
+          for image in "${images[@]}"; do
+            test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$image")" = "$BUILD_VERSION"
+            test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")" = "$BUILD_REVISION"
+          done
+          docker image inspect "${images[@]}" > release-a-image-manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-a-image-manifest-${{ github.sha }}
+          path: release-a-image-manifest.json
+          retention-days: 14

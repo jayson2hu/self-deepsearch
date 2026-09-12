@@ -1,0 +1,385 @@
+name: self-deepsearch-japan
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - log_parameter_max_length=0
+      - -c
+      - log_line_prefix=%m [%p] %q%u@%d 
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../database:/database-tools:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    shm_size: 128mb
+    deploy:
+      resources:
+        limits:
+          cpus: "0.65"
+          memory: 1024m
+    logging: *default-logging
+    restart: unless-stopped
+
+  database-migrate:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    environment:
+      ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:?set ADMIN_DATABASE_URL}
+      MIGRATION_DIR: /migrations
+    entrypoint: ["sh", "/database-tools/migrate.sh"]
+    volumes:
+      - ../../database:/database-tools:ro
+      - ../../../db/migrations:/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128m
+    logging: *default-logging
+    restart: "no"
+
+  database-logins:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    environment:
+      ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:?set ADMIN_DATABASE_URL}
+      PLATFORM_API_DB_PASSWORD: ${PLATFORM_API_DB_PASSWORD:?set PLATFORM_API_DB_PASSWORD}
+      PLATFORM_WORKER_DB_PASSWORD: ${PLATFORM_WORKER_DB_PASSWORD:?set PLATFORM_WORKER_DB_PASSWORD}
+    entrypoint: ["sh", "/database-tools/provision_runtime_logins.sh"]
+    volumes:
+      - ../../database:/database-tools:ro
+    depends_on:
+      database-migrate:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128m
+    logging: *default-logging
+    restart: "no"
+
+  database-fixtures:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    environment:
+      ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:?set ADMIN_DATABASE_URL}
+      ALLOW_SYNTHETIC_FIXTURES: ${ALLOW_SYNTHETIC_FIXTURES:-false}
+      CONFIRM_SYNTHETIC_FIXTURES: ${CONFIRM_SYNTHETIC_FIXTURES:-disabled}
+      SEED_FILE: /seeds/development.sql
+    entrypoint: ["sh", "/database-tools/load_release_a_fixtures.sh"]
+    volumes:
+      - ../../database:/database-tools:ro
+      - ../../../db/seeds:/seeds:ro
+    depends_on:
+      database-logins:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128m
+    logging: *default-logging
+    restart: "no"
+
+  owner-bootstrap:
+    image: ${PLATFORM_API_IMAGE:?set PLATFORM_API_IMAGE}
+    profiles: ["tools"]
+    entrypoint: ["/create-owner"]
+    environment:
+      DATABASE_URL: ${PLATFORM_API_DATABASE_URL:?set PLATFORM_API_DATABASE_URL}
+      BOOTSTRAP_OWNER_EMAIL: ${BOOTSTRAP_OWNER_EMAIL:-}
+      BOOTSTRAP_OWNER_PASSWORD: ${BOOTSTRAP_OWNER_PASSWORD:-}
+    depends_on:
+      database-logins:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128m
+    logging: *default-logging
+    restart: "no"
+
+  platform-api:
+    image: ${PLATFORM_API_IMAGE:?set PLATFORM_API_IMAGE}
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      BUILD_VERSION: ${BUILD_VERSION:?set BUILD_VERSION}
+      API_ADDR: ${API_ADDR:-:8080}
+      DATABASE_URL: ${PLATFORM_API_DATABASE_URL:?set PLATFORM_API_DATABASE_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+      AUTH_HMAC_SECRET: ${AUTH_HMAC_SECRET:?set AUTH_HMAC_SECRET}
+      SMTP_URL: ${SMTP_URL:?set SMTP_URL}
+      EMAIL_DAILY_LIMIT: ${EMAIL_DAILY_LIMIT:-500}
+      EMAIL_FAILURE_THRESHOLD: ${EMAIL_FAILURE_THRESHOLD:-5}
+      EMAIL_CIRCUIT_COOLDOWN: ${EMAIL_CIRCUIT_COOLDOWN:-15m}
+      EMAIL_SEND_TIMEOUT: ${EMAIL_SEND_TIMEOUT:-10s}
+      TURNSTILE_BYPASS: ${TURNSTILE_BYPASS:-false}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?set TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:?set TURNSTILE_SECRET_KEY}
+      TURNSTILE_EXPECTED_HOSTNAME: ${TURNSTILE_EXPECTED_HOSTNAME:?set TURNSTILE_EXPECTED_HOSTNAME}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-true}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:?set S3_PUBLIC_BASE_URL}
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_DELIVERY_DYNAMIC_MODE: ${MEDIA_DELIVERY_DYNAMIC_MODE:-off}
+      MEDIA_EDGE_POLICY_MODE: ${MEDIA_EDGE_POLICY_MODE:-off}
+      MEDIA_EDGE_POLICY_TOKEN: ${MEDIA_EDGE_POLICY_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.40"
+          memory: 384m
+    logging: *default-logging
+    restart: unless-stopped
+
+  platform-worker-japan:
+    image: ${PLATFORM_WORKER_IMAGE:?set PLATFORM_WORKER_IMAGE}
+    environment:
+      BUILD_VERSION: ${BUILD_VERSION:?set BUILD_VERSION}
+      WORKER_ADDR: ${WORKER_ADDR:-:8081}
+      WORKER_REGION: japan
+      WORKER_ID: ${WORKER_ID:-japan-worker-1}
+      WORKER_POLL_INTERVAL: ${WORKER_POLL_INTERVAL:-2s}
+      WORKER_LEASE_DURATION: ${WORKER_LEASE_DURATION:-30s}
+      COLLECTION_ENABLED: "false"
+      DATABASE_URL: ${PLATFORM_WORKER_DATABASE_URL:?set PLATFORM_WORKER_DATABASE_URL}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+      DISPLAY_REVALIDATE_URL: ${DISPLAY_REVALIDATE_URL:?set DISPLAY_REVALIDATE_URL}
+      CACHE_HMAC_SECRET: ${CACHE_HMAC_SECRET:?set CACHE_HMAC_SECRET}
+      MEDIA_DELETE_URL: ${MEDIA_DELETE_URL:?set MEDIA_DELETE_URL}
+      MEDIA_HMAC_SECRET: ${MEDIA_HMAC_SECRET:?set MEDIA_HMAC_SECRET}
+      MEDIA_UPLOAD_CONTROL_URL: ${MEDIA_UPLOAD_CONTROL_URL:-}
+      MEDIA_UPLOAD_CONTROL_SECRET: ${MEDIA_UPLOAD_CONTROL_SECRET:-}
+      MEDIA_UPLOAD_QUEUE_MODE: ${MEDIA_UPLOAD_QUEUE_MODE:-off}
+      MEDIA_UPLOAD_CONTROL_ALLOW_HTTP: ${MEDIA_UPLOAD_CONTROL_ALLOW_HTTP:-false}
+      MEDIA_UPLOAD_ADMISSION_MODE: ${MEDIA_UPLOAD_ADMISSION_MODE:-off}
+      MEDIA_UPLOAD_ADMISSION_SECRET: ${MEDIA_UPLOAD_ADMISSION_SECRET:-}
+      MEDIA_RECONCILE_ENABLED: ${MEDIA_RECONCILE_ENABLED:-true}
+      MEDIA_RECONCILE_URL: ${MEDIA_RECONCILE_URL:?set MEDIA_RECONCILE_URL}
+      MEDIA_RECONCILE_INTERVAL: ${MEDIA_RECONCILE_INTERVAL:-24h}
+      MEDIA_INSPECT_ENABLED: ${MEDIA_INSPECT_ENABLED:-true}
+      MEDIA_INSPECT_DISPLAY_ORIGIN: ${MEDIA_INSPECT_DISPLAY_ORIGIN:?set MEDIA_INSPECT_DISPLAY_ORIGIN}
+      MEDIA_USAGE_MONITOR_MODE: ${MEDIA_USAGE_MONITOR_MODE:-off}
+      MEDIA_RECONCILE_USAGE_GUARD: ${MEDIA_RECONCILE_USAGE_GUARD:-off}
+      MEDIA_USAGE_PERIOD_START: ${MEDIA_USAGE_PERIOD_START:-}
+      MEDIA_USAGE_PERIOD_END: ${MEDIA_USAGE_PERIOD_END:-}
+      MEDIA_USAGE_INTERVAL: ${MEDIA_USAGE_INTERVAL:-15m}
+      R2_ANALYTICS_ACCOUNT_ID: ${R2_ANALYTICS_ACCOUNT_ID:-}
+      R2_ANALYTICS_API_TOKEN: ${R2_ANALYTICS_API_TOKEN:-}
+      HISTORY_ARCHIVE_ENABLED: ${HISTORY_ARCHIVE_ENABLED:-false}
+      HISTORY_ARCHIVE_DIR: ${HISTORY_ARCHIVE_DIR:-/var/lib/self-deepsearch/history-archives}
+      HISTORY_ARCHIVE_INTERVAL: ${HISTORY_ARCHIVE_INTERVAL:-6h}
+      HISTORY_ARCHIVE_MIN_AGE: ${HISTORY_ARCHIVE_MIN_AGE:-720h}
+      HISTORY_ARCHIVE_BATCH_SIZE: ${HISTORY_ARCHIVE_BATCH_SIZE:-1000}
+    volumes:
+      - worker-spool:/var/lib/self-deepsearch/spool
+      - history-archives:/var/lib/self-deepsearch/history-archives
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8081"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+    logging: *default-logging
+    restart: unless-stopped
+
+  display-web:
+    image: ${DISPLAY_WEB_IMAGE:?set DISPLAY_WEB_IMAGE}
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      TURNSTILE_BYPASS: ${TURNSTILE_BYPASS:-false}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?set TURNSTILE_SITE_KEY}
+      PLATFORM_API_URL: http://platform-api:8080
+      MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
+      MEDIA_DELIVERY_DYNAMIC_MODE: ${MEDIA_DELIVERY_DYNAMIC_MODE:-off}
+      SITE_URL: ${SITE_URL:?set SITE_URL}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set NEXT_PUBLIC_SITE_URL}
+      RIGHTS_CONTACT_EMAIL: ${RIGHTS_CONTACT_EMAIL:?set RIGHTS_CONTACT_EMAIL}
+      CACHE_HMAC_SECRET: ${CACHE_HMAC_SECRET:?set CACHE_HMAC_SECRET}
+    expose:
+      - "3000"
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: 320m
+    logging: *default-logging
+    restart: unless-stopped
+
+  ops-web:
+    image: ${OPS_WEB_IMAGE:?set OPS_WEB_IMAGE}
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      PLATFORM_API_URL: http://platform-api:8080
+    expose:
+      - "3001"
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: 256m
+    logging: *default-logging
+    restart: unless-stopped
+
+  edge:
+    image: ${EDGE_IMAGE:?set EDGE_IMAGE}
+    profiles: ["edge"]
+    environment:
+      DISPLAY_HOST: ${DISPLAY_HOST:?set DISPLAY_HOST}
+      API_HOST: ${API_HOST:?set API_HOST}
+      OPS_HOST: ${OPS_HOST:?set OPS_HOST}
+      NGINX_ENVSUBST_FILTER: '$${DISPLAY_HOST} $${API_HOST} $${OPS_HOST}'
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../../reverse-proxy/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${ORIGIN_CERT_FILE:?set ORIGIN_CERT_FILE}:/etc/nginx/tls/tls.crt:ro
+      - ${ORIGIN_KEY_FILE:?set ORIGIN_KEY_FILE}:/etc/nginx/tls/tls.key:ro
+    depends_on:
+      platform-api:
+        condition: service_healthy
+      display-web:
+        condition: service_healthy
+      ops-web:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 96m
+    logging: *default-logging
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: ["monitoring"]
+    user: "65534:65534"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --data.retention=120h
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ${ALERTMANAGER_CONFIG_FILE:?set ALERTMANAGER_CONFIG_FILE}:/etc/alertmanager/alertmanager.yml:ro
+      - ${ALERTMANAGER_SMTP_PASSWORD_FILE:?set ALERTMANAGER_SMTP_PASSWORD_FILE}:/run/secrets/alertmanager_smtp_password:ro
+      - alertmanager-data:/alertmanager
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: 128m
+    logging: *default-logging
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    profiles: ["monitoring"]
+    user: "65534:65534"
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.disable-defaults
+      - --collector.cpu
+      - --collector.meminfo
+      - --collector.filesystem
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/docker/.+|var/lib/containers/storage/.+)($|/)
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.03"
+          memory: 64m
+          pids: 64
+    logging: *default-logging
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["monitoring"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=512MB
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ../../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ${METRICS_TOKEN_FILE:?set METRICS_TOKEN_FILE}:/run/secrets/metrics_token:ro
+    depends_on:
+      alertmanager:
+        condition: service_started
+      node-exporter:
+        condition: service_started
+      platform-api:
+        condition: service_healthy
+      platform-worker-japan:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.07"
+          memory: 384m
+    logging: *default-logging
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  worker-spool:
+  history-archives:
+  alertmanager-data:

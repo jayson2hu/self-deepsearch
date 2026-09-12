@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+  <title id="title">默认作品图</title>
+  <desc id="desc">作品资料默认占位图</desc>
+  <rect width="960" height="600" fill="#e5e8ea"/>
+  <rect x="70" y="70" width="820" height="460" rx="18" fill="#d4d9dc"/>
+  <path d="M185 430l155-165 112 112 84-84 139 137H185z" fill="#aeb6bb"/>
+  <circle cx="350" cy="205" r="42" fill="#aeb6bb"/>
+  <path d="M480 160h260" stroke="#8f989e" stroke-width="18" stroke-linecap="round"/>
+  <path d="M480 205h180" stroke="#8f989e" stroke-width="14" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 800" role="img" aria-labelledby="title desc">
+  <title id="title">默认人物图</title>
+  <desc id="desc">人物资料默认占位图</desc>
+  <rect width="640" height="800" fill="#e5e8ea"/>
+  <rect x="55" y="55" width="530" height="690" rx="22" fill="#d4d9dc"/>
+  <circle cx="320" cy="290" r="108" fill="#aeb6bb"/>
+  <path d="M145 640c21-142 101-207 175-207s154 65 175 207" fill="#aeb6bb"/>
+  <path d="M190 130h260" stroke="#8f989e" stroke-width="18" stroke-linecap="round"/>
+  <path d="M230 175h180" stroke="#8f989e" stroke-width="14" stroke-linecap="round"/>
+</svg>

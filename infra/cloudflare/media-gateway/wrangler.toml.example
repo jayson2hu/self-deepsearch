@@ -1,0 +1,16 @@
+name = "self-deepsearch-media-gateway"
+main = "src/index.mjs"
+compatibility_date = "2026-09-11"
+
+[vars]
+MEDIA_EDGE_GATEWAY_MODE = "enforce"
+MEDIA_PUBLIC_ORIGIN = "https://media.example.invalid"
+MEDIA_POLICY_URL = "https://api.example.invalid/edge/v1/media-delivery-policy"
+MEDIA_POLICY_CACHE_TTL_SECONDS = "5"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "replace-with-private-public-derivatives-bucket"
+
+# Store MEDIA_EDGE_POLICY_TOKEN with `wrangler secret put`; never add it here.
+

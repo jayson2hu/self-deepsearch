@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="幕鉴作品公开资料详情原型，仅展示元数据和宣传图片。">
+  <title>作品资料 · 幕鉴</title>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="preconnect" href="https://api.dicebear.com">
+  <style>
+    :root {
+      --ink: #17191c;
+      --muted: #676c73;
+      --faint: #92979e;
+      --paper: #fff;
+      --canvas: #f3f4f6;
+      --line: #dfe2e6;
+      --accent: #c83e36;
+      --accent-dark: #9f2f29;
+      --teal: #147d73;
+      --yellow: #d49b19;
+      --night: #202226;
+      --success: #18794e;
+      --shadow: 0 8px 24px rgba(20, 24, 28, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(20, 125, 115, .32);
+      outline-offset: 2px;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    .wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+
+    .notice-bar { color: #f5f6f7; background: var(--night); font-size: 12px; }
+    .notice-inner {
+      min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    }
+    .notice-copy, .source-state { display: inline-flex; align-items: center; gap: 7px; }
+    .source-state { color: #b8ddd9; }
+
+    .site-header {
+      position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.96);
+      border-bottom: 1px solid var(--line); backdrop-filter: blur(12px);
+    }
+    .header-inner { height: 66px; display: flex; align-items: center; gap: 28px; }
+    .brand { display: inline-flex; align-items: baseline; gap: 9px; flex: 0 0 auto; }
+    .brand-name { font-family: Georgia, "Songti SC", serif; font-size: 25px; font-weight: 700; line-height: 1; }
+    .brand-dot { color: var(--accent); }
+    .brand-tag { color: var(--muted); font-size: 11px; }
+    .nav { display: flex; align-items: center; gap: 5px; }
+    .nav a { min-height: 38px; padding: 9px 12px; color: #484d53; font-size: 14px; border-bottom: 2px solid transparent; }
+    .nav a:hover, .nav a.active { color: var(--ink); border-color: var(--accent); }
+    .header-search {
+      width: min(360px, 34vw); height: 40px; display: grid; grid-template-columns: 1fr 42px;
+      margin-left: auto; background: #f2f3f4; border: 1px solid var(--line); border-radius: 5px; overflow: hidden;
+    }
+    .header-search input { min-width: 0; padding: 0 12px; background: transparent; border: 0; outline: 0; }
+    .header-search button { display: grid; place-items: center; color: #fff; background: var(--accent); border: 0; cursor: pointer; }
+    .icon-button {
+      width: 40px; height: 40px; display: inline-grid; place-items: center; color: #3e4349;
+      background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+    }
+    .icon-button:hover { background: #eef0f2; border-color: var(--line); }
+
+    .breadcrumb {
+      min-height: 54px; display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+      color: var(--muted); font-size: 12px;
+    }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb i { color: #a9adb2; }
+
+    .title-band { padding: 24px 0 27px; color: #fff; background: var(--night); }
+    .title-grid { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 30px; align-items: end; }
+    .eyebrow { margin: 0 0 7px; color: #e6bcb8; font-size: 12px; font-weight: 800; }
+    h1 {
+      max-width: 820px; margin: 0; font-family: Georgia, "Songti SC", serif;
+      font-size: clamp(29px, 5vw, 43px); line-height: 1.22; letter-spacing: 0;
+    }
+    .title-meta { display: flex; flex-wrap: wrap; gap: 7px 18px; margin-top: 13px; color: #c9cdd1; font-size: 13px; }
+    .title-meta span { display: inline-flex; align-items: center; gap: 6px; }
+    .verification {
+      min-width: 190px; padding: 13px 15px; color: #d8e9e7; background: #293b39;
+      border: 1px solid #41635f; border-radius: 5px;
+    }
+    .verification strong { display: flex; align-items: center; gap: 7px; color: #fff; font-size: 13px; }
+    .verification span { display: block; margin-top: 3px; font-size: 11px; }
+
+    .page-layout {
+      display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 30px;
+      align-items: start; padding: 28px 0 44px;
+    }
+    .media-grid { display: block; }
+    .media-main, .media-small { position: relative; background: #dfe2e5; overflow: hidden; border-radius: 5px; }
+    .media-main { width: 100%; aspect-ratio: 16 / 9; }
+    .media-side { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; }
+    .media-small { min-height: 0; }
+    .media-main img, .media-small img { width: 100%; height: 100%; object-fit: cover; }
+    .image-count {
+      position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 8px; color: #fff; background: rgba(23,25,28,.84); border-radius: 4px; font-size: 11px;
+    }
+
+    .fact-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr); margin: 14px 0 0;
+      background: #fff; border: 1px solid var(--line); border-radius: 5px;
+    }
+    .fact { min-width: 0; padding: 14px 15px; border-right: 1px solid var(--line); }
+    .fact:last-child { border-right: 0; }
+    .fact-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; }
+    .fact-value { display: block; overflow-wrap: anywhere; font-size: 13px; font-weight: 800; }
+    .fact-value.person { color: var(--teal); }
+
+    .ad-strip {
+      min-height: 82px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px;
+      margin: 22px 0; padding: 16px 19px; background: #fff; border: 1px solid var(--line);
+      border-left: 4px solid var(--yellow); border-radius: 4px;
+    }
+    .ad-kicker { display: block; margin-bottom: 2px; color: var(--yellow); font-size: 10px; font-weight: 800; }
+    .ad-title { margin: 0; font-size: 14px; font-weight: 800; }
+    .ad-copy { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .ad-button {
+      padding: 8px 12px; color: var(--ink); background: #f4e6b9; border: 0;
+      border-radius: 4px; cursor: pointer; font-weight: 700;
+    }
+
+    .inline-native-ad {
+      min-height: 96px;
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 15px;
+      margin-top: 24px;
+      padding: 14px;
+      color: #edf7f5;
+      background: #183d39;
+      border: 1px solid #2e625c;
+      border-radius: 5px;
+    }
+    .native-ad-mark {
+      width: 62px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      color: #183d39;
+      background: #b8ddd9;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .inline-native-ad h3 { margin: 0; font-size: 15px; }
+    .inline-native-ad p { margin: 3px 0 0; color: #bdd2cf; font-size: 11px; }
+    .native-ad-button {
+      padding: 8px 12px;
+      color: #183d39;
+      background: #b8ddd9;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .content-section { margin-top: 26px; }
+    .section-heading {
+      display: flex; align-items: end; justify-content: space-between; gap: 16px;
+      margin-bottom: 14px; padding-bottom: 9px; border-bottom: 2px solid var(--ink);
+    }
+    .section-heading h2 {
+      margin: 0; font-family: Georgia, "Songti SC", serif; font-size: 21px; line-height: 1.25; letter-spacing: 0;
+    }
+    .section-heading span { color: var(--muted); font-size: 11px; }
+    .description { margin: 0; color: #43474c; font-size: 14px; line-height: 1.85; }
+
+    .cast-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .cast-item {
+      min-width: 0; display: grid; grid-template-columns: 62px minmax(0,1fr) auto;
+      align-items: center; gap: 11px; padding: 10px; background: #fff;
+      border: 1px solid var(--line); border-radius: 5px;
+    }
+    .cast-avatar { width: 62px; height: 62px; object-fit: cover; background: #e5e7ea; border-radius: 4px; }
+    .cast-name { display: block; font-size: 14px; font-weight: 800; }
+    .cast-alias { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .cast-action { color: var(--teal); }
+
+    .gallery { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 9px; }
+    .gallery-button {
+      position: relative; aspect-ratio: 16 / 10; padding: 0; background: #e2e4e7;
+      border: 0; border-radius: 5px; overflow: hidden; cursor: zoom-in;
+    }
+    .gallery-button img { width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease; }
+    .gallery-button:hover img { transform: scale(1.035); }
+
+    .source-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); font-size: 12px; }
+    .source-table th, .source-table td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+    .source-table th { width: 145px; color: var(--muted); font-weight: 500; }
+    .source-table tr:last-child th, .source-table tr:last-child td { border-bottom: 0; }
+    .source-ok { color: var(--success); font-weight: 800; }
+
+    .sidebar-section { margin-bottom: 24px; }
+    .sidebar-title {
+      margin: 0 0 11px; padding-bottom: 8px; font-family: Georgia, "Songti SC", serif;
+      font-size: 18px; border-bottom: 2px solid var(--ink);
+    }
+    .side-ad {
+      min-height: 250px; display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 18px; color: #fff; background: var(--night); border-radius: 6px;
+    }
+    .side-ad p { margin: 4px 0 0; color: #bcc0c5; font-size: 12px; }
+    .related-list { margin: 0; padding: 0; list-style: none; background: #fff; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .related-item { border-bottom: 1px solid #eceef0; }
+    .related-item:last-child { border-bottom: 0; }
+    .related-link { display: grid; grid-template-columns: 74px minmax(0,1fr); gap: 10px; padding: 9px; }
+    .related-link:hover { background: #f7f8f9; }
+    .related-thumb { width: 74px; aspect-ratio: 16/10; object-fit: cover; background: #e2e4e7; border-radius: 3px; }
+    .related-code { display: block; color: var(--accent); font-size: 9px; font-weight: 800; }
+    .related-name { display: -webkit-box; margin-top: 2px; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11px; font-weight: 700; line-height: 1.45; }
+    .related-native-ad {
+      padding: 12px;
+      color: #5d4e16;
+      background: #f7efcf;
+      border-bottom: 1px solid #eadca7;
+      cursor: pointer;
+    }
+    .related-native-ad strong { display: block; margin: 3px 0 2px; color: #382f0d; font-size: 12px; }
+    .related-native-ad span { font-size: 10px; }
+    .boundary-box { padding: 15px; background: #eef5f4; border-left: 3px solid var(--teal); font-size: 12px; }
+    .boundary-box strong { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: #1c554f; }
+    .boundary-box p { margin: 0; color: #53615f; }
+    .report-button {
+      width: 100%; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 7px;
+      margin-top: 10px; color: #474c52; background: transparent; border: 1px solid #c9cdd1;
+      border-radius: 5px; cursor: pointer;
+    }
+    .report-button:hover { background: #fff; }
+
+    .rail-ad {
+      position: fixed;
+      z-index: 20;
+      top: 116px;
+      width: 160px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      filter: drop-shadow(0 8px 18px rgba(18, 20, 22, .14));
+    }
+    .rail-left { left: max(8px, calc((100vw - 1080px) / 2 - 175px)); }
+    .rail-right { right: max(8px, calc((100vw - 1080px) / 2 - 175px)); }
+    .rail-panel {
+      position: relative;
+      width: 160px;
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #20242a;
+      background: #fff;
+      border: 1px solid #d4d7db;
+      border-radius: 4px 4px 2px 2px;
+      overflow: hidden;
+    }
+    .rail-ad.collapsed .rail-panel { display: none; }
+    .rail-ad-image { width: 100%; height: 112px; object-fit: cover; background: #dfe2e5; }
+    .rail-ad-info {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: rgba(23, 25, 28, .72);
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .rail-ad-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px 18px;
+      text-align: center;
+    }
+    .rail-ad-kicker { color: var(--accent); font-size: 9px; font-weight: 900; }
+    .rail-ad-body h3 { margin: 12px 0 10px; font-size: 22px; line-height: 1.18; }
+    .rail-ad-body p { margin: 0; color: #787d84; font-size: 11px; line-height: 1.65; }
+    .rail-ad-logo {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      margin: 25px 0;
+      color: #fff;
+      background: var(--teal);
+      border-radius: 5px;
+      font-weight: 900;
+    }
+    .rail-ad-cta {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      margin-top: 24px;
+      color: #fff;
+      background: #4b5057;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .rail-ad-cta:hover { background: var(--accent); }
+    .rail-collapse {
+      width: 42px;
+      height: 23px;
+      display: grid;
+      place-items: center;
+      margin-top: -1px;
+      color: #5d6269;
+      background: #fff;
+      border: 1px solid #d4d7db;
+      border-top: 0;
+      border-radius: 0 0 6px 6px;
+      cursor: pointer;
+    }
+    .rail-ad.collapsed .rail-collapse {
+      margin-top: 0;
+      border-top: 1px solid #d4d7db;
+      border-radius: 6px;
+    }
+
+    .more-section { padding: 35px 0 44px; background: #fff; border-top: 1px solid var(--line); }
+    .more-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+    .more-card { min-width: 0; background: #f5f6f7; border: 1px solid transparent; border-radius: 5px; overflow: hidden; }
+    .more-card:hover { background: #fff; border-color: #c9cdd1; box-shadow: var(--shadow); }
+    .more-card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; background: #e2e4e7; }
+    .more-body { padding: 11px; }
+    .more-code { color: var(--accent); font-size: 9px; font-weight: 800; }
+    .more-title { min-height: 38px; margin: 4px 0 0; font-size: 12px; line-height: 1.5; }
+
+    .site-footer { padding: 30px 0 36px; color: #aeb2b7; background: var(--night); font-size: 12px; }
+    .footer-grid { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 30px; align-items: start; }
+    .footer-brand { margin-bottom: 8px; color: #fff; font-size: 20px; font-weight: 800; }
+    .footer-copy { margin: 0; color: #8f949a; line-height: 1.7; }
+    .footer-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+    .footer-badge { padding: 4px 7px; color: #dfe2e5; background: #2d3035; border: 1px solid #40444a; border-radius: 3px; font-size: 9px; font-weight: 800; }
+    .footer-disclosures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #3a3e44; border-bottom: 1px solid #3a3e44; }
+    .footer-disclosure { min-width: 0; padding: 15px 18px; border-left: 1px solid #3a3e44; }
+    .footer-disclosure:first-child { border-left: 0; }
+    .footer-disclosure h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 7px; color: #fff; font-size: 12px; }
+    .footer-disclosure p { margin: 0; color: #aeb2b7; line-height: 1.75; }
+    .footer-bottom { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; margin-top: 22px; }
+    .footer-legal-note { max-width: 650px; margin: 0; color: #858a91; line-height: 1.7; }
+    .footer-links { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px 20px; }
+
+    dialog {
+      width: min(1120px, calc(100% - 24px)); max-height: calc(100vh - 24px); padding: 0;
+      background: #111315; border: 0; border-radius: 6px; box-shadow: 0 24px 80px rgba(0,0,0,.45); overflow: hidden;
+    }
+    dialog::backdrop { background: rgba(8,9,10,.86); }
+    .lightbox-img { width: 100%; max-height: calc(100vh - 24px); object-fit: contain; }
+    .dialog-close {
+      position: absolute; z-index: 2; top: 10px; right: 10px; color: #fff;
+      background: rgba(20,22,24,.78); border-color: rgba(255,255,255,.2);
+    }
+
+    .toast {
+      position: fixed; z-index: 80; left: 50%; bottom: 24px; transform: translate(-50%, 24px);
+      max-width: calc(100% - 32px); padding: 11px 15px; color: #fff; background: #24272b;
+      border: 1px solid #3f444b; border-radius: 5px; box-shadow: var(--shadow); opacity: 0;
+      pointer-events: none; transition: opacity .2s ease, transform .2s ease; font-size: 13px;
+    }
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+    .error-state { display: none; min-height: 55vh; place-items: center; text-align: center; }
+    .error-state.visible { display: grid; }
+    .error-state h1 { font-size: 32px; }
+    .error-state p { color: var(--muted); }
+    .back-button { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 9px 13px; color: #fff; background: var(--accent); border-radius: 5px; }
+
+    @media (max-width: 980px) {
+      .nav { display: none; }
+      .page-layout { grid-template-columns: 1fr; }
+      .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .sidebar-section { margin: 0; }
+      .more-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 24px, 1240px); }
+      .notice-inner { justify-content: center; text-align: center; }
+      .source-state, .brand-tag { display: none; }
+      .header-inner { height: 58px; gap: 9px; }
+      .header-search { width: auto; flex: 1; }
+      .title-grid { grid-template-columns: 1fr; gap: 18px; }
+      .verification { min-width: 0; }
+      .fact-strip { grid-template-columns: 1fr 1fr; }
+      .fact:nth-child(2) { border-right: 0; }
+      .fact:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .ad-strip { grid-template-columns: 1fr; }
+      .ad-button { justify-self: start; }
+      .inline-native-ad { grid-template-columns: 52px minmax(0, 1fr); }
+      .native-ad-mark { width: 52px; height: 52px; }
+      .native-ad-button { grid-column: 1 / -1; width: 100%; }
+      .cast-list { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: repeat(2, 1fr); }
+      .sidebar { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; gap: 20px; }
+      .footer-disclosures { grid-template-columns: 1fr; }
+      .footer-disclosure { border-left: 0; border-top: 1px solid #3a3e44; }
+      .footer-disclosure:first-child { border-top: 0; }
+      .footer-bottom { flex-direction: column; }
+      .footer-links { justify-content: flex-start; }
+    }
+    @media (max-width: 460px) {
+      .breadcrumb { min-height: 44px; }
+      h1 { font-size: 29px; }
+      .header-search input::placeholder { color: transparent; }
+      .more-grid { grid-template-columns: 1fr; }
+      .source-table th { width: 105px; }
+    }
+    @media (min-width: 1420px) {
+      .rail-ad { display: flex; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/auth-prototype.css">
+</head>
+<body>
+  <div class="notice-bar">
+    <div class="wrap notice-inner">
+      <span class="notice-copy"><i data-lucide="shield-check" aria-hidden="true"></i> 仅展示公开资料，不提供播放、下载或资源跳转</span>
+      <span class="source-state"><i data-lucide="badge-check" aria-hidden="true"></i> 演示数据 · 来源待核验</span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html" aria-label="幕鉴首页">
+        <span class="brand-name">幕鉴<span class="brand-dot">.</span></span><span class="brand-tag">影像资料索引</span>
+      </a>
+      <nav class="nav" aria-label="主导航">
+        <a href="index.html#discover">发现</a><a href="index.html#people">人物</a><a class="active" href="#">作品</a><a href="index.html#ranking">榜单</a>
+      </nav>
+      <form class="header-search" id="headerSearch" role="search">
+        <label class="sr-only" for="headerSearchInput">搜索作品或人物</label>
+        <input id="headerSearchInput" type="search" placeholder="搜索编号、标题或人物">
+        <button type="submit" aria-label="搜索"><i data-lucide="search"></i></button>
+      </form>
+      <div class="auth-mount" data-auth-mount></div>
+    </div>
+  </header>
+
+  <aside class="rail-ad rail-left" aria-label="左侧 160 × 600 广告">
+    <div class="rail-panel">
+      <span class="rail-ad-info">AD</span>
+      <img class="rail-ad-image" src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=480&q=78" alt="广告创意示意图">
+      <div class="rail-ad-body">
+        <span class="rail-ad-kicker">FRAMEFLOW STUDIO</span>
+        <h3>让每一帧<br>更有故事</h3>
+        <div class="rail-ad-logo">FF</div>
+        <p>影像创作工具<br>桌面端品牌展示</p>
+        <button class="rail-ad-cta" type="button" aria-label="查看左侧广告" data-toast="左侧广告点击为原型占位"><i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+    <button class="rail-collapse" type="button" aria-label="收起左侧广告" aria-expanded="true"><i data-lucide="chevron-up"></i></button>
+  </aside>
+  <aside class="rail-ad rail-right" aria-label="右侧 160 × 600 广告">
+    <div class="rail-panel">
+      <span class="rail-ad-info">AD</span>
+      <img class="rail-ad-image" src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=480&q=78" alt="广告创意示意图">
+      <div class="rail-ad-body">
+        <span class="rail-ad-kicker">CITY FRAME 2026</span>
+        <h3>城市影像<br>创作季</h3>
+        <div class="rail-ad-logo">CF</div>
+        <p>品牌专题合作<br>宽屏右侧展示</p>
+        <button class="rail-ad-cta" type="button" aria-label="查看右侧广告" data-toast="右侧广告点击为原型占位"><i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+    <button class="rail-collapse" type="button" aria-label="收起右侧广告" aria-expanded="true"><i data-lucide="chevron-up"></i></button>
+  </aside>
+
+  <div class="wrap breadcrumb" aria-label="面包屑导航">
+    <a href="index.html">首页</a><i data-lucide="chevron-right" aria-hidden="true"></i>
+    <a href="index.html#discover">作品资料</a><i data-lucide="chevron-right" aria-hidden="true"></i>
+    <span id="breadcrumbCode">MK-1042</span>
+  </div>
+
+  <main id="content">
+    <section class="title-band">
+      <div class="wrap title-grid">
+        <div>
+          <p class="eyebrow" id="workCode">MK-1042 · PUBLIC METADATA</p>
+          <h1 id="workTitle">雨后的银座：城市灯光下的偶遇</h1>
+          <div class="title-meta">
+            <span><i data-lucide="calendar" aria-hidden="true"></i><time id="releaseDate" datetime="2026-07-18">2026.07.18</time></span>
+            <span><i data-lucide="building-2" aria-hidden="true"></i><span id="studioName">Maku Archive Studio</span></span>
+            <span><i data-lucide="images" aria-hidden="true"></i>4 张精选图</span>
+          </div>
+        </div>
+        <div class="title-side">
+          <div class="verification">
+            <strong><i data-lucide="badge-check" aria-hidden="true"></i>资料已核验</strong>
+            <span>最后更新：2026.07.22</span>
+          </div>
+          <div class="member-actions" aria-label="登录用户操作">
+            <button class="member-action" type="button" data-requires-auth data-default-label="收藏作品" data-active-label="已收藏" aria-pressed="false"><i data-lucide="bookmark" aria-hidden="true"></i><span data-action-label>收藏作品</span></button>
+            <button class="member-action" type="button" data-requires-auth data-default-label="关注人物" data-active-label="已关注" aria-pressed="false"><i data-lucide="user-plus" aria-hidden="true"></i><span data-action-label>关注人物</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap page-layout">
+      <article>
+        <section class="media-grid" aria-label="宣传截图预览">
+          <button class="media-main gallery-trigger" type="button"><img id="mainImage" src="" alt="作品主宣传截图"><span class="image-count"><i data-lucide="maximize-2"></i>查看大图</span></button>
+        </section>
+
+        <section class="fact-strip" aria-label="作品基础信息">
+          <div class="fact"><span class="fact-label">作品编号</span><span class="fact-value" id="factCode">MK-1042</span></div>
+          <div class="fact"><span class="fact-label">出演人物</span><span class="fact-value person" id="factPerson">雾岛 凛</span></div>
+          <div class="fact"><span class="fact-label">发行年份</span><span class="fact-value" id="factYear">2026</span></div>
+          <div class="fact"><span class="fact-label">资料语言</span><span class="fact-value">中文 / 日本語</span></div>
+        </section>
+
+        <aside class="ad-strip" aria-label="广告位">
+          <div><span class="ad-kicker">AD · 品牌展示位</span><p class="ad-title">内容详情页横幅广告</p><p class="ad-copy">清晰标注、不遮挡正文、不伪装为播放或下载入口。</p></div>
+          <button class="ad-button" type="button" data-toast="广告合作入口为原型占位">查看合作</button>
+        </aside>
+
+        <section class="content-section" aria-labelledby="summaryTitle">
+          <div class="section-heading"><h2 id="summaryTitle">资料摘要</h2><span>编辑整理</span></div>
+          <p class="description" id="description">以雨后东京为背景的虚构影像资料条目。页面通过编号、人物、日期和厂牌建立可检索关系，并以来源明确的宣传图片辅助识别；所有文本仅用于界面演示，不对应真实作品。</p>
+        </section>
+
+        <aside class="inline-native-ad" aria-label="正文原生广告位">
+          <div class="native-ad-mark">AD</div>
+          <div><h3>品牌内容合作 · 原生展示位</h3><p>正文段落之间的固定尺寸广告，异步加载时不改变页面结构。</p></div>
+          <button class="native-ad-button" type="button" data-toast="正文原生广告为原型占位">了解更多</button>
+        </aside>
+
+        <section class="content-section" aria-labelledby="castTitle">
+          <div class="section-heading"><h2 id="castTitle">出演人物</h2><span>1 人</span></div>
+          <div class="cast-list">
+            <a class="cast-item" href="index.html#people">
+              <img class="cast-avatar" id="castAvatar" src="" alt="虚构人物头像">
+              <span><span class="cast-name" id="castName">雾岛 凛</span><span class="cast-alias" id="castAlias">きりしま りん · Kirishima Rin</span></span>
+              <i class="cast-action" data-lucide="arrow-right" aria-hidden="true"></i>
+            </a>
+          </div>
+        </section>
+
+        <section class="content-section" aria-labelledby="galleryTitle">
+          <div class="section-heading"><h2 id="galleryTitle">宣传截图</h2><span>非露骨 · 演示素材</span></div>
+          <div class="gallery" id="gallery"></div>
+        </section>
+
+        <section class="content-section" aria-labelledby="sourceTitle">
+          <div class="section-heading"><h2 id="sourceTitle">资料来源</h2><span>字段级核验</span></div>
+          <table class="source-table">
+            <tbody>
+              <tr><th scope="row">编号与标题</th><td>演示资料编辑录入</td><td class="source-ok">已核验</td></tr>
+              <tr><th scope="row">人物信息</th><td>虚构人物档案库</td><td class="source-ok">已核验</td></tr>
+              <tr><th scope="row">宣传图片</th><td>公开非露骨示意图</td><td class="source-ok">演示授权</td></tr>
+              <tr><th scope="row">最后复核</th><td>2026.07.22</td><td class="source-ok">有效</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <aside class="ad-strip" aria-label="正文底部广告位">
+          <div><span class="ad-kicker">AD · 728 × 90</span><p class="ad-title">资料页底部通栏广告</p><p class="ad-copy">位于主体内容结束之后、相关推荐之前。</p></div>
+          <button class="ad-button" type="button" data-toast="正文底部广告为原型占位">查看活动</button>
+        </aside>
+      </article>
+
+      <aside class="sidebar" aria-label="相关信息">
+        <section class="sidebar-section side-ad" aria-label="侧栏广告位">
+          <span class="ad-kicker">AD · 300 × 250</span><strong>品牌视觉展示位</strong><p>静态素材 · 无跳转劫持 · 清晰广告标识</p>
+        </section>
+        <section class="sidebar-section">
+          <h2 class="sidebar-title">相关作品</h2>
+          <ol class="related-list" id="relatedList"></ol>
+        </section>
+        <section class="sidebar-section">
+          <div class="boundary-box"><strong><i data-lucide="shield-check"></i>页面边界</strong><p>不提供、不存储、不转发视频、磁力、网盘、下载地址或资源站链接。</p></div>
+          <button class="report-button" type="button" data-requires-auth data-auth-action="资料纠错"><i data-lucide="flag"></i>资料纠错与权利申诉</button>
+        </section>
+      </aside>
+    </div>
+
+    <section class="more-section" aria-labelledby="moreTitle">
+      <div class="wrap">
+        <div class="section-heading"><h2 id="moreTitle">继续浏览</h2><span>基于人物、厂牌与标签关联</span></div>
+        <div class="more-grid" id="moreGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="error-state wrap" id="errorState">
+    <div><i data-lucide="file-question" aria-hidden="true"></i><h1>没有找到这条资料</h1><p>编号可能已更正、合并或下架。</p><a class="back-button" href="index.html"><i data-lucide="arrow-left"></i>返回资料库</a></div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">幕鉴.</div><p class="footer-copy">公开人物与作品资料索引</p>
+          <div class="footer-badges" aria-label="网站属性"><span class="footer-badge">18+</span><span class="footer-badge">资料索引</span><span class="footer-badge">无视频资源</span></div>
+        </div>
+        <div class="footer-disclosures">
+          <section class="footer-disclosure"><h3><i data-lucide="book-open"></i>内容定位</h3><p>本站仅对公开人物及作品资料进行整理、索引与展示，不提供内容观看服务。</p></section>
+          <section class="footer-disclosure"><h3><i data-lucide="shield-ban"></i>资源边界</h3><p>本站不存储、不上传、不播放、不下载，也不代理转发任何视频、音频、磁力、种子、网盘地址或第三方资源。</p></section>
+          <section class="footer-disclosure"><h3><i data-lucide="scale"></i>数据与权利</h3><p>页面仅保存检索所需的结构化资料和经审核的公开派生图；本站不提供图片识别服务。相关权利归原权利人所有。</p></section>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-legal-note">资料如有错误、过期或涉及权利问题，请通过资料纠错或版权下架入口提交。经核验后将及时更正或移除。</p>
+        <nav class="footer-links" aria-label="页脚导航"><a href="#">使用条款</a><a href="#">版权与下架</a><a href="#">资料纠错</a><a href="#">广告合作</a></nav>
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="lightbox" aria-label="宣传截图大图">
+    <button class="icon-button dialog-close" id="lightboxClose" type="button" aria-label="关闭大图"><i data-lucide="x"></i></button>
+    <img class="lightbox-img" id="lightboxImage" src="" alt="宣传截图大图">
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="assets/auth-prototype.js"></script>
+  <script>
+    const DEFAULT_WORK_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600">
+        <rect width="960" height="600" fill="#e7eaed"/>
+        <rect x="330" y="205" width="300" height="190" rx="12" fill="#c5ccd2"/>
+        <circle cx="425" cy="275" r="34" fill="#f5f6f7"/>
+        <path d="M354 372l94-88 68 62 46-40 44 66z" fill="#f5f6f7"/>
+        <text x="480" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#646b72">NO IMAGE</text>
+      </svg>`);
+    const DEFAULT_PERSON_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480">
+        <rect width="480" height="480" fill="#e7eaed"/>
+        <circle cx="240" cy="176" r="82" fill="#c5ccd2"/>
+        <path d="M96 422c15-103 73-158 144-158s129 55 144 158z" fill="#c5ccd2"/>
+      </svg>`);
+
+    function bindImageFallback(img) {
+      const source = img.getAttribute('src');
+      if (!source) return;
+      const fallback = img.classList.contains('cast-avatar') ? DEFAULT_PERSON_IMAGE : DEFAULT_WORK_IMAGE;
+      const useFallback = () => {
+        if (img.dataset.fallbackApplied === 'true') return;
+        img.dataset.fallbackApplied = 'true';
+        img.src = fallback;
+      };
+      img.addEventListener('error', useFallback);
+      if (img.complete && img.naturalWidth === 0 && !source.startsWith('data:')) useFallback();
+    }
+
+    function bindImageFallbacks(root = document) {
+      root.querySelectorAll('img').forEach(bindImageFallback);
+    }
+
+    const images = {
+      tokyo: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1400&q=84',
+      sea: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=84',
+      stage: 'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=1400&q=84',
+      flower: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1400&q=84',
+      film: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=84',
+      city: 'https://images.unsplash.com/photo-1495542779398-9fec7dc7986c?auto=format&fit=crop&w=1400&q=84'
+    };
+
+    const works = {
+      'MK-1042': { title: '雨后的银座：城市灯光下的偶遇', person: '雾岛 凛', alias: 'きりしま りん · Kirishima Rin', date: '2026.07.18', studio: 'Maku Archive Studio', image: images.tokyo, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=KirishimaRin&size=480&backgroundColor=f8d8d5', summary: '以雨后东京为背景的虚构影像资料条目。页面通过编号、人物、日期和厂牌建立可检索关系，并以来源明确的宣传图片辅助识别；所有文本仅用于界面演示，不对应真实作品。' },
+      'MK-1038': { title: '夏日来信：沿海电车的最后一站', person: '星野 遥', alias: 'ほしの はる · Hoshino Haru', date: '2026.07.16', studio: 'Coastline Label', image: images.sea, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=HoshinoHaru&size=480&backgroundColor=d8ece7', summary: '围绕沿海风景整理的虚构作品资料。条目用于演示作品编号检索、多语言人物关联和非露骨宣传图片画廊。' },
+      'MK-1029': { title: '午夜剧场：落幕后仍亮着的灯', person: '神谷 澪', alias: 'かみや みお · Kamiya Mio', date: '2026.07.11', studio: 'Stage Note', image: images.stage, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=KamiyaMio&size=480&backgroundColor=f2e2bd', summary: '以剧场后台为主题的虚构资料条目，演示人物、厂牌、发布日期与图片来源之间的结构化关系。' },
+      'MK-1023': { title: '花房日记：午后三点的约定', person: '白石 葵', alias: 'しらいし あおい · Shiraishi Aoi', date: '2026.07.08', studio: 'Botanic Film', image: images.flower, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=ShiraishiAoi&size=480&backgroundColor=dce1ee', summary: '以花房和自然光为视觉线索的虚构作品资料，用于预览新收录状态、截图展示和字段核验方式。' },
+      'MK-1017': { title: '胶片之间：工作室里未完成的肖像', person: '高桥 纱月', alias: 'たかはし さつき · Takahashi Satsuki', date: '2026.06.29', studio: 'Frame Works', image: images.film, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=TakahashiSatsuki&size=480&backgroundColor=ead8e8', summary: '关于摄影工作室的虚构资料条目，重点演示作品详情、宣传图来源和人物档案的交叉索引。' },
+      'MK-1008': { title: '清晨列车：抵达之前的二十分钟', person: '藤本 澄香', alias: 'ふじもと すみか · Fujimoto Sumika', date: '2026.06.18', studio: 'Morning Archive', image: images.city, avatar: 'https://api.dicebear.com/9.x/notionists/png?seed=FujimotoSumika&size=480&backgroundColor=d9e7ef', summary: '以清晨城市和通勤列车为主题的虚构资料条目，用于演示典藏内容与相关作品推荐。' }
+    };
+
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code') || 'MK-1042';
+    const work = works[code];
+    const main = document.getElementById('content');
+    const errorState = document.getElementById('errorState');
+    const toast = document.getElementById('toast');
+    const lightbox = document.getElementById('lightbox');
+    let toastTimer;
+
+    function renderIcons() {
+      if (window.lucide) window.lucide.createIcons({ attrs: { width: 18, height: 18, 'stroke-width': 1.8 } });
+    }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('visible');
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
+    }
+
+    function relatedEntries() {
+      return Object.entries(works).filter(([itemCode]) => itemCode !== code);
+    }
+
+    function renderWork() {
+      if (!work) {
+        main.hidden = true;
+        errorState.classList.add('visible');
+        document.querySelectorAll('.rail-ad').forEach((rail) => rail.hidden = true);
+        document.title = '资料未找到 · 幕鉴';
+        renderIcons();
+        return;
+      }
+
+      document.title = `${code} · ${work.title} · 幕鉴`;
+      document.getElementById('breadcrumbCode').textContent = code;
+      document.getElementById('workCode').textContent = `${code} · PUBLIC METADATA`;
+      document.getElementById('workTitle').textContent = work.title;
+      document.getElementById('releaseDate').textContent = work.date;
+      document.getElementById('releaseDate').dateTime = work.date.replaceAll('.', '-');
+      document.getElementById('studioName').textContent = work.studio;
+      document.getElementById('factCode').textContent = code;
+      document.getElementById('factPerson').textContent = work.person;
+      document.getElementById('factYear').textContent = work.date.slice(0, 4);
+      document.getElementById('description').textContent = work.summary;
+      document.getElementById('castName').textContent = work.person;
+      document.getElementById('castAlias').textContent = work.alias;
+      document.getElementById('castAvatar').src = work.avatar;
+      document.getElementById('castAvatar').alt = `${work.person}虚构头像`;
+
+      const galleryImages = [work.image, ...Object.values(images).filter((item) => item !== work.image)];
+      document.getElementById('mainImage').src = galleryImages[0];
+
+      document.getElementById('gallery').innerHTML = galleryImages.slice(1, 4).map((src, index) => `
+        <button class="gallery-button gallery-trigger" type="button" aria-label="查看宣传截图 ${index + 1}">
+          <img src="${src}" alt="${work.title}精选宣传截图 ${index + 2}" loading="lazy">
+        </button>`).join('');
+
+      const related = relatedEntries();
+      const relatedMarkup = related.slice(0, 4).map(([itemCode, item]) => `
+        <li class="related-item"><a class="related-link" href="work-detail.html?code=${itemCode}">
+          <img class="related-thumb" src="${item.image}" alt="" loading="lazy">
+          <span><span class="related-code">${itemCode}</span><span class="related-name">${item.title}</span></span>
+        </a></li>`);
+      relatedMarkup.splice(2, 0, '<li class="related-native-ad" data-toast="相关推荐广告为原型占位"><span>AD · 原生推荐位</span><strong>品牌专题内容</strong><span>清晰标注的列表内广告</span></li>');
+      document.getElementById('relatedList').innerHTML = relatedMarkup.join('');
+
+      document.getElementById('moreGrid').innerHTML = related.slice(0, 4).map(([itemCode, item]) => `
+        <a class="more-card" href="work-detail.html?code=${itemCode}">
+          <img src="${item.image}" alt="${item.title}宣传图" loading="lazy">
+          <div class="more-body"><span class="more-code">${itemCode}</span><h3 class="more-title">${item.title}</h3></div>
+        </a>`).join('');
+
+      bindImageFallbacks();
+
+      document.querySelectorAll('.gallery-trigger').forEach((button) => {
+        button.addEventListener('click', () => {
+          const img = button.querySelector('img');
+          document.getElementById('lightboxImage').src = img.src;
+          document.getElementById('lightboxImage').alt = img.alt;
+          lightbox.showModal();
+        });
+      });
+
+      document.querySelectorAll('[data-toast]').forEach((button) => button.addEventListener('click', () => showToast(button.dataset.toast)));
+      renderIcons();
+    }
+
+    document.getElementById('headerSearch').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const query = document.getElementById('headerSearchInput').value.trim();
+      if (query) location.href = `index.html?q=${encodeURIComponent(query)}`;
+    });
+
+    document.getElementById('lightboxClose').addEventListener('click', () => lightbox.close());
+    lightbox.addEventListener('click', (event) => {
+      const rect = lightbox.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) lightbox.close();
+    });
+
+    document.querySelectorAll('.rail-collapse').forEach((button) => {
+      button.addEventListener('click', () => {
+        const rail = button.closest('.rail-ad');
+        const collapsed = rail.classList.toggle('collapsed');
+        button.setAttribute('aria-expanded', String(!collapsed));
+        button.setAttribute('aria-label', collapsed ? '展开侧边广告' : '收起侧边广告');
+        button.innerHTML = `<i data-lucide="${collapsed ? 'chevron-down' : 'chevron-up'}"></i>`;
+        renderIcons();
+      });
+    });
+
+    renderWork();
+  </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "scope": "Every Release A path that can issue object-store data-plane requests",
+  "direct_object_store_clients": [
+    "infra/cloudflare/media-gateway/src/index.mjs",
+    "workers/media-python/media_worker/storage.py"
+  ],
+  "tasks": [
+    {
+      "id": "controlled_media_upload",
+      "region": "beijing",
+      "trigger": "manual_or_admin_command",
+      "automatic": false,
+      "default_enabled": false,
+      "budget_class": "nonessential",
+      "object_operations": [
+        "list",
+        "head",
+        "put"
+      ],
+      "source_files": [
+        "workers/media-python/media_worker/cli.py",
+        "workers/media-python/media_worker/pipeline.py",
+        "workers/media-python/media_worker/storage.py",
+        "workers/media-python/media_worker/upload_admission.py",
+        "workers/media-python/media_worker/upload_control.py"
+      ],
+      "controls": [
+        "MEDIA_DELIVERY_MODE",
+        "shared_upload_lock",
+        "upload_control_generation",
+        "per_operation_usage_admission",
+        "two_bucket_capacity_scan"
+      ],
+      "failure_behavior": "deny before the next request; fence an indeterminate write for manual reconciliation"
+    },
+    {
+      "id": "scheduled_full_reconciliation",
+      "region": "japan_to_beijing",
+      "trigger": "scheduled",
+      "automatic": true,
+      "default_enabled": false,
+      "budget_class": "nonessential",
+      "object_operations": [
+        "list",
+        "head"
+      ],
+      "source_files": [
+        "services/platform-worker/cmd/worker/main.go",
+        "services/platform-worker/internal/mediareconcile/reconcile.go",
+        "services/platform-worker/internal/mediausage/task_guard.go",
+        "workers/media-python/media_worker/server.py",
+        "workers/media-python/media_worker/storage.py"
+      ],
+      "controls": [
+        "MEDIA_RECONCILE_ENABLED",
+        "MEDIA_RECONCILE_USAGE_GUARD",
+        "pre_schedule_usage_admission",
+        "pre_dispatch_usage_admission"
+      ],
+      "failure_behavior": "do not dispatch the cross-region request and retain an explicit deferred or failed audit state"
+    },
+    {
+      "id": "rights_media_deletion",
+      "region": "japan_to_beijing",
+      "trigger": "durable_outbox",
+      "automatic": true,
+      "default_enabled": true,
+      "budget_class": "necessary",
+      "object_operations": [
+        "head",
+        "delete"
+      ],
+      "source_files": [
+        "services/platform-worker/internal/outbox/media_delete.go",
+        "workers/media-python/media_worker/server.py",
+        "workers/media-python/media_worker/storage.py"
+      ],
+      "controls": [
+        "outbox_lease",
+        "idempotency_key",
+        "signed_exact_receipt",
+        "delete_and_verify"
+      ],
+      "usage_guard_bypass_required": true,
+      "failure_behavior": "retry without reporting deletion complete; never pause rights takedown because a nonessential budget is exhausted"
+    },
+    {
+      "id": "public_media_delivery",
+      "region": "cloudflare",
+      "trigger": "user_request",
+      "automatic": false,
+      "default_enabled": false,
+      "budget_class": "request_path",
+      "object_operations": [
+        "get"
+      ],
+      "source_files": [
+        "infra/cloudflare/media-gateway/src/index.mjs",
+        "services/platform-api/internal/httpapi/media_delivery.go"
+      ],
+      "controls": [
+        "private_r2_binding",
+        "MEDIA_EDGE_GATEWAY_MODE",
+        "fail_closed_delivery_policy",
+        "default_image_fallback"
+      ],
+      "failure_behavior": "skip R2 and return the local default image with no-store"
+    }
+  ],
+  "scheduled_jobs_without_object_store_data_plane_access": [
+    "catalog_cache_revalidation",
+    "daily_default_image_inspection",
+    "email_delivery",
+    "history_archive",
+    "media_usage_analytics_observation"
+  ]
+}

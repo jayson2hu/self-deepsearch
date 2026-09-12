@@ -1,0 +1,208 @@
+log_format self_deepsearch '$time_iso8601 host=$host method=$request_method status=$status '
+                           'bytes=$body_bytes_sent request_time=$request_time upstream_time=$upstream_response_time';
+access_log /var/log/nginx/access.log self_deepsearch;
+
+map $http_cf_connecting_ip $forwarded_client_ip {
+    default $http_cf_connecting_ip;
+    ""      $remote_addr;
+}
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ""      close;
+}
+
+map $uri $display_cache_control {
+    default "public, max-age=300, s-maxage=300, stale-while-revalidate=60";
+    ~^/api(?:/|$) "private, no-store";
+    ~^/account(?:/|$) "private, no-store";
+    ~^/logout(?:/|$) "private, no-store";
+    ~^/(?:login|register|forgot-password|invite)(?:/|$) "private, no-store";
+    ~^/auth(?:/|$) "private, no-store";
+    ~^/search(?:/|$) "private, no-store";
+}
+
+map $request_method $display_method_cache_control {
+    default "private, no-store";
+    GET $display_cache_control;
+    HEAD $display_cache_control;
+}
+
+map $upstream_status $display_response_cache_control {
+    default "private, no-store";
+    ~^20[0-6]$ $display_method_cache_control;
+}
+
+# Do not replace the runtime stop response's no-store with the usual HTML TTL.
+map $upstream_http_x_media_delivery_mode $display_media_cache_control {
+    default $display_response_cache_control;
+    default_only "private, no-store";
+}
+
+server_tokens off;
+
+upstream display_web {
+    server display-web:3000;
+    keepalive 16;
+}
+
+upstream platform_api {
+    server platform-api:8080;
+    keepalive 16;
+}
+
+upstream ops_web {
+    server ops-web:3001;
+    keepalive 8;
+}
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 308 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    http2 on;
+    server_name _;
+    ssl_certificate /etc/nginx/tls/tls.crt;
+    ssl_certificate_key /etc/nginx/tls/tls.key;
+    return 444;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${DISPLAY_HOST};
+    ssl_certificate /etc/nginx/tls/tls.crt;
+    ssl_certificate_key /etc/nginx/tls/tls.key;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" always;
+
+    location ^~ /api/internal/ {
+        return 404;
+    }
+
+    location ^~ /_next/static/ {
+        proxy_pass http://display_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" always;
+    }
+
+    location / {
+        proxy_pass http://display_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header CF-Connecting-IP $forwarded_client_ip;
+        proxy_set_header X-Real-IP $forwarded_client_ip;
+        proxy_set_header X-Forwarded-For $forwarded_client_ip;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control $display_media_cache_control always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" always;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${API_HOST};
+    ssl_certificate /etc/nginx/tls/tls.crt;
+    ssl_certificate_key /etc/nginx/tls/tls.key;
+    client_max_body_size 2m;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'" always;
+    add_header Cache-Control "no-store" always;
+
+    location = /metrics {
+        return 404;
+    }
+
+    location ^~ /internal/ {
+        return 404;
+    }
+
+    location = /edge/v1/media-delivery-policy {
+        proxy_pass http://platform_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+    location ^~ /edge/ {
+        return 404;
+    }
+
+    location / {
+        proxy_pass http://platform_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header CF-Connecting-IP $forwarded_client_ip;
+        proxy_set_header X-Real-IP $forwarded_client_ip;
+        proxy_set_header X-Forwarded-For $forwarded_client_ip;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_hide_header Cache-Control;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${OPS_HOST};
+    ssl_certificate /etc/nginx/tls/tls.crt;
+    ssl_certificate_key /etc/nginx/tls/tls.key;
+    client_max_body_size 2m;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Cache-Control "private, no-store" always;
+
+    location / {
+        proxy_pass http://ops_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header CF-Connecting-IP $forwarded_client_ip;
+        proxy_set_header X-Real-IP $forwarded_client_ip;
+        proxy_set_header X-Forwarded-For $forwarded_client_ip;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_pass_header Content-Security-Policy;
+        proxy_hide_header Cache-Control;
+    }
+}

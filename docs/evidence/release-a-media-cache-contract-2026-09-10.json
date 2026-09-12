@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "generated_at": "2026-09-10T13:13:06.625Z",
+  "boundary": "Real Go processor and production Next.js; synthetic in-memory catalog; no PostgreSQL, dispatcher, SMTP, S3 or Cloudflare",
+  "checks": [
+    {
+      "name": "prime-real-next-cache",
+      "status": "passed",
+      "duration_ms": 4914,
+      "upstream_reads": {
+        "home": 1,
+        "work": 1,
+        "sitemap": 1
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "unchanged-without-invalidation",
+      "status": "passed",
+      "duration_ms": 76,
+      "upstream_reads": {
+        "home": 1,
+        "work": 1,
+        "sitemap": 1
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "wrong-signature-does-not-refresh",
+      "status": "passed",
+      "duration_ms": 4252,
+      "upstream_reads": {
+        "home": 1,
+        "work": 1,
+        "sitemap": 1
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "expired-signature-does-not-refresh",
+      "status": "passed",
+      "duration_ms": 4152,
+      "upstream_reads": {
+        "home": 1,
+        "work": 1,
+        "sitemap": 1
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "publication-refreshes-html-and-sitemap",
+      "status": "passed",
+      "duration_ms": 4232,
+      "upstream_reads": {
+        "home": 2,
+        "work": 2,
+        "sitemap": 2
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "media-only-change-remains-cached-without-event",
+      "status": "passed",
+      "duration_ms": 43,
+      "upstream_reads": {
+        "home": 2,
+        "work": 2,
+        "sitemap": 2
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "media-cache-purge-refreshes-home-and-detail",
+      "status": "passed",
+      "duration_ms": 3988,
+      "upstream_reads": {
+        "home": 3,
+        "work": 3,
+        "sitemap": 3
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 200,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "hidden-content-removed-from-all-surfaces",
+      "status": "passed",
+      "duration_ms": 4368,
+      "upstream_reads": {
+        "home": 4,
+        "work": 5,
+        "sitemap": 4
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 404,
+        "sitemap": 200
+      }
+    },
+    {
+      "name": "duplicate-event-remains-safe",
+      "status": "passed",
+      "duration_ms": 3923,
+      "upstream_reads": {
+        "home": 5,
+        "work": 7,
+        "sitemap": 5
+      },
+      "page_statuses": {
+        "home": 200,
+        "work": 404,
+        "sitemap": 200
+      }
+    }
+  ]
+}
