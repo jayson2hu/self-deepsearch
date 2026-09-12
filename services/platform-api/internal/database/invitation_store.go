@@ -299,7 +299,7 @@ RETURNING user_id::text, normalized_email, password_hash, role, account_status, 
 	}
 	if _, err := tx.Exec(ctx, `
 INSERT INTO platform.sessions (user_id, token_hash, created_at, expires_at, last_used_at)
-VALUES ($1::uuid, $2, $3, CASE WHEN $4 = 'user' THEN $5 ELSE $6 END, $3)`, user.ID, request.SessionHash, request.Now, role, request.UserSessionUntil, request.OperatorSessionUntil); err != nil {
+VALUES ($1::uuid, $2, $3, CASE WHEN $4 = 'user' THEN $5::timestamptz ELSE $6::timestamptz END, $3)`, user.ID, request.SessionHash, request.Now, role, request.UserSessionUntil, request.OperatorSessionUntil); err != nil {
 		return identity.User{}, fmt.Errorf("create invited session: %w", err)
 	}
 	if err := insertAudit(ctx, tx, user.ID, "user.invitation_accept", "user", user.ID,

@@ -1,0 +1,427 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "status": "passed",
+  "generated_at": "2026-09-12T05:39:37.696Z",
+  "timezone": "Asia/Shanghai",
+  "evidence_date": "2026-09-12",
+  "mode": "local-synthetic",
+  "target_origin": "local-random-loopback",
+  "browser_channel": "chromium",
+  "samples_per_route_after_warmup": 3,
+  "thresholds": {
+    "lcp_ms_strictly_less_than": 2500,
+    "mobile_cls_strictly_less_than": 0.1
+  },
+  "measurement": {
+    "network_throttling": "none",
+    "cache_state": "one warm-up navigation in the same browser context before samples",
+    "statistic": "median LCP; maximum mobile CLS",
+    "field_data": false,
+    "post_capture_cleanup": "after metrics are captured, wait up to 2s for same-origin document/fetch/xhr streams to settle before closing the page; cleanup time is excluded from reported metrics"
+  },
+  "synthetic_boundary": "Next.js standalone build with memory-only synthetic API; no Docker/PostgreSQL/SMTP/S3/R2/Cloudflare",
+  "failures": [],
+  "results": [
+    {
+      "route": {
+        "key": "display-home",
+        "path": "/"
+      },
+      "viewport": {
+        "key": "desktop",
+        "width": 1366,
+        "height": 900,
+        "isMobile": false,
+        "hasTouch": false
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "lcp_ms": 272,
+          "cls": 0.0015583242286765842,
+          "fcp_ms": 212,
+          "ttfb_ms": 29.200000762939453,
+          "dom_content_loaded_ms": 71.70000076293945,
+          "load_ms": 269.8000011444092,
+          "resource_count": 29,
+          "transfer_bytes": 15599,
+          "encoded_body_bytes": 157466
+        },
+        {
+          "sample": 2,
+          "lcp_ms": 332,
+          "cls": 0.0015583242286765842,
+          "fcp_ms": 256,
+          "ttfb_ms": 31,
+          "dom_content_loaded_ms": 204.69999885559082,
+          "load_ms": 310.79999923706055,
+          "resource_count": 29,
+          "transfer_bytes": 15597,
+          "encoded_body_bytes": 157464
+        },
+        {
+          "sample": 3,
+          "lcp_ms": 364,
+          "cls": 0.0015583242286765842,
+          "fcp_ms": 312,
+          "ttfb_ms": 37.20000076293945,
+          "dom_content_loaded_ms": 276.29999923706055,
+          "load_ms": 368.8999996185303,
+          "resource_count": 29,
+          "transfer_bytes": 15591,
+          "encoded_body_bytes": 157458
+        }
+      ],
+      "summary": {
+        "lcp_ms": {
+          "median": 332,
+          "min": 272,
+          "max": 364
+        },
+        "cls": {
+          "median": 0.00156,
+          "min": 0.00156,
+          "max": 0.00156
+        },
+        "fcp_ms": {
+          "median": 256,
+          "min": 212,
+          "max": 312
+        },
+        "ttfb_ms": {
+          "median": 31,
+          "min": 29.2,
+          "max": 37.2
+        },
+        "dom_content_loaded_ms": {
+          "median": 204.7,
+          "min": 71.7,
+          "max": 276.3
+        },
+        "load_ms": {
+          "median": 310.8,
+          "min": 269.8,
+          "max": 368.9
+        },
+        "transfer_bytes": {
+          "median": 15597,
+          "min": 15591,
+          "max": 15599
+        },
+        "encoded_body_bytes": {
+          "median": 157464,
+          "min": 157458,
+          "max": 157466
+        },
+        "resource_count": {
+          "median": 29,
+          "min": 29,
+          "max": 29
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    },
+    {
+      "route": {
+        "key": "work-detail",
+        "path": "/works/test-001-00000002"
+      },
+      "viewport": {
+        "key": "desktop",
+        "width": 1366,
+        "height": 900,
+        "isMobile": false,
+        "hasTouch": false
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "lcp_ms": 372,
+          "cls": 0.0005260002558116768,
+          "fcp_ms": 236,
+          "ttfb_ms": 113.70000076293945,
+          "dom_content_loaded_ms": 225.4000015258789,
+          "load_ms": 505.6000003814697,
+          "resource_count": 22,
+          "transfer_bytes": 8029,
+          "encoded_body_bytes": 152729
+        },
+        {
+          "sample": 2,
+          "lcp_ms": 196,
+          "cls": 0.0005260002558116768,
+          "fcp_ms": 196,
+          "ttfb_ms": 23.30000114440918,
+          "dom_content_loaded_ms": 90.5,
+          "load_ms": 246.89999961853027,
+          "resource_count": 28,
+          "transfer_bytes": 14452,
+          "encoded_body_bytes": 157352
+        },
+        {
+          "sample": 3,
+          "lcp_ms": 196,
+          "cls": 0.0005260002558116768,
+          "fcp_ms": 196,
+          "ttfb_ms": 38.10000038146973,
+          "dom_content_loaded_ms": 153.29999923706055,
+          "load_ms": 229.29999923706055,
+          "resource_count": 28,
+          "transfer_bytes": 14454,
+          "encoded_body_bytes": 157354
+        }
+      ],
+      "summary": {
+        "lcp_ms": {
+          "median": 196,
+          "min": 196,
+          "max": 372
+        },
+        "cls": {
+          "median": 0.00053,
+          "min": 0.00053,
+          "max": 0.00053
+        },
+        "fcp_ms": {
+          "median": 196,
+          "min": 196,
+          "max": 236
+        },
+        "ttfb_ms": {
+          "median": 38.1,
+          "min": 23.3,
+          "max": 113.7
+        },
+        "dom_content_loaded_ms": {
+          "median": 153.3,
+          "min": 90.5,
+          "max": 225.4
+        },
+        "load_ms": {
+          "median": 246.9,
+          "min": 229.3,
+          "max": 505.6
+        },
+        "transfer_bytes": {
+          "median": 14452,
+          "min": 8029,
+          "max": 14454
+        },
+        "encoded_body_bytes": {
+          "median": 157352,
+          "min": 152729,
+          "max": 157354
+        },
+        "resource_count": {
+          "median": 28,
+          "min": 22,
+          "max": 28
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    },
+    {
+      "route": {
+        "key": "display-home",
+        "path": "/"
+      },
+      "viewport": {
+        "key": "mobile",
+        "width": 390,
+        "height": 844,
+        "isMobile": true,
+        "hasTouch": true
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "lcp_ms": 180,
+          "cls": 0,
+          "fcp_ms": 168,
+          "ttfb_ms": 21.19999885559082,
+          "dom_content_loaded_ms": 87.5,
+          "load_ms": 222.29999923706055,
+          "resource_count": 29,
+          "transfer_bytes": 15595,
+          "encoded_body_bytes": 157462
+        },
+        {
+          "sample": 2,
+          "lcp_ms": 184,
+          "cls": 0,
+          "fcp_ms": 168,
+          "ttfb_ms": 12.799999237060547,
+          "dom_content_loaded_ms": 248.19999885559082,
+          "load_ms": 248.29999923706055,
+          "resource_count": 29,
+          "transfer_bytes": 15600,
+          "encoded_body_bytes": 157467
+        },
+        {
+          "sample": 3,
+          "lcp_ms": 280,
+          "cls": 0,
+          "fcp_ms": 208,
+          "ttfb_ms": 15.399999618530273,
+          "dom_content_loaded_ms": 51.89999961853027,
+          "load_ms": 272.8999996185303,
+          "resource_count": 29,
+          "transfer_bytes": 15592,
+          "encoded_body_bytes": 157459
+        }
+      ],
+      "summary": {
+        "lcp_ms": {
+          "median": 184,
+          "min": 180,
+          "max": 280
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "fcp_ms": {
+          "median": 168,
+          "min": 168,
+          "max": 208
+        },
+        "ttfb_ms": {
+          "median": 15.4,
+          "min": 12.8,
+          "max": 21.2
+        },
+        "dom_content_loaded_ms": {
+          "median": 87.5,
+          "min": 51.9,
+          "max": 248.2
+        },
+        "load_ms": {
+          "median": 248.3,
+          "min": 222.3,
+          "max": 272.9
+        },
+        "transfer_bytes": {
+          "median": 15595,
+          "min": 15592,
+          "max": 15600
+        },
+        "encoded_body_bytes": {
+          "median": 157462,
+          "min": 157459,
+          "max": 157467
+        },
+        "resource_count": {
+          "median": 29,
+          "min": 29,
+          "max": 29
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    },
+    {
+      "route": {
+        "key": "work-detail",
+        "path": "/works/test-001-00000002"
+      },
+      "viewport": {
+        "key": "mobile",
+        "width": 390,
+        "height": 844,
+        "isMobile": true,
+        "hasTouch": true
+      },
+      "samples": [
+        {
+          "sample": 1,
+          "lcp_ms": 144,
+          "cls": 0,
+          "fcp_ms": 140,
+          "ttfb_ms": 24.69999885559082,
+          "dom_content_loaded_ms": 195.69999885559082,
+          "load_ms": 195.79999923706055,
+          "resource_count": 28,
+          "transfer_bytes": 14455,
+          "encoded_body_bytes": 157355
+        },
+        {
+          "sample": 2,
+          "lcp_ms": 148,
+          "cls": 0,
+          "fcp_ms": 148,
+          "ttfb_ms": 18.700000762939453,
+          "dom_content_loaded_ms": 200.70000076293945,
+          "load_ms": 201,
+          "resource_count": 28,
+          "transfer_bytes": 14460,
+          "encoded_body_bytes": 157360
+        },
+        {
+          "sample": 3,
+          "lcp_ms": 220,
+          "cls": 0,
+          "fcp_ms": 220,
+          "ttfb_ms": 30,
+          "dom_content_loaded_ms": 110.70000076293945,
+          "load_ms": 277.3000011444092,
+          "resource_count": 28,
+          "transfer_bytes": 14458,
+          "encoded_body_bytes": 157358
+        }
+      ],
+      "summary": {
+        "lcp_ms": {
+          "median": 148,
+          "min": 144,
+          "max": 220
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "fcp_ms": {
+          "median": 148,
+          "min": 140,
+          "max": 220
+        },
+        "ttfb_ms": {
+          "median": 24.7,
+          "min": 18.7,
+          "max": 30
+        },
+        "dom_content_loaded_ms": {
+          "median": 195.7,
+          "min": 110.7,
+          "max": 200.7
+        },
+        "load_ms": {
+          "median": 201,
+          "min": 195.8,
+          "max": 277.3
+        },
+        "transfer_bytes": {
+          "median": 14458,
+          "min": 14455,
+          "max": 14460
+        },
+        "encoded_body_bytes": {
+          "median": 157358,
+          "min": 157355,
+          "max": 157360
+        },
+        "resource_count": {
+          "median": 28,
+          "min": 28,
+          "max": 28
+        }
+      },
+      "failures": [],
+      "status": "passed"
+    }
+  ]
+}

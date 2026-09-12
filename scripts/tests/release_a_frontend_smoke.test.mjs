@@ -140,10 +140,12 @@ test("JSON-LD helper rejects raw script-closing content", () => {
 });
 
 test("standalonePaths points at both source and staged asset trees", () => {
-  const paths = standalonePaths("display-web", "C:\\repo");
-  assert.equal(paths.server, "C:\\repo\\apps\\display-web\\.next\\standalone\\apps\\display-web\\server.js");
-  assert.equal(paths.targetStatic, "C:\\repo\\apps\\display-web\\.next\\standalone\\apps\\display-web\\.next\\static");
-  assert.equal(paths.targetPublic, "C:\\repo\\apps\\display-web\\.next\\standalone\\apps\\display-web\\public");
+  const repositoryRoot = path.join(os.tmpdir(), "release-a-paths");
+  const paths = standalonePaths("display-web", repositoryRoot);
+  const standaloneRoot = path.join(repositoryRoot, "apps", "display-web", ".next", "standalone", "apps", "display-web");
+  assert.equal(paths.server, path.join(standaloneRoot, "server.js"));
+  assert.equal(paths.targetStatic, path.join(standaloneRoot, ".next", "static"));
+  assert.equal(paths.targetPublic, path.join(standaloneRoot, "public"));
 });
 
 test("prepareStandaloneAssets reports only directories created by the runner", async (context) => {

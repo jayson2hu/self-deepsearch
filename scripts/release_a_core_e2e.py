@@ -134,7 +134,7 @@ def execute(args: argparse.Namespace, report: dict[str, Any]) -> None:
             process = subprocess.Popen(
                 [str(api_binary)], cwd=ROOT, env=environment,
                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
             try:
                 readiness_client = email.ReleaseAClient(api_base, MAILPIT, ORIGIN, 2)

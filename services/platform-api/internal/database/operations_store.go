@@ -975,7 +975,7 @@ RETURNING publication_id::text`, input.EntityType, entityID, revisionID, input.C
 	}
 	if _, err := tx.Exec(ctx, `
 INSERT INTO platform.outbox_events (aggregate_type, aggregate_id, event_type, payload, dedupe_key)
-VALUES ($1, $2::uuid, 'publication_changed', jsonb_build_object('entity_type', $1, 'entity_id', $2, 'slug', $3), $4)
+VALUES ($1::text, $2::uuid, 'publication_changed', jsonb_build_object('entity_type', $1::text, 'entity_id', $2::uuid, 'slug', $3::text), $4)
 ON CONFLICT (event_type, dedupe_key) DO NOTHING`, input.EntityType, entityID, input.CanonicalSlug, revisionID); err != nil {
 		return operations.Entity{}, fmt.Errorf("enqueue publication side effects: %w", err)
 	}
@@ -1018,7 +1018,7 @@ RETURNING current_revision_id::text, canonical_slug`, entityType, entityID, now)
 	}
 	if _, err := tx.Exec(ctx, `
 INSERT INTO platform.outbox_events (aggregate_type, aggregate_id, event_type, payload, dedupe_key)
-VALUES ($1, $2::uuid, 'publication_hidden', jsonb_build_object('entity_type', $1, 'entity_id', $2), $3)
+VALUES ($1::text, $2::uuid, 'publication_hidden', jsonb_build_object('entity_type', $1::text, 'entity_id', $2::uuid), $3)
 ON CONFLICT (event_type, dedupe_key) DO NOTHING`, entityType, entityID, revisionID+":"+now.Format(time.RFC3339Nano)); err != nil {
 		return operations.Entity{}, fmt.Errorf("enqueue hide side effects: %w", err)
 	}
@@ -1189,28 +1189,28 @@ SELECT metadata.schema_version,
        (SELECT count(*) FROM platform.outbox_events WHERE status IN ('pending', 'retry', 'running')),
        (SELECT count(*) FROM platform.outbox_events WHERE status = 'dead'),
        (SELECT coalesce(sum(byte_size), 0) FROM platform.media_objects WHERE object_status <> 'deleted'),
-       (SELECT extract(epoch FROM ($1 - max(coalesce(restore_verified_at, copied_at, completed_at))))
+       (SELECT extract(epoch FROM ($1::timestamptz - max(coalesce(restore_verified_at, copied_at, completed_at))))
         FROM audit.backup_runs WHERE backup_status = 'verified'),
-       (SELECT extract(epoch FROM ($1 - max(completed_at)))
+       (SELECT extract(epoch FROM ($1::timestamptz - max(completed_at)))
         FROM audit.media_reconciliation_runs WHERE run_status = 'completed'),
        coalesce((SELECT missing_s3_count::bigint + corrupt_s3_count + missing_backup_count +
                         corrupt_backup_count + orphan_s3_count + orphan_backup_count
                  FROM audit.media_reconciliation_runs
                  WHERE run_status = 'completed' ORDER BY completed_at DESC LIMIT 1), 0),
        (SELECT count(*) FROM audit.media_reconciliation_runs
-        WHERE run_status = 'failed' AND started_at >= $1 - interval '24 hours'),
-       (SELECT greatest(0, extract(epoch FROM ($1 - completed_at)))
+        WHERE run_status = 'failed' AND started_at >= $1::timestamptz - interval '24 hours'),
+       (SELECT greatest(0, extract(epoch FROM ($1::timestamptz - completed_at)))
         FROM audit.media_inspection_runs WHERE run_status = 'completed' ORDER BY completed_at DESC, run_id DESC LIMIT 1),
        coalesce((SELECT publication_issues FROM audit.media_inspection_runs
         WHERE run_status = 'completed' ORDER BY completed_at DESC, run_id DESC LIMIT 1), 0),
        coalesce((SELECT default_failures FROM audit.media_inspection_runs
         WHERE run_status = 'completed' ORDER BY completed_at DESC, run_id DESC LIMIT 1), 0),
        (SELECT count(*) FROM audit.media_inspection_runs
-        WHERE run_status = 'failed' AND completed_at >= $1 - interval '24 hours'),
+        WHERE run_status = 'failed' AND completed_at >= $1::timestamptz - interval '24 hours'),
        coalesce((SELECT sum(search_requests) FROM platform.search_metrics_hourly
-        WHERE hour_bucket >= date_trunc('hour', $1 AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' - interval '24 hours'), 0),
+        WHERE hour_bucket >= date_trunc('hour', $1::timestamptz AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' - interval '24 hours'), 0),
        coalesce((SELECT sum(zero_result_requests) FROM platform.search_metrics_hourly
-        WHERE hour_bucket >= date_trunc('hour', $1 AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' - interval '24 hours'), 0)
+        WHERE hour_bucket >= date_trunc('hour', $1::timestamptz AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' - interval '24 hours'), 0)
 FROM platform.system_metadata metadata WHERE singleton`, now).Scan(&result.SchemaVersion, &result.PendingReviewTasks,
 		&result.ReviewingRevisions, &result.PendingOutboxEvents, &result.FailedOutboxEvents,
 		&result.MediaBytes, &result.VerifiedBackupAgeSeconds, &result.MediaReconcileAgeSeconds,
@@ -1374,7 +1374,7 @@ RETURNING media_object_id::text`,
 		if _, err := tx.Exec(ctx, `
 INSERT INTO platform.media_derivations (
     parent_object_id, child_object_id, format, parameters, tool_version
-) VALUES ($1::uuid, $2::uuid, 'webp', jsonb_build_object('rendition', $3), $4)`,
+) VALUES ($1::uuid, $2::uuid, 'webp', jsonb_build_object('rendition', $3::text), $4)`,
 			objectIDs["master"], objectIDs[rendition], rendition, input.ToolVersion); err != nil {
 			return operations.MediaManifest{}, fmt.Errorf("create media derivation: %w", err)
 		}
@@ -1393,7 +1393,7 @@ RETURNING entity_media_id::text`, input.EntityType, input.EntityID, result.Asset
 	if _, err := tx.Exec(ctx, `
 INSERT INTO platform.outbox_events (aggregate_type, aggregate_id, event_type, payload, dedupe_key)
 VALUES ($1, $2::uuid, 'cache_purge',
-        jsonb_build_object('entity_type', $1, 'entity_id', $2, 'asset_id', $3::text), 'media-publish:' || $3::text)
+        jsonb_build_object('entity_type', $1::text, 'entity_id', $2::uuid, 'asset_id', $3::text), 'media-publish:' || $3::text)
 ON CONFLICT (event_type, dedupe_key) DO NOTHING`, input.EntityType, input.EntityID, result.AssetID); err != nil {
 		return operations.MediaManifest{}, fmt.Errorf("enqueue media publication refresh: %w", err)
 	}
@@ -1611,7 +1611,7 @@ ORDER BY asset.asset_id`, entityID, entityType)
 	}
 	_, err = tx.Exec(ctx, `
 INSERT INTO platform.outbox_events (aggregate_type, aggregate_id, event_type, payload, dedupe_key)
-VALUES ($1, $2::uuid, 'publication_takedown', jsonb_build_object('entity_type', $1, 'entity_id', $2), $3)
+VALUES ($1::text, $2::uuid, 'publication_takedown', jsonb_build_object('entity_type', $1::text, 'entity_id', $2::uuid), $3)
 ON CONFLICT (event_type, dedupe_key) DO NOTHING`, entityType, entityID, takedownID)
 	if err != nil {
 		return fmt.Errorf("enqueue takedown side effects: %w", err)

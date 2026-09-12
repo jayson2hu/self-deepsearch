@@ -32,7 +32,15 @@ class NginxContractTests(unittest.TestCase):
 
     def test_template_filter_is_limited_to_host_variables(self) -> None:
         compose = (CONFIG.parents[1] / "compose" / "japan" / "compose.yaml").read_text(encoding="utf-8")
-        self.assertIn("NGINX_ENVSUBST_FILTER: '$${DISPLAY_HOST} $${API_HOST} $${OPS_HOST}'", compose)
+        match = re.search(r"NGINX_ENVSUBST_FILTER: '([^']+)'", compose)
+        self.assertIsNotNone(match)
+        # Compose escapes the regex end anchor as $$; the Nginx entrypoint
+        # matches variable names with awk before passing them to envsubst.
+        pattern = re.compile(match.group(1).replace("$$", "$"))
+        for variable in ("DISPLAY_HOST", "API_HOST", "OPS_HOST"):
+            self.assertIsNotNone(pattern.search(variable), variable)
+        for variable in ("HOSTNAME", "PATH", "host", "uri", "DISPLAY_HOST_SECRET", "OTHER_API_HOST"):
+            self.assertIsNone(pattern.search(variable), variable)
 
     def test_internal_revalidation_is_not_public(self) -> None:
         display = self.server("DISPLAY_HOST")

@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
-import path from "node:path";
 import { createCatalog, createIsolatedStandalone, removeIsolatedRuntime, startCatalog } from "../../scripts/release_a_cache_contract.mjs";
 import { ensureArtifacts, findFreePort, REPOSITORY_ROOT, startChild, stopChild, waitForHTTP } from "../../scripts/release_a_frontend_smoke.mjs";
 
@@ -99,7 +98,7 @@ test("media stop suppresses runtime HTML and browser image requests, then recove
     await expect(stopped.page.getByRole("img", { name: "TEST-CACHE 作品图" })).toHaveAttribute("src", "/default-work.svg");
     await expect(stopped.page.getByRole("link", { name: "登录后收藏、隐藏或纠错" })).toBeVisible();
     expect(stopped.remote).toEqual([]);
-    await stopped.page.screenshot({ path: path.join(REPOSITORY_ROOT, "docs/evidence", `release-a-media-delivery-${info.project.name}-2026-09-11.png`), fullPage: true });
+    await stopped.page.screenshot({ path: info.outputPath("media-delivery-stopped.png"), fullPage: true });
     await stopped.page.context().close();
     const stoppedLogin = await newPage();
     await stoppedLogin.page.goto(`${origin}/login`);

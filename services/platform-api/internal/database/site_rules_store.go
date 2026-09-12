@@ -33,7 +33,7 @@ func (store *Store) UpdateDiscoveryMixRule(ctx context.Context, input operations
 	}
 	command, err := tx.Exec(ctx, `
 UPDATE platform.site_content_rules
-SET value = jsonb_build_object('work_slots', $1, 'performer_slots', $2, 'repeat_window', $3),
+SET value = jsonb_build_object('work_slots', $1::integer, 'performer_slots', $2::integer, 'repeat_window', $3::integer),
     enabled = $4, updated_by = $5::uuid, updated_at = $6
 WHERE rule_key = 'home.discovery_mix'`, input.WorkSlots, input.PerformerSlots, input.RepeatWindow,
 		input.Enabled, actorID, now)

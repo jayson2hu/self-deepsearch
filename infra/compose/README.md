@@ -15,6 +15,8 @@ IMAGE_PREFIX='registry.example.com/self-deepsearch' \
 docker buildx bake release-a --load
 ```
 
+构建网络无法访问 Go 官方代理时，可显式附加 `--set 'platform-*.args.GOPROXY=https://goproxy.cn'`；Python 依赖源可用 `--set 'media-python.args.PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/'` 显式覆盖。这些参数只影响构建阶段，Dockerfile 默认仍使用官方源。
+
 只有部署账号已登录私有 registry 时才把 `--load` 改成 `--push`。推送后将生成的五个不可变标签分别写入日本/北京私有 env，并再次执行环境检查。`.dockerignore` 排除所有 env、证书/私钥、开发 metrics token、依赖缓存、测试产物和运行数据；不要在 Dockerfile 中临时 `COPY .env` 绕过该边界。
 
 生产命令使用 `docker compose --env-file <服务器私有 .env> ...` 为 Compose 提供变量插值。该选项不会自动把整份文件注入容器；两套生产模板禁止使用服务级 `env_file`，每个服务只通过 `environment` 接收运行所需的最小变量集合。修改模板时必须同步运行安全合同测试，避免公开前端、北京 Worker 或媒体服务获得无关凭证。
@@ -30,6 +32,8 @@ docker buildx bake release-a --load
 租约加固无需新增迁移，但须在上线前通过独立 PostgreSQL Worker 合同，并替换全部日本 outbox 消费者，避免新旧逻辑并跑。允许重试不等于 exactly-once：远端可能已执行但回执丢失，缓存和媒体接收端仍须保持幂等。详见 `docs/RELEASE_A_RUNBOOK.md` 的租约与重试说明。
 
 `edge` profile 分别绑定 `DISPLAY_HOST`、`API_HOST` 和 `OPS_HOST`，使用服务器私有的 Cloudflare Origin Certificate。公开目录只有成功的 GET/HEAD HTML 默认缓存 5 分钟，POST/PUT/PATCH/DELETE、4xx/5xx、账号、搜索、API 和后台响应强制 `no-store`；只给 `/_next/static/` 添加 immutable 长缓存，拒绝公开访问 `/api/internal/`、API `/metrics` 和未知 TLS Host。Nginx 访问日志不记录客户端 IP、URL 路径或查询参数。
+
+CI 在无后端服务的 `nginx -t` 检查中额外加载 `japan/compose.nginx-check.yaml`，为三个 upstream 提供仅检查用的回环地址。该覆层不能用于实际启动 edge；生产始终由 Compose 网络解析真实服务地址。
 
 生产源站防火墙必须只允许 Cloudflare 公布的出口网段访问 80/443；只有满足该前提，`CF-Connecting-IP` 才能作为真实客户端 IP 传给 API。`OPS_HOST` 在测试期可以登录访问，正式开放前必须再由 Cloudflare Access、VPN 或固定 IP 白名单限制，不能只依赖后台账号密码。TLS 证书和私钥文件只保存在服务器，不能提交到仓库。
 
@@ -49,4 +53,4 @@ API 从 pgxpool 内存统计导出连接池 acquired/idle/total/max、利用率�
 
 北京模板按 2C8G 主机设置独立上限：Go Worker 为 0.20 CPU/192 MiB/128 pids，Python 图片服务为 1.25 CPU/2 GiB/256 pids，常驻合计最多 1.45 CPU、约 2.19 GiB。剩余资源留给操作系统、Docker、SFTP/备份及人工图片处理峰值；两项服务同样使用 10 MiB × 3 的 `json-file` 轮转。40MP 图片上限不代表 2 GiB 一定足够，目标 Linux 仍须用最大允许样本和并发删除/对账实测 RSS；不得为绕过 OOM 直接取消限制。
 
-日本 Worker 新增 `MEDIA_RECONCILE_USAGE_GUARD=off|enforce`，默认 off。Enforce 依赖 observe 和启用对账，只控制定时全量扫描的发起，不停止必要删除或图片展示；无需新迁移/服务。更新全部日本 Worker 和监控后，按[准入手册](../../docs/MEDIA_TASK_ADMISSION.md)验证，再决定是否显式开启。回退会移除该准入，须先暂停自动对账调度，不能只将 off 当作安全恢复。本轮没有运行 Docker 配置/镜像构建或真实服务。
+日本 Worker 新增 `MEDIA_RECONCILE_USAGE_GUARD=off|enforce`，默认 off。Enforce 依赖 observe 和启用对账，只控制定时全量扫描的发起，不停止必要删除或图片展示；无需新迁移/服务。更新全部日本 Worker 和监控后，按[准入手册](../../docs/MEDIA_TASK_ADMISSION.md)验证，再决定是否显式开启。回退会移除该准入，须先暂停自动对账调度，不能只将 off 当作安全恢复。该准入功能最初提交时未运行 Docker 验收；2026-09-12 已在 Ubuntu 完成三套 Compose 校验、实际 `nginx -t`、五个 Release A 镜像构建与非 root 健康检查，并验证两站同源读接口连通真实 API 和 PostgreSQL，详见[本地 Docker 验收证据](../../docs/evidence/release-a-docker-ubuntu-2026-09-12.json)。验收镜像来自修复后的未提交工作树，未推送 registry，也不代表跨区生产部署已验收。

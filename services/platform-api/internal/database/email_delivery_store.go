@@ -140,7 +140,7 @@ UPDATE platform.email_delivery_state
 SET consecutive_failures = consecutive_failures + 1,
     circuit_open_until = CASE
         WHEN consecutive_failures + 1 >= $1
-        THEN $2 + ($3 * interval '1 second')
+        THEN $2::timestamptz + ($3::bigint * interval '1 second')
         ELSE circuit_open_until
     END,
     updated_at = $2

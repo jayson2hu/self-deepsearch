@@ -16,14 +16,17 @@
 - `docker-bake.hcl`：统一构建 API、Worker、公开站、运营后台和媒体服务 5 个镜像；镜像写入 OCI 版本/源码 revision 标签，CI 构建后保留 image inspect 清单但不自动推送。
 
 当前进度和未验收项见 [docs/PROGRESS.md](./docs/PROGRESS.md)，本地联调和运营流程见 [docs/RELEASE_A_RUNBOOK.md](./docs/RELEASE_A_RUNBOOK.md)。
+
+2026-09-12 Ubuntu 验收已实际启动隔离 Docker PostgreSQL 16 与 Mailpit，迁移/权限、API 与 Worker SQL 合同、账号邮件及异人审核发布闭环、本地备份恢复均通过。此次修复了真实 SQL 参数类型、种子守卫、Linux 兼容性及独立镜像构建问题；完整结果与外部剩余门槛见[Ubuntu 验收记录](./docs/evidence/release-a-ubuntu-acceptance-2026-09-12.md)。下方较早日期证据保留其当时范围，公网结论仍以最新就绪审计为准。
+
 新增[上传前用量准入与自动暂停](./docs/MEDIA_UPLOAD_ADMISSION.md)：北京每次 Listing/PUT 前通过私有签名接口读取日本现有用量状态；拒绝或不可用时阻断操作并持久记录系统暂停，旧恢复快照失效。默认 off，不新增服务/迁移，不冒充管理员、不清 pending、不自动恢复。此保护由下一次操作触发，不能撤销在途 SDK 请求，也不是计费保证；[本轮证据](./docs/evidence/release-a-media-upload-admission-2026-09-11.md)仅覆盖离线合同和本机 HTTP。日本 API/页面已另接默认 off 的动态默认图执行，Cloudflare 私有 R2 网关代码已补已知 URL/旧对象缓存入口；存储账单口径和网关真实部署验收仍未完成。
 
 [后台授权上传控制队列](./docs/MEDIA_UPLOAD_QUEUE.md)：admin/owner 近期认证后提交五分钟请求，日本 Go Worker 保存派发记录，再调用[北京执行端](./docs/MEDIA_UPLOAD_CONTROL.md)；回执丢失保持待确认，后续签名状态可确认且不重复执行。v21 增加两张表，复用现有服务/连接池，默认 off；不清 pending，不由用量复核自动恢复。后台 `/media/upload-control` 已接入状态、独立暂停/恢复确认和回执历史；原请求重试不换键，状态缺失或过期时禁止新操作。[页面证据](./docs/evidence/release-a-media-upload-ui-2026-09-11.md)与[队列证据](./docs/evidence/release-a-media-upload-queue-2026-09-11.md)保留历史验证范围，不替代真实环境验收。
 图片容量检查已覆盖共享锁、两桶全部当前对象、未完成 multipart 部件、未知写入及 manifest 写入失败后的人工核对；一次扫描共享 256 个列表请求预算，异常或预算耗尽 fail-closed。需要升级北京共享状态卷与只读 multipart 权限，见[上传容量与恢复](./docs/MEDIA_UPLOAD_CAPACITY.md)。[主动默认图执行端](./docs/MEDIA_DELIVERY_MODE.md)现同时支持最高优先级人工 `default_only` 与可选动态 `enforce`：Go API 按请求读取粘性用量状态去图，Next Proxy 对每个文档请求读取私有策略，以 CSP 立即阻断旧 ISR HTML 的远程图片；任一依赖错误 fail-closed。新增默认关闭的[Cloudflare 图片边缘网关](./docs/MEDIA_EDGE_GATEWAY.md)，以私有 R2 binding 在对象缓存之前执行同一策略，已知媒体 URL、旧边缘对象和缺失源对象都会受控或回退默认图，不新增日本常驻服务。Go Worker 的[一次性用量查询](./docs/MEDIA_USAGE_OBSERVATION.md)现同时报告账户操作量和全部已观测 bucket 的 UTC 日峰值/GB-month 整数估算；只有显式确认全账户 Standard 类别后才比较 10 GB-month 免费额度。持久观察器仍只保存操作量，高水位和复核证据默认 off，未增加 Schema；[人工复核与账期切换](./docs/MEDIA_USAGE_REVIEWS.md)不会被较低新样本自动清除。Analytics 不是账单，供应商版本历史、未返回 bucket/共享应用、真实类别/水位、网关 R2 私有化和 purge 仍待验证，不能据此承诺零费用。
-图片模块尚未整体验收：已实现主图查询和并发安全替换 API、后台独立确认、共享旧资产保留、非共享旧公开图删除排队与私有母版 30 天保留，接入已有逐对象删除和权利下架提前机制。新登记接口仍只新增，不隐式覆盖。作品固定 1 张位置 0 主图和最多 3 张位置 1-3 的精选图，位置不可重复；精选图要求先有主图，公开读取不把只有精选图的数据提升为封面。当前 Schema 为 v21；真实 PostgreSQL/双 bucket/北京副本/缓存生命周期仍待验证，不能当作已上线。见[主图替换证据](./docs/evidence/release-a-media-primary-2026-09-10.md)和[展示槽位证据](./docs/evidence/release-a-media-display-slots-2026-09-11.md)。
+图片模块尚未整体验收：已实现主图查询和并发安全替换 API、后台独立确认、共享旧资产保留、非共享旧公开图删除排队与私有母版 30 天保留，接入已有逐对象删除和权利下架提前机制。新登记接口仍只新增，不隐式覆盖。作品固定 1 张位置 0 主图和最多 3 张位置 1-3 的精选图，位置不可重复；精选图要求先有主图，公开读取不把只有精选图的数据提升为封面。当前 Schema 为 v21；本机 PostgreSQL 合同已通过；真实双 bucket、北京副本和缓存完整生命周期仍待目标环境验证，不能当作已上线。见[主图替换证据](./docs/evidence/release-a-media-primary-2026-09-10.md)和[展示槽位证据](./docs/evidence/release-a-media-display-slots-2026-09-11.md)。
 当前 go/no-go 证据矩阵见 [docs/RELEASE_A_READINESS.md](./docs/RELEASE_A_READINESS.md)。
-当前代码的统一预检、production build、性能/HTTP P95 和 desktop/mobile 78 项浏览器回归见[全量本地回归证据](./docs/evidence/release-a-local-regression-2026-09-11.md)；该证据使用内存合成 API，不替代真实 PostgreSQL、邮件、R2/Cloudflare 或目标服务器。逐项需求状态见[Release A 需求与验收矩阵](./docs/RELEASE_A_REQUIREMENTS_MATRIX.md)。
-图片对账已补完整响应确认、样本体积控制和拿锁后调度快照，实际 Go→Python 对账合同已有本地证据；每日注册公开状态与两张默认图 HTTP 内容检查、独立审计及后台告警已接入；真实 SQL、bucket 权限和完整部署尚未验收。见[对账验证](./docs/evidence/release-a-reconciliation-2026-09-10.md)。
+9 月 11 日统一预检、production build、性能/HTTP P95 和 desktop/mobile 78 项浏览器回归保留为[历史证据](./docs/evidence/release-a-local-regression-2026-09-11.md)。最新 [Ubuntu 前端验收](./docs/evidence/release-a-frontend-ubuntu-2026-09-12.json)已通过 82/82 浏览器、12 张视觉截图、两站构建/HTTP 与性能门槛，生产及全量 npm 依赖均 0 漏洞；本轮修复了 Ubuntu 桌面广告文字重叠及 E2E 覆盖历史截图的问题。这些前端证据使用内存合成 API，不替代真实 PostgreSQL、邮件、R2/Cloudflare 或目标服务器。逐项需求状态见[Release A 需求与验收矩阵](./docs/RELEASE_A_REQUIREMENTS_MATRIX.md)。
+图片对账已补完整响应确认、样本体积控制和拿锁后调度快照，实际 Go→Python 对账合同已有本地证据；每日注册公开状态与两张默认图 HTTP 内容检查、独立审计及后台告警已接入；本机真实 SQL 合同已通过，bucket 权限和目标部署仍待验收。见[对账验证](./docs/evidence/release-a-reconciliation-2026-09-10.md)。
 Release A 威胁模型、风险登记和安全放行条件见 [docs/RELEASE_A_SECURITY_REVIEW.md](./docs/RELEASE_A_SECURITY_REVIEW.md)。
 定时全量图片对账已接入[用量准入](./docs/MEDIA_TASK_ADMISSION.md)：独立开关默认 off；显式启用后在高风险、缺失/过期/复核状态下不发起跨区扫描，权利删除继续运行。不控制上传、页面图片或直连 URL，也不增加服务、数据库表或 Analytics 请求。
 [对象存储任务策略](./docs/MEDIA_STORAGE_TASK_POLICY.md)已把 Release A 的上传、定时全量对账、权利删除和公开读取四类数据面入口登记为机器可检查清单；当前唯一非必要自动对象任务是全量对账。以后新增直接 SDK 客户端或自动任务必须先登记分类与准入，不能绕过额度边界。
@@ -70,7 +73,7 @@ npm run test:e2e:release-a
 
 另可运行 `npm run test:cache:release-a`，用真实 Go Worker 签名处理器调用 Next 的内部刷新接口，验证首页、详情和 sitemap 的内容变化、仅新增图片时的缓存刷新、错误/过期签名拒绝及下架。需要 Go 与已构建前端；不启动 Docker，目录 API 仍为合成替身。脚本使用独立临时 standalone 副本，不污染预览缓存，证据写入 `docs/evidence/release-a-cache-contract-local.json`。这项合同已纳入统一预检及 CI web 的必过门槛。
 
-也可以让脚本自动先执行构建：`npm run smoke:frontend:release-a:build`。mock API 只服务合成资料，不访问真实外部服务；结构化数据用包含 `</script>` 攻击片段的标题验证安全转义。Playwright 使用有状态 mock，在真实浏览器覆盖番号搜索、账号、偏好、人工审核发布、邀请与用户权限、按 Request ID 查询最小披露审计时间线、反馈三角色流转、CSV 错误文件安全下载，以及权利请求登记→editor 只读→admin 近期密码执行→公开搜索撤下；目前共 39 个场景，在桌面与移动视口执行 78 项，包含公开账号页与后台 CSP nonce、用量复核、上传控制的独立确认、待处理/有效回执、响应丢失同键重试、旧状态过期与角色隔离。该证据不声明 S3/R2 物理删除已完成。本地默认使用已安装 Chrome，CI 安装 Chromium，并在 E2E 前强制生成 12 张视觉截图、执行浏览器 LCP/CLS 与首页/搜索 HTTP P95 门槛，上传 14 天证据包；测试不会启动或写入 PostgreSQL、Mailpit、对象存储，也不会替代真实业务联调。
+也可以让脚本自动先执行构建：`npm run smoke:frontend:release-a:build`。mock API 只服务合成资料，不访问真实外部服务；结构化数据用包含 `</script>` 攻击片段的标题验证安全转义。Playwright 使用有状态 mock，在真实浏览器覆盖番号搜索、账号、偏好、人工审核发布、邀请与用户权限、按 Request ID 查询最小披露审计时间线、反馈三角色流转、CSV 错误文件安全下载，以及权利请求登记→editor 只读→admin 近期密码执行→公开搜索撤下；目前共 41 个场景，在桌面与移动视口执行 82 项，包含公开账号页与后台 CSP nonce、用量复核、上传控制的独立确认、待处理/有效回执、响应丢失同键重试、旧状态过期与角色隔离。该证据不声明 S3/R2 物理删除已完成。本地默认使用已安装 Chrome，CI 安装 Chromium，并在 E2E 前强制生成 12 张视觉截图、执行浏览器 LCP/CLS 与首页/搜索 HTTP P95 门槛，上传 14 天证据包；测试不会启动或写入 PostgreSQL、Mailpit、对象存储，也不会替代真实业务联调。
 
 日常开发可直接在仓库根目录分别运行 `npm run dev:display` 和 `npm run dev:ops`，然后使用 `http://127.0.0.1:3000/`（公开站）与 `http://127.0.0.1:3001/login`（运营后台）。不要直接双击 `index.html` 或 `work-detail.html` 使用 `file://` 联调；这会绕过 Next.js 的同源 API 代理，页面数据和登录请求无法正常工作。根目录脚本使用默认端口即可，若要改端口请在对应应用目录执行 `npm run dev -- --port <端口>`。
 
@@ -83,7 +86,7 @@ $env:PYTHON='C:\path\to\python.exe' # Python 已在 PATH 时可省略
 npm run preflight:release-a
 ```
 
-默认预检同时检查仓库根目录与 `docs/` 的全部 Markdown 本地链接；也可单独执行 `npm run check:markdown-links`。需要把 Playwright 当前全部场景（39 场景、桌面/移动 78 项）一起纳入同一轮本地门槛时，使用 `npm run preflight:release-a -- --with-e2e`；加入本地预热 LCP/CLS 门槛时追加 `--with-performance`。需要额外验证三套 Compose 静态配置时再加 `--with-compose`；Compose 参数只渲染配置，不启动容器。运营后台及公开站登录、注册、重置、邀请、退出和账号中心 HTML 已使用请求级 CSP nonce；公开目录为兼容 Next 框架引导脚本仍使用独立 CSP 策略，该风险与页面是否运行时渲染分开评估，边界见[账号页面 CSP 验证](./docs/evidence/release-a-ops-csp-nonce-2026-09-11.md)和[运行时目录验证](./docs/evidence/release-a-runtime-catalog-2026-09-11.md)。
+默认预检同时检查仓库根目录与 `docs/` 的全部 Markdown 本地链接；也可单独执行 `npm run check:markdown-links`。需要把 Playwright 当前全部场景（41 场景、桌面/移动 82 项）一起纳入同一轮本地门槛时，使用 `npm run preflight:release-a -- --with-e2e`；加入本地预热 LCP/CLS 门槛时追加 `--with-performance`。需要额外验证三套 Compose 静态配置时再加 `--with-compose`；Compose 参数只渲染配置，不启动容器。运营后台及公开站登录、注册、重置、邀请、退出和账号中心 HTML 已使用请求级 CSP nonce；公开目录为兼容 Next 框架引导脚本仍使用独立 CSP 策略，该风险与页面是否运行时渲染分开评估，边界见[账号页面 CSP 验证](./docs/evidence/release-a-ops-csp-nonce-2026-09-11.md)和[运行时目录验证](./docs/evidence/release-a-runtime-catalog-2026-09-11.md)。
 
 只想持续浏览合成数据站点时，可以启动不依赖 Docker 的本地预览：
 
@@ -99,7 +102,7 @@ npm run preview:release-a:build
 npm run capture:visual:release-a:build
 ```
 
-该命令在随机回环端口启动同一套有状态 mock 与两站 standalone build，使用本机 Chrome 自动生成公开首页、`TEST-001` 作品详情、后台登录、owner 运营概览和用户权限页的桌面/移动全页截图，并写入包含视口、文件字节数和 SHA-256 的 `manifest.json`。默认输出到 `docs/evidence/release-a-visual-<Asia/Shanghai 日期>`；已有当前构建时可使用 `npm run capture:visual:release-a`。输出目录只能位于 `docs/evidence` 的独立子目录，结束后浏览器、mock 和前端监听会自动关闭。它仍是内存合成数据证据，不替代 PostgreSQL、SMTP、S3/R2、Cloudflare 或最终域名验收。
+该命令在随机回环端口启动同一套有状态 mock 与两站 standalone build，使用本机 Chrome 自动生成公开首页、`TEST-001` 作品详情、后台登录、owner 运营概览、用户权限和审计查询页的桌面/移动全页截图，并写入包含视口、文件字节数和 SHA-256 的 `manifest.json`。默认输出到 `docs/evidence/release-a-visual-<Asia/Shanghai 日期>`；已有当前构建时可使用 `npm run capture:visual:release-a`。输出目录只能位于 `docs/evidence` 的独立子目录，结束后浏览器、mock 和前端监听会自动关闭。它仍是内存合成数据证据，不替代 PostgreSQL、SMTP、S3/R2、Cloudflare 或最终域名验收。
 
 需要执行产品定义的 LCP `< 2.5s`、移动端 CLS `< 0.1` 浏览器门槛时运行：
 
@@ -107,7 +110,7 @@ npm run capture:visual:release-a:build
 npm run probe:performance:release-a:build
 ```
 
-本地模式在公开首页和 `TEST-001` 详情的桌面/移动视口各预热一次，再分别采样 3 次，记录 LCP、CLS、FCP、TTFB、加载时间和资源字节到 `docs/evidence/release-a-performance-<日期>.json`。当前 [本地浏览器性能证据](./docs/evidence/release-a-performance-2026-09-10.json) 已通过，但使用无网络限速和内存合成 API，不代表最终域名已经验收。目标环境准备好后使用 `npm run probe:performance:release-a -- --display-url https://<公开站域名> --work-path /works/<已发布-slug> --output docs/evidence/release-a-performance-target.json` 重跑；远程入口只接受不含凭据、路径和查询的 HTTPS origin。
+本地模式在公开首页和 `TEST-001` 详情的桌面/移动视口各预热一次，再分别采样 3 次，记录 LCP、CLS、FCP、TTFB、加载时间和资源字节到 `docs/evidence/release-a-performance-<日期>.json`。最新 [9 月 12 日本地浏览器性能证据](./docs/evidence/release-a-performance-2026-09-12.json) 已通过，四组 LCP 中位数为 148–332ms，移动 CLS 均为 0；使用无网络限速和内存合成 API，不代表最终域名已经验收。目标环境准备好后使用 `npm run probe:performance:release-a -- --display-url https://<公开站域名> --work-path /works/<已发布-slug> --output docs/evidence/release-a-performance-target.json` 重跑；远程入口只接受不含凭据、路径和查询的 HTTPS origin。
 
 公开 API P95 `<300ms`、番号搜索 P95 `<500ms` 使用低并发顺序探针：
 
@@ -115,7 +118,7 @@ npm run probe:performance:release-a:build
 npm run probe:http-latency:release-a
 ```
 
-工具对首页 API 和搜索 API 各预热 3 次、顺序采样 20 次，验证 200、JSON 与 2 MiB 响应上限，并生成 [本地 HTTP 延迟证据](./docs/evidence/release-a-http-latency-2026-09-10.json)。报告不保存番号原文或响应正文，只保留番号 SHA-256、响应字节和耗时。最终入口使用 `--display-url https://<公开站域名> --search-code <已发布番号>` 重跑。统一预检的 `--with-performance` 会依次执行浏览器 LCP/CLS 和 HTTP P95 两个门槛。
+工具对首页 API 和搜索 API 各预热 3 次、顺序采样 20 次，验证 200、JSON 与 2 MiB 响应上限；最新 [9 月 12 日本地 HTTP 延迟证据](./docs/evidence/release-a-http-latency-2026-09-12.json)的首页 API/搜索 P95 为 29.79/9.10ms，均通过门槛。报告不保存番号原文或响应正文，只保留番号 SHA-256、响应字节和耗时。最终入口使用 `--display-url https://<公开站域名> --search-code <已发布番号>` 重跑。统一预检的 `--with-performance` 会依次执行浏览器 LCP/CLS 和 HTTP P95 两个门槛。
 
 ```powershell
 go test ./services/platform-api/... ./services/platform-worker/...
@@ -130,7 +133,7 @@ docker compose config --quiet
 
 Python 和真实 PostgreSQL 的命令见运行手册。真实环境准备好后，`scripts/release_a_email_e2e.py` 验证注册/重置/关闭/邀请，`scripts/release_a_catalog_e2e.py` 验证作品录入/异人审核/发布/番号搜索/隐藏；两个工具都不会输出密码，运营账号密码应只从本机环境变量读取。`.env.example` 只保存变量名和本地开发值，生产数据库、邮件、Turnstile、S3、session 和 HMAC 密钥不得进入 Git。
 
-CI 另设真实核心服务门槛 `core-e2e`：一次性 PostgreSQL 16 + Mailpit + 编译后的 Go API，通过 `scripts/release_a_core_e2e.py` 自动引导 owner、邮件邀请 editor，并串联账号和审核发布链路。失败会阻断镜像交付，只上传脱敏 JSON 结果；不启动 Worker 或前端，也不替代目标服务器、Turnstile、图片与 Cloudflare 验收。专用空库重跑要求和命令见 [运行手册 7.1](docs/RELEASE_A_RUNBOOK.md#71-真实核心服务-ci-验收)。本机未执行该真实服务作业，不能把新增配置视为已经通过。
+CI 另设真实核心服务门槛 `core-e2e`：一次性 PostgreSQL 16 + Mailpit + 编译后的 Go API，通过 `scripts/release_a_core_e2e.py` 自动引导 owner、邮件邀请 editor，并串联账号和审核发布链路。失败会阻断镜像交付，只上传脱敏 JSON 结果；不启动 Worker 或前端，也不替代目标服务器、Turnstile、图片与 Cloudflare 验收。专用空库重跑要求和命令见 [运行手册 7.1](docs/RELEASE_A_RUNBOOK.md#71-真实核心服务-ci-验收)。2026-09-12 已在 Ubuntu 实际执行并通过全部 8 项核心检查，见[本轮核心证据](./docs/evidence/release-a-core-e2e-ubuntu-2026-09-12.json)；这不代表远端 CI 或目标部署已运行。
 
 复制生产模板并在服务器私有目录填好真实值后，先做只读环境检查再启动 Compose。`core` 检查日本核心服务，`full` 在持有两份私有配置的受控管理机上核对日本/北京共享媒体密钥、公开图片基地址、版本号、双 bucket 和 10 GiB 上限；`--check-files` 在日本服务器上额外检查 Origin Certificate、私钥和 metrics token 文件。检查器只输出变量名和问题，不输出变量值；不要为了检查而在日本、北京服务器之间复制整份私有 env。直接检查仓库 `.env.example` 会因为仍含占位符而按设计失败。
 

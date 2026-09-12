@@ -2,6 +2,7 @@ FROM golang:1.22-alpine AS build
 WORKDIR /src
 COPY services/platform-api/go.mod services/platform-api/go.sum* ./services/platform-api/
 WORKDIR /src/services/platform-api
+ARG GOPROXY=https://proxy.golang.org,direct
 RUN go mod download
 COPY services/platform-api/ .
 ARG BUILD_VERSION=dev

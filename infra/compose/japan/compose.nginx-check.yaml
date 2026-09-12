@@ -1,0 +1,8 @@
+# Syntax checks run without upstream services. These mappings are test-only;
+# never include this override when starting the deployed edge.
+services:
+  edge:
+    extra_hosts:
+      - "display-web:127.0.0.1"
+      - "platform-api:127.0.0.1"
+      - "ops-web:127.0.0.1"

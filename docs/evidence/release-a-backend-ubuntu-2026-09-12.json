@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "evidence_date": "2026-09-12",
+  "status": "passed",
+  "source_state": "modified_worktree",
+  "base_revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+  "environment": {
+    "os": "Ubuntu 22.04.3 LTS",
+    "go": "1.22.2",
+    "python": "3.12.13",
+    "postgresql_server": "16.15",
+    "mail": "isolated Mailpit"
+  },
+  "boundary": "Disposable local PostgreSQL databases and synthetic identities/catalog data. Runtime repository checks used restricted API and Worker logins. This is not target-server, real SMTP, R2, Cloudflare or cross-region acceptance.",
+  "checks": {
+    "database_roundtrip": {
+      "status": "passed",
+      "schema_version": 21,
+      "migrations_up_and_down": 21,
+      "runtime_permissions": "passed",
+      "seed_confirmation_negative_cases": ["0", "true", "missing"],
+      "seed_catalog_negative_cases": [
+        "unknown source",
+        "built-in manual source with publication batch",
+        "built-in manual source with unbatched source record"
+      ],
+      "seed_idempotent_total_works": 100,
+      "seed_published_works": 99,
+      "isolation": "Final run used a separate PostgreSQL container with no external network or published port; schema Down deletes cluster-level roles."
+    },
+    "api_repository": {
+      "status": "passed",
+      "started_at": "2026-09-12T13:31:24.7384279+08:00",
+      "finished_at": "2026-09-12T13:31:43.617284075+08:00",
+      "top_level_passed": 59,
+      "subtests_passed": 109,
+      "failed": 0,
+      "skipped": 0
+    },
+    "worker_repository": {
+      "status": "passed",
+      "top_level_passed": 7,
+      "subtests_passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "packages": ["outbox", "mediareconcile", "mediainspect", "mediausage", "mediauploadcontrol"]
+    },
+    "go_vet": "passed",
+    "go_race": {
+      "status": "passed",
+      "started_at": "2026-09-12T13:41:35.312578765+08:00",
+      "finished_at": "2026-09-12T13:44:08.14678487+08:00",
+      "package_parallelism": 1,
+      "packages_passed": 21,
+      "top_level_passed": 330,
+      "subtests_passed": 781,
+      "failed": 0,
+      "opt_in_tests_skipped": 47,
+      "skip_boundary": "The generic race run did not supply PostgreSQL or Next revalidation contract configuration. Database contracts and the nine Go-to-Next checks passed in their dedicated runs; they are not claimed to have run under race instrumentation.",
+      "go_to_python_http": "enabled and passed"
+    },
+    "independent_go_modules": {
+      "platform_api": "GOWORK=off go mod tidy and go build ./... passed",
+      "platform_worker": "GOWORK=off go mod tidy and go build ./... passed"
+    },
+    "python": {
+      "status": "passed",
+      "tests_passed": 300,
+      "subtests_passed": 303,
+      "skipped": 0,
+      "duration_seconds": 116.59,
+      "ruff": "passed",
+      "mypy_source_files": 18,
+      "mypy": "passed",
+      "openapi_drift": "passed"
+    },
+    "core_e2e": {
+      "status": "passed",
+      "checks_passed": 8,
+      "evidence": "release-a-core-e2e-ubuntu-2026-09-12.json"
+    },
+    "backup_restore": {
+      "status": "passed",
+      "postgresql_client_major": 16,
+      "dump": "passed",
+      "sha256_and_local_copy": "passed",
+      "audit_record": "passed",
+      "restore_to_new_empty_database": "passed",
+      "restored_schema_version": 21,
+      "restored_schemas": ["audit", "collector", "platform"],
+      "restored_user_and_work_counts": "matched source",
+      "nonempty_restore_target": "rejected",
+      "cross_region_sftp": "not tested"
+    }
+  },
+  "execution_notes": [
+    "The initial SQL runs exposed parameter inference defects and fixture guard errors. The reported results are the successful post-fix reruns.",
+    "The real Argon2 concurrency test needed a 30-second overall test deadline under race instrumentation on a shared two-CPU host. Production concurrency, queue limits and 500ms queue timeout were not changed.",
+    "A late roundtrip run on a shared PostgreSQL cluster was correctly blocked from dropping roles with dependencies in other test databases. The final full roundtrip passed on an isolated PostgreSQL instance.",
+    "Raw logs, test credentials and database dumps are temporary acceptance artifacts and are excluded from the committed evidence."
+  ]
+}

@@ -5,8 +5,14 @@ SELECT :'release_a_fixture' = '1' AS release_a_fixture_confirmed \gset
 \endif
 \if :release_a_fixture_confirmed
 \else
-\echo 'Refusing to load Release A synthetic fixtures without --set release_a_fixture=1'
-\quit 3
+-- psql 16 ignores arguments to \quit and exits successfully. Raise a real
+-- error so automated callers cannot report an unconfirmed seed as accepted.
+\set ON_ERROR_STOP on
+DO $fixture_guard$
+BEGIN
+    RAISE EXCEPTION 'Refusing to load Release A synthetic fixtures without --set release_a_fixture=1';
+END
+$fixture_guard$;
 \endif
 
 -- Every supported caller uses psql --single-transaction. These locks make the
@@ -15,6 +21,8 @@ SELECT :'release_a_fixture' = '1' AS release_a_fixture_confirmed \gset
 SET LOCAL lock_timeout = '5s';
 LOCK TABLE
     collector.sources,
+    collector.publication_batches,
+    collector.source_records,
     collector.review_tasks,
     collector.conflict_reviews,
     platform.users,
@@ -66,6 +74,20 @@ BEGIN
         WHERE studio_id <> '70000000-0000-4000-8000-000000000001'::uuid
     ) OR EXISTS (
         SELECT 1 FROM collector.sources
+        WHERE source_id NOT IN (
+            '80000000-0000-4000-8000-000000000001'::uuid,
+            '81000000-0000-4000-8000-000000000001'::uuid
+        ) OR (
+            source_id = '81000000-0000-4000-8000-000000000001'::uuid
+            AND (name <> 'Manual CSV import' OR source_type <> 'manual' OR base_url IS NOT NULL)
+        )
+    ) OR EXISTS (
+        -- Migration 6 creates the built-in manual source even in an empty
+        -- database. Its presence is safe only before real ingestion begins.
+        SELECT 1 FROM collector.publication_batches
+        WHERE source_id <> '80000000-0000-4000-8000-000000000001'::uuid
+    ) OR EXISTS (
+        SELECT 1 FROM collector.source_records
         WHERE source_id <> '80000000-0000-4000-8000-000000000001'::uuid
     ) THEN
         RAISE EXCEPTION 'Release A synthetic fixtures require an empty or fixture-only catalog database';

@@ -74,7 +74,7 @@ npm run smoke:frontend:release-a
 npm run test:e2e:release-a
 ```
 
-Playwright 命令要求先存在当前 production build。本地默认使用已安装 Chrome；CI 会安装固定版本 Chromium。浏览器套件使用有状态 mock API，覆盖匿名番号搜索与详情、账号验证码和个人功能、人工录入审核发布、邀请与用户权限、admin 按 Request ID 查询最小披露审计时间线、反馈 editor/admin 分权、CSV 错误文件安全下载、权利下架、图片与用量/上传保护，以及公开账号页和后台请求级 CSP nonce；当前共 39 个场景，在桌面与移动视口执行 78 项，不发送真实邮件，也不把 mock 状态变更视为 PostgreSQL 权限或 S3/R2 物理删除证据。
+Playwright 命令要求先存在当前 production build。本地默认使用已安装 Chrome；CI 会安装固定版本 Chromium。浏览器套件使用有状态 mock API，覆盖匿名番号搜索与详情、账号验证码和个人功能、人工录入审核发布、邀请与用户权限、admin 按 Request ID 查询最小披露审计时间线、反馈 editor/admin 分权、CSV 错误文件安全下载、权利下架、图片与用量/上传保护，以及公开账号页和后台请求级 CSP nonce；当前共 41 个场景，在桌面与移动视口执行 82 项，不发送真实邮件，也不把 mock 状态变更视为 PostgreSQL 权限或 S3/R2 物理删除证据。
 
 需要人工浏览当前构建时运行：
 
@@ -229,7 +229,7 @@ go test -count=1 -v ./services/platform-api/internal/database -run 'TestIdentity
 
 当前需验证 5 组结果：改密/关闭撤销旧会话且拒绝旧快照、角色/邮箱/状态变化拒绝签发、同邮箱重注册不接受旧验证码、实际账号行锁等待后拒绝旧密码快照，以及新增的幂等退出/首次撤销证据保护；同时覆盖请求开始早于 session 创建的撤销时间约束。缺少数据库变量会明确 SKIP，不能记为通过。现有 CI migrations 会在迁移/fixture 加载后用受限 API 登录执行整个 database 包，无需增加权限或另开 CI 作业。
 
-合同使用随机合成账号，测试后保留合成记录和追加式审计，随一次性 CI 库结束处理；不要为了清理授予 DELETE、删除审计或停用触发器。本机尚未执行真实 SQL，当前本地验证及命令见[账号生命周期证据](./evidence/release-a-identity-lifecycle-2026-09-10.md)。
+合同使用随机合成账号，测试后保留合成记录和追加式审计，随一次性 CI 库结束处理；不要为了清理授予 DELETE、删除审计或停用触发器。2026-09-12 Ubuntu 受限账号真实 SQL 与核心闭环已通过，见[本轮后端证据](./evidence/release-a-backend-ubuntu-2026-09-12.json)；[账号生命周期历史证据](./evidence/release-a-identity-lifecycle-2026-09-10.md)保留其原执行范围。
 
 账号快照加固本身没有 Schema/OpenAPI 迁移，部署需替换全部日本 API 实例及同镜像 owner 引导工具；旧 API 未退出前不能依赖新保证。后续退出确认改动涉及两站前端与 Nginx，按对应小节配套升级。密码计算护栏与角色变化后旧会话失效已实现，目标资源及实际 SQL 验证仍列在[安全审计](./RELEASE_A_SECURITY_REVIEW.md)；顺序邮箱测试成功不能覆盖这些门槛。
 
@@ -252,7 +252,7 @@ go test -count=1 -v ./services/platform-api/internal/database -run 'TestIdentity
 go test ./services/platform-api/internal/database -run '^TestPostgresRoleChange' -v -count=1
 ```
 
-合同沿用前述受限 v21 测试库与随机合成夹具，保留追加式审计，不增加 DELETE 权限。当前本地事务替身、HTTP 和桌面/移动 UI 回归通过，真实 SQL 未执行；详情见[角色会话验证](./evidence/release-a-role-sessions-2026-09-10.md)。
+合同沿用前述受限 v21 测试库与随机合成夹具，保留追加式审计，不增加 DELETE 权限。本轮 Ubuntu 真实 SQL、HTTP 与桌面/移动回归均已通过，见[Ubuntu 验收](./evidence/release-a-ubuntu-acceptance-2026-09-12.md)；[角色会话历史验证](./evidence/release-a-role-sessions-2026-09-10.md)保留原日期。
 
 ### 密码计算超载与邀请预检
 
@@ -389,7 +389,7 @@ go test -count=1 -timeout=90s -v ./services/platform-worker/internal/outbox -run
 
 ### 当前能力与未完成项
 
-本模块代码已接入主图替换，但真实 SQL 与完整存储生命周期尚未验收。普通登记仅新增独立资产，不覆盖已有主图；替换必须使用专门接口和明确的旧资产 ID。重复下架的原 URL 保留、逐对象任务幂等与未发布资料下架保留原机制。当前整体 Schema 为 v21。
+本模块已接入主图替换，2026-09-12 Ubuntu 真实 SQL 合同已通过；真实对象存储与完整跨区生命周期仍待验收。普通登记仅新增独立资产，不覆盖已有主图；替换必须使用专门接口和明确的旧资产 ID。重复下架的原 URL 保留、逐对象任务幂等与未发布资料下架保留原机制。当前整体 Schema 为 v21。
 
 `POST /admin/v1/media/manifests` 在同一事务中写资产、对象、派生关系、关联、审计与 `cache_purge`。201 表示登记及刷新任务已提交，不表示所有页面/边缘缓存已更新；409 包含主图/不可变对象冲突及父资料已下架/合并。503 不表示成功，提交结果不明时先核对原 `asset_id`，不要更换 ID 反复提交。草稿和普通隐藏资料仍可提前登记图片，但 v17 公开视图只返回所属资料已公开的图片。
 
@@ -520,7 +520,7 @@ go test ./services/platform-worker/internal/outbox -run TestMediaDeletionPythonH
 
 对账确认现在要求完整的 HTTP 200/JSON 报告：全部计数显式存在、run ID 与清单数一致、样本类别/计数/路径合理。缺计数/null/重复字段、尾随数据、超限或无效 UTF-8 都返回失败并记录 `invalid_report`，不会补成全 0 后完成。正常服务失败记录 `reconcile_unavailable`。样本每类最多 50 条且转义后 8 KiB，可能少于 50 条，异常总数仍完整；不能将样本为空理解成没有异常。
 
-建议先升级北京媒体服务，再升级日本 Worker，该响应加固本身无新迁移；当前套件需 v21（每日检查迁移 18、观察状态迁移 19、复核回执迁移 20）。Worker 调度在 advisory lock 获得后读取最新运行快照；真实 SQL 并发合同等待两个连接都被锁阻塞后才放行，要求只有一条运行。CI 已把它排在 outbox SQL 后串行执行，本机尚未执行。使用同一专用回环 `self_deepsearch_worker_test` 库时，设置 `MEDIA_RECONCILE_CONTRACT_DATABASE_URL`（受限 worker）、`MEDIA_RECONCILE_CONTRACT_ADMIN_DATABASE_URL`（仅核对空库/Schema/测试锁）和 `CONFIRM_MEDIA_RECONCILE_CONTRACT=disposable-database`，再运行：
+建议先升级北京媒体服务，再升级日本 Worker，该响应加固本身无新迁移；当前套件需 v21（每日检查迁移 18、观察状态迁移 19、复核回执迁移 20）。Worker 调度在 advisory lock 获得后读取最新运行快照；真实 SQL 并发合同等待两个连接都被锁阻塞后才放行，要求只有一条运行。CI 已把它排在 outbox SQL 后串行执行；2026-09-12 Ubuntu 真实 PostgreSQL 16.15 调度与并发合同已通过。使用同一专用回环 `self_deepsearch_worker_test` 库时，设置 `MEDIA_RECONCILE_CONTRACT_DATABASE_URL`（受限 worker）、`MEDIA_RECONCILE_CONTRACT_ADMIN_DATABASE_URL`（仅核对空库/Schema/测试锁）和 `CONFIRM_MEDIA_RECONCILE_CONTRACT=disposable-database`，再运行：
 
 ```powershell
 go test ./services/platform-worker/internal/mediareconcile -run TestPostgresReconciliationScheduleContract -v -count=1
@@ -531,6 +531,8 @@ go test ./services/platform-worker/internal/mediareconcile -run TestPostgresReco
 当前检查会把尚未物理删除的保留母版视为应存在对象，隐藏不释放容量。远端已删但数据库尚未确认的短暂窗口仍可能报缺失，应结合删除 outbox 状态核对，不能直接忽略隐藏图片。每日注册公开状态与默认图定时检查已独立接入（见每日检查手册）；现有对账完成不证明 bucket 权限或全部图片健康。详见[对账验证](./evidence/release-a-reconciliation-2026-09-10.md)。
 
 ## 7. 数据库与测试
+
+Ubuntu 真实验收结果见[2026-09-12 记录](./evidence/release-a-ubuntu-acceptance-2026-09-12.md)。`postgres_roundtrip.sh` 的 Down 会删除集群级角色，应使用独立 PostgreSQL 实例；不要与 API/Worker/core-e2e 库共用同一集群执行回滚。API/Worker/core-e2e 在同一临时实例的不同数据库执行时，运行账号密码必须保持一致，因为登录角色属于集群级。
 
 不启动 Docker 的统一本地预检：
 
@@ -599,7 +601,7 @@ Windows 构建的两个文件加 `.exe`，运行器会自动选择这个后缀�
 
 CI 只上传 `release-a-core-e2e-ci.json`，包含阶段、检查结果、时间和错误类型；不上传原始进程日志、响应体、Cookie、密码或验证码。测试账户、隐藏作品和审计数据留在一次性数据库内，随 CI 服务销毁；不要把它用于共享运营库。配置缺失时在启动进程和访问网络前拒绝。
 
-证据边界：即使该作业通过，也只证明真实 Go API/PostgreSQL/Mailpit 核心链路；不证明 Worker/outbox、两个前端与 API 的真实集成、Turnstile、S3/R2、Cloudflare 或日本/北京目标环境已验收。本机本轮没有这些服务，当前新增作业仍等待 CI 或独立测试环境产生真实执行证据。
+证据边界：即使该作业通过，也只证明真实 Go API/PostgreSQL/Mailpit 核心链路；不证明 Worker/outbox、两个前端与 API 的真实集成、Turnstile、S3/R2、Cloudflare 或日本/北京目标环境已验收。2026-09-12 已在 Ubuntu Docker 的隔离 PostgreSQL 16/Mailpit 环境执行并通过，见[本轮真实核心证据](./evidence/release-a-core-e2e-ubuntu-2026-09-12.json)。
 
 ## 8. 备份策略
 

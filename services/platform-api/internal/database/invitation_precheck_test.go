@@ -85,7 +85,7 @@ func TestInvitationFinalValidationRejectsPostPrecheckChanges(t *testing.T) {
 				}
 			case "quota":
 				want = identity.ErrRateLimited
-				if _, err := h.store.pool.Exec(h.ctx, `INSERT INTO platform.security_rate_limits (action, dimension_type, dimension_hash, window_start, window_seconds, request_count, success_count, expires_at) VALUES ('invitation_accept', 'ip_hash', $1, $2, 86400, 10, 0, $2 + interval '1 day')`, accept.IPHash, now.Truncate(24*time.Hour)); err != nil {
+				if _, err := h.store.pool.Exec(h.ctx, `INSERT INTO platform.security_rate_limits (action, dimension_type, dimension_hash, window_start, window_seconds, request_count, success_count, expires_at) VALUES ('invitation_accept', 'ip_hash', $1, $2::timestamptz, 86400, 10, 0, $2::timestamptz + interval '1 day')`, accept.IPHash, now.Truncate(24*time.Hour)); err != nil {
 					t.Fatal(err)
 				}
 			}

@@ -266,7 +266,7 @@ services:
       DISPLAY_HOST: ${DISPLAY_HOST:?set DISPLAY_HOST}
       API_HOST: ${API_HOST:?set API_HOST}
       OPS_HOST: ${OPS_HOST:?set OPS_HOST}
-      NGINX_ENVSUBST_FILTER: '$${DISPLAY_HOST} $${API_HOST} $${OPS_HOST}'
+      NGINX_ENVSUBST_FILTER: '^(DISPLAY_HOST|API_HOST|OPS_HOST)$$'
     ports:
       - "80:80"
       - "443:443"

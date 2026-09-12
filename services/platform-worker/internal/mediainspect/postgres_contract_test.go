@@ -164,7 +164,7 @@ FROM platform.system_metadata WHERE singleton`).Scan(&version, &userData); err !
 			} else if errors.Is(err, ErrNotDue) {
 				notDue++
 			} else {
-				t.Fatal("scheduler returned an unexpected database error")
+				t.Fatalf("scheduler returned an unexpected database error: %v", err)
 			}
 		case <-ctx.Done():
 			t.Fatal("schedulers did not finish before deadline")

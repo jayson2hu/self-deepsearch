@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "stage": "completed",
+  "checks": {
+    "database_api_readiness": "passed",
+    "signup": "passed",
+    "password_reset": "passed",
+    "account_close": "passed",
+    "session_revocation": "passed",
+    "invitation": "passed",
+    "editor_invitation": "passed",
+    "create_review_publish_search_sitemap_hide": "passed"
+  },
+  "scope": "real-go-api-postgresql-mailpit",
+  "started_at": "2026-09-12T05:28:08+00:00",
+  "not_covered": [
+    "worker",
+    "frontend",
+    "turnstile",
+    "s3",
+    "cloudflare",
+    "target_servers"
+  ],
+  "finished_at": "2026-09-12T05:28:15+00:00"
+}

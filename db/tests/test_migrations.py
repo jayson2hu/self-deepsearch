@@ -198,8 +198,12 @@ class MigrationContractTests(unittest.TestCase):
 
         roundtrip = (database_root / "tests" / "postgres_roundtrip.sh").read_text(encoding="utf-8")
         self.assertIn("load_release_a_fixtures", roundtrip)
-        self.assertIn("--set release_a_fixture=0", roundtrip)
+        self.assertIn("for rejected_confirmation in 0 true; do", roundtrip)
+        self.assertIn('--set "release_a_fixture=$rejected_confirmation"', roundtrip)
+        self.assertIn("fixture seed accepted a missing confirmation", roundtrip)
         self.assertIn("roundtrip real-source sentinel", roundtrip)
+        self.assertIn("fixture loader accepted existing manual ingestion", roundtrip)
+        self.assertIn("fixture loader accepted an unbatched manual source record", roundtrip)
 
     def test_performer_view_rollback_rebuilds_view_before_dropping_columns(self) -> None:
         _, down = sections(MIGRATION_DIR / "00005_public_performer_fields.sql")

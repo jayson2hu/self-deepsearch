@@ -83,7 +83,7 @@ func (store *Store) CreateChallenge(ctx context.Context, request identity.Challe
 SELECT EXISTS (
     SELECT 1 FROM platform.email_challenges
     WHERE normalized_email = $1 AND purpose = $2 AND consumed_at IS NULL
-      AND sent_at > $3 - interval '60 seconds'
+      AND sent_at > $3::timestamptz - interval '60 seconds'
 )`, request.Email, request.Purpose, request.SentAt).Scan(&recent)
 		if err != nil {
 			return fmt.Errorf("check challenge resend interval: %w", err)
@@ -385,7 +385,7 @@ func incrementRate(ctx context.Context, tx pgx.Tx, action, dimensionType, dimens
 INSERT INTO platform.security_rate_limits (
     action, dimension_type, dimension_hash, window_start, window_seconds,
     request_count, success_count, expires_at
-) VALUES ($1, $2, $3, $4, $5, 1, 0, $4 + ($5 * interval '1 second'))
+) VALUES ($1, $2, $3, $4::timestamptz, $5::integer, 1, 0, $4::timestamptz + ($5::integer * interval '1 second'))
 ON CONFLICT (action, dimension_type, dimension_hash, window_start, window_seconds)
 DO UPDATE SET request_count = platform.security_rate_limits.request_count + 1
 RETURNING request_count`, action, dimensionType, dimensionHash, start, int(window.Seconds())).Scan(&count)

@@ -238,6 +238,17 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   } else {
     await expect(rails.first()).toBeVisible();
     await expect(rails.last()).toBeVisible();
+    const readableRailText = await rails.locator(".ad-slot").evaluateAll((slots) => slots.every((slot) => {
+      const boxes = Array.from(slot.children, (child) => ({
+        rect: child.getBoundingClientRect(),
+        fontSize: Number.parseFloat(getComputedStyle(child).fontSize),
+      }));
+      return boxes.every(({ rect, fontSize }) => rect.width > 0 && rect.height >= fontSize)
+        && boxes.every(({ rect }, index) => boxes.slice(index + 1).every(({ rect: other }) => (
+          rect.right <= other.left || other.right <= rect.left || rect.bottom <= other.top || other.bottom <= rect.top
+        )));
+    }));
+    expect(readableRailText).toBe(true);
   }
 
   await page.getByLabel("搜索番号、标题或人物").fill("TEST-001");

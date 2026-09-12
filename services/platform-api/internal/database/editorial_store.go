@@ -220,7 +220,7 @@ func enqueueEditorialCacheInvalidation(ctx context.Context, tx pgx.Tx, recommend
 	_, err := tx.Exec(ctx, `
 INSERT INTO platform.outbox_events (aggregate_type, aggregate_id, event_type, payload, dedupe_key)
 VALUES ('editorial_recommendation', $1::uuid, 'cache_purge',
-        jsonb_build_object('reason', 'editorial_recommendation_changed', 'work_id', $2, 'action', $3),
+        jsonb_build_object('reason', 'editorial_recommendation_changed', 'work_id', $2::text, 'action', $3::text),
         $1::text || ':' || $3 || ':' || $4)
 ON CONFLICT (event_type, dedupe_key) DO NOTHING`, recommendationID, workID, action, now.UTC().Format(time.RFC3339Nano))
 	if err != nil {

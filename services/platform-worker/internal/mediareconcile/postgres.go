@@ -44,7 +44,7 @@ func prepareReconciliation(ctx context.Context, begin func(context.Context, pgx.
 	if err := tx.QueryRow(ctx, `
 SELECT EXISTS (
   SELECT 1 FROM audit.media_reconciliation_runs
-  WHERE started_at > $1 - make_interval(secs => $2)
+  WHERE started_at > $1::timestamptz - make_interval(secs => $2)
     AND NOT (run_status = 'failed' AND error_code = 'usage_guard_denied')
 )`, now, int(minimumInterval.Seconds())).Scan(&notDue); err != nil {
 		return Run{}, fmt.Errorf("read media reconciliation schedule: %w", err)

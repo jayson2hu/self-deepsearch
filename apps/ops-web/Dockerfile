@@ -19,10 +19,12 @@ LABEL org.opencontainers.image.title="self-deepsearch-ops-web" \
       org.opencontainers.image.version="${BUILD_VERSION}" \
       org.opencontainers.image.revision="${BUILD_REVISION}"
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3001
 WORKDIR /app
 COPY --from=build /app/apps/ops-web/.next/standalone ./
 COPY --from=build /app/apps/ops-web/.next/static ./apps/ops-web/.next/static
+RUN install -d -o node -g node /app/apps/ops-web/.next/cache
 EXPOSE 3001
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD ["wget", "--quiet", "--spider", "http://127.0.0.1:3001/login"]

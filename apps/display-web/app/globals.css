@@ -73,8 +73,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .ad-slot strong { margin-top: 5px; color: var(--ink); font-size: 12px; }
 .ad-slot small { margin-top: 3px; font-size: 10px; }
 .ad-slot__mark { display: inline-block; color: var(--yellow); font-size: 10px; font-weight: 900; }
-.ad-slot--rail { position: sticky; top: 92px; min-height: 430px; padding: 14px 10px; text-align: center; writing-mode: vertical-rl; }
-.ad-slot--rail strong, .ad-slot--rail small { display: inline; margin: 0 5px 0 0; }
+.ad-slot--rail { position: sticky; top: 92px; min-height: 430px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.ad-slot--rail strong, .ad-slot--rail small { margin: 0; }
 .ad-slot--banner, .ad-slot--infeed { min-height: 76px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
 .ad-slot--banner strong, .ad-slot--infeed strong { margin: 0; }
 .ad-slot--banner small, .ad-slot--infeed small { margin: 0 0 0 auto; }

@@ -260,9 +260,17 @@ func TestPasswordWorkerRealArgon2Burst(t *testing.T) {
 		go func() { <-start; _, err := worker.hash(context.Background(), "a-long-test-password"); results <- err }()
 	}
 	close(start)
+	// This test checks concurrency and queue bounds, not Argon2 latency. Race
+	// instrumentation and shared CI CPUs can exceed the fake-worker timeout.
+	deadline := time.After(30 * time.Second)
 	for index := 0; index < 8; index++ {
-		if err := passwordResult(t, results); err != nil && !errors.Is(err, ErrAuthBusy) {
-			t.Fatal(err)
+		select {
+		case err := <-results:
+			if err != nil && !errors.Is(err, ErrAuthBusy) {
+				t.Fatal(err)
+			}
+		case <-deadline:
+			t.Fatal("real Argon2 burst did not finish")
 		}
 	}
 	stats := worker.stats()

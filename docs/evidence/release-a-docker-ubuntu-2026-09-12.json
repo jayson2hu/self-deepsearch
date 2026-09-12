@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-12",
+  "status": "passed",
+  "acceptance_scope": "Release A local Ubuntu Docker delivery; not production deployment approval",
+  "environment": {
+    "os": "Ubuntu 22.04.3 LTS",
+    "host_architecture": "x86_64",
+    "image_platform": "linux/amd64",
+    "host_cpu_count": 2,
+    "host_memory_gib": 8,
+    "docker_engine": "29.1.3",
+    "docker_compose": "2.40.3+ds1-0ubuntu1~22.04.1",
+    "docker_buildx": "0.30.1"
+  },
+  "source": {
+    "state": "modified_worktree",
+    "base_revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+    "oci_revision_label": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+    "note": "Images were built from the repaired, uncommitted worktree. The OCI revision is the supplied base-revision test label, not a claim that these artifacts were built from that clean commit. CI must rebuild using the final committed revision."
+  },
+  "build": {
+    "version": "ubuntu-20260912",
+    "image_prefix": "self-deepsearch-acceptance",
+    "builder": "default",
+    "delivery": "local --load only",
+    "registry_push_performed": false,
+    "targets_built": 5,
+    "command_template": "BUILD_VERSION=ubuntu-20260912 BUILD_REVISION=<base_revision> IMAGE_PREFIX=self-deepsearch-acceptance docker buildx bake --builder default <target> --load --progress plain",
+    "network_overrides": {
+      "go": "--set <platform-api|platform-worker>.args.GOPROXY=https://goproxy.cn",
+      "python": "--set media-python.args.PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/",
+      "distroless": {
+        "original_reference": "gcr.io/distroless/static-debian12:nonroot",
+        "pull_reference": "m.daocloud.io/gcr.io/distroless/static-debian12:nonroot",
+        "pulled_digest": "sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab",
+        "handling": "Pulled through the mirror and locally tagged with the original reference; Dockerfile base reference unchanged."
+      },
+      "defaults_remain_official": true
+    },
+    "observed_network_limits": [
+      "Direct gcr.io metadata lookup timed out.",
+      "Official Go module proxy timed out; explicit goproxy.cn override succeeded.",
+      "Official PyPI download exceeded a bounded build attempt; explicit Aliyun mirror override succeeded. Mirror package resolution is not asserted identical to the official index."
+    ]
+  },
+  "configuration_checks": [
+    {
+      "name": "local Compose",
+      "command": "docker compose config --quiet",
+      "exit_code": 0
+    },
+    {
+      "name": "Japan Compose including edge, monitoring and tools",
+      "command": "docker compose --env-file infra/compose/japan/.env.example -f infra/compose/japan/compose.yaml --profile edge --profile monitoring --profile tools config --quiet",
+      "exit_code": 0
+    },
+    {
+      "name": "Beijing Compose",
+      "command": "docker compose --env-file infra/compose/beijing/.env.example -f infra/compose/beijing/compose.yaml config --quiet",
+      "exit_code": 0
+    },
+    {
+      "name": "Nginx actual syntax check",
+      "image": "nginx:1.27.5-alpine",
+      "command": "ORIGIN_CERT_FILE=<temporary-synthetic-cert> ORIGIN_KEY_FILE=<temporary-synthetic-key> docker compose -p self-deepsearch-acceptance-edge --env-file infra/compose/japan/.env.example -f infra/compose/japan/compose.yaml -f infra/compose/japan/compose.nginx-check.yaml --profile edge run --rm --no-deps edge nginx -t",
+      "exit_code": 0,
+      "output": "nginx: configuration file /etc/nginx/nginx.conf test is successful",
+      "note": "Test-only DNS override maps absent upstream names to loopback for nginx -t; never include it in a deployed edge."
+    }
+  ],
+  "runtime_method": {
+    "network": "Temporary Docker internal network; API and PostgreSQL were not newly exposed publicly.",
+    "database": "Real disposable PostgreSQL, schema v21, platform_api_login least-privilege role, empty catalogue.",
+    "healthcheck": "Original image healthcheck command retained. Runtime-only scheduling shortened to interval 2s, start period 3s, timeout 5s, retries 3 for the smoke test.",
+    "nonroot": "Verified actual container process UIDs with docker top, in addition to image Config.User.",
+    "frontend": "Both production Next.js containers called their own /api/v1/site/home and /api/v1/search/works?q=ABP-001 routes. PLATFORM_API_URL targeted the real Go API container, which used the disposable PostgreSQL database.",
+    "cache_write": "Under the actual node UID, checked write access, created a synthetic file inside .next/cache, and removed it. Startup logs contained no EACCES after the fix."
+  },
+  "images": [
+    {
+      "target": "platform-api",
+      "tag": "self-deepsearch-acceptance/platform-api:ubuntu-20260912",
+      "local_image_id": "sha256:9d1c2d757c3585305649cba1066fd2c00933c8f5122a87e93783da5aef7d423d",
+      "local_descriptor_digest": "sha256:9d1c2d757c3585305649cba1066fd2c00933c8f5122a87e93783da5aef7d423d",
+      "local_repo_digests": [
+        "self-deepsearch-acceptance/platform-api@sha256:9d1c2d757c3585305649cba1066fd2c00933c8f5122a87e93783da5aef7d423d"
+      ],
+      "architecture": "amd64",
+      "size_bytes": 7843408,
+      "oci_labels": {
+        "org.opencontainers.image.revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+        "org.opencontainers.image.title": "self-deepsearch-platform-api",
+        "org.opencontainers.image.version": "ubuntu-20260912"
+      },
+      "source_state": "modified_worktree",
+      "configured_user": "nonroot:nonroot",
+      "observed_process_uids": [
+        65532
+      ],
+      "image_healthcheck": {
+        "Test": [
+          "CMD",
+          "/platform-api",
+          "--healthcheck"
+        ],
+        "Interval": 30000000000,
+        "Timeout": 5000000000,
+        "StartPeriod": 10000000000,
+        "Retries": 3
+      },
+      "observed_health": {
+        "status": "healthy",
+        "failing_streak": 0,
+        "last_exit_code": 0,
+        "checked_at": "2026-09-12T13:48:33.588871849+08:00"
+      },
+      "startup_eacces_found": false,
+      "passed": true
+    },
+    {
+      "target": "platform-worker",
+      "tag": "self-deepsearch-acceptance/platform-worker:ubuntu-20260912",
+      "local_image_id": "sha256:1635a22ddfe0d8a5b30c39934d27fee03b11f3d2683d006bea09b2b92bc48057",
+      "local_descriptor_digest": "sha256:1635a22ddfe0d8a5b30c39934d27fee03b11f3d2683d006bea09b2b92bc48057",
+      "local_repo_digests": [
+        "self-deepsearch-acceptance/platform-worker@sha256:1635a22ddfe0d8a5b30c39934d27fee03b11f3d2683d006bea09b2b92bc48057"
+      ],
+      "architecture": "amd64",
+      "size_bytes": 4531214,
+      "oci_labels": {
+        "org.opencontainers.image.revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+        "org.opencontainers.image.title": "self-deepsearch-platform-worker",
+        "org.opencontainers.image.version": "ubuntu-20260912"
+      },
+      "source_state": "modified_worktree",
+      "configured_user": "nonroot:nonroot",
+      "observed_process_uids": [
+        65532
+      ],
+      "image_healthcheck": {
+        "Test": [
+          "CMD",
+          "/platform-worker",
+          "--healthcheck"
+        ],
+        "Interval": 30000000000,
+        "Timeout": 5000000000,
+        "StartPeriod": 10000000000,
+        "Retries": 3
+      },
+      "observed_health": {
+        "status": "healthy",
+        "failing_streak": 0,
+        "last_exit_code": 0,
+        "checked_at": "2026-09-12T13:51:06.689355506+08:00"
+      },
+      "startup_eacces_found": false,
+      "passed": true
+    },
+    {
+      "target": "media-python",
+      "tag": "self-deepsearch-acceptance/media-python:ubuntu-20260912",
+      "local_image_id": "sha256:60c4f778bcc8e695397692b7c64406fb5e3a87ed2ade4eeb47bd43b63bb94ade",
+      "local_descriptor_digest": "sha256:60c4f778bcc8e695397692b7c64406fb5e3a87ed2ade4eeb47bd43b63bb94ade",
+      "local_repo_digests": [
+        "self-deepsearch-acceptance/media-python@sha256:60c4f778bcc8e695397692b7c64406fb5e3a87ed2ade4eeb47bd43b63bb94ade"
+      ],
+      "architecture": "amd64",
+      "size_bytes": 75116973,
+      "oci_labels": {
+        "org.opencontainers.image.revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+        "org.opencontainers.image.title": "self-deepsearch-media-python",
+        "org.opencontainers.image.version": "ubuntu-20260912"
+      },
+      "source_state": "modified_worktree",
+      "configured_user": "media",
+      "observed_process_uids": [
+        10001
+      ],
+      "image_healthcheck": {
+        "Test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health/live', timeout=2).read()"
+        ],
+        "Interval": 30000000000,
+        "Timeout": 5000000000,
+        "StartPeriod": 10000000000,
+        "Retries": 3
+      },
+      "observed_health": {
+        "status": "healthy",
+        "failing_streak": 0,
+        "last_exit_code": 0,
+        "checked_at": "2026-09-12T13:56:51.185804495+08:00"
+      },
+      "startup_eacces_found": false,
+      "passed": true
+    },
+    {
+      "target": "display-web",
+      "tag": "self-deepsearch-acceptance/display-web:ubuntu-20260912",
+      "local_image_id": "sha256:c9a9c202a4fc40f4487816ff18cbacece25b5a9ac694ad44c15526f5962a86a6",
+      "local_descriptor_digest": "sha256:c9a9c202a4fc40f4487816ff18cbacece25b5a9ac694ad44c15526f5962a86a6",
+      "local_repo_digests": [
+        "self-deepsearch-acceptance/display-web@sha256:c9a9c202a4fc40f4487816ff18cbacece25b5a9ac694ad44c15526f5962a86a6"
+      ],
+      "architecture": "amd64",
+      "size_bytes": 82162499,
+      "oci_labels": {
+        "org.opencontainers.image.revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+        "org.opencontainers.image.title": "self-deepsearch-display-web",
+        "org.opencontainers.image.version": "ubuntu-20260912"
+      },
+      "source_state": "modified_worktree",
+      "configured_user": "node",
+      "observed_process_uids": [
+        1000
+      ],
+      "image_healthcheck": {
+        "Test": [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--spider",
+          "http://127.0.0.1:3000/"
+        ],
+        "Interval": 30000000000,
+        "Timeout": 5000000000,
+        "StartPeriod": 15000000000,
+        "Retries": 3
+      },
+      "observed_health": {
+        "status": "healthy",
+        "failing_streak": 0,
+        "last_exit_code": 0,
+        "checked_at": "2026-09-12T14:13:12.578710873+08:00"
+      },
+      "startup_eacces_found": false,
+      "cache_directory": {
+        "path": "/app/apps/display-web/.next/cache",
+        "owner_uid": 1000,
+        "runtime_uid": 1000,
+        "write_verified": true
+      },
+      "same_origin_postgres": [
+        {
+          "path": "/api/v1/site/home",
+          "status": 200,
+          "cache_control": "no-store",
+          "section_count": 6,
+          "total_items": 0
+        },
+        {
+          "path": "/api/v1/search/works?q=ABP-001",
+          "status": 200,
+          "cache_control": "no-store",
+          "query": "ABP-001",
+          "total_items": 0,
+          "next_cursor": null
+        }
+      ],
+      "passed": true
+    },
+    {
+      "target": "ops-web",
+      "tag": "self-deepsearch-acceptance/ops-web:ubuntu-20260912",
+      "local_image_id": "sha256:30f0230fb0f6ab6f4f003d8b8df1d3b4e13ca693c572a0fe0cabb254ee425cc2",
+      "local_descriptor_digest": "sha256:30f0230fb0f6ab6f4f003d8b8df1d3b4e13ca693c572a0fe0cabb254ee425cc2",
+      "local_repo_digests": [
+        "self-deepsearch-acceptance/ops-web@sha256:30f0230fb0f6ab6f4f003d8b8df1d3b4e13ca693c572a0fe0cabb254ee425cc2"
+      ],
+      "architecture": "amd64",
+      "size_bytes": 82152882,
+      "oci_labels": {
+        "org.opencontainers.image.revision": "7a932be95fbcad0f5e394a414101f7e89a36d786",
+        "org.opencontainers.image.title": "self-deepsearch-ops-web",
+        "org.opencontainers.image.version": "ubuntu-20260912"
+      },
+      "source_state": "modified_worktree",
+      "configured_user": "node",
+      "observed_process_uids": [
+        1000
+      ],
+      "image_healthcheck": {
+        "Test": [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--spider",
+          "http://127.0.0.1:3001/login"
+        ],
+        "Interval": 30000000000,
+        "Timeout": 5000000000,
+        "StartPeriod": 15000000000,
+        "Retries": 3
+      },
+      "observed_health": {
+        "status": "healthy",
+        "failing_streak": 0,
+        "last_exit_code": 0,
+        "checked_at": "2026-09-12T14:16:27.484870686+08:00"
+      },
+      "startup_eacces_found": false,
+      "cache_directory": {
+        "path": "/app/apps/ops-web/.next/cache",
+        "owner_uid": 1000,
+        "runtime_uid": 1000,
+        "write_verified": true
+      },
+      "same_origin_postgres": [
+        {
+          "path": "/api/v1/site/home",
+          "status": 200,
+          "cache_control": "no-store",
+          "section_count": 6,
+          "total_items": 0
+        },
+        {
+          "path": "/api/v1/search/works?q=ABP-001",
+          "status": 200,
+          "cache_control": "no-store",
+          "query": "ABP-001",
+          "total_items": 0,
+          "next_cursor": null
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "fixes_verified": [
+    {
+      "problem": "Official Nginx entrypoint treated NGINX_ENVSUBST_FILTER as a regex, but the template supplied a variable-list expression, producing an awk regex error.",
+      "fix": "Use an anchored three-name regex with Compose dollar escaping.",
+      "regression": "Existing Nginx contract verifies permitted names and rejected unrelated variables."
+    },
+    {
+      "problem": "CI nginx -t with --no-deps could not resolve upstream services that were intentionally absent.",
+      "fix": "Add a clearly test-only Compose DNS override and use it in the CI syntax check.",
+      "regression": "Actual nginx -t passed using the example environment and temporary synthetic TLS files."
+    },
+    {
+      "problem": "Standalone Go Docker builds exposed module metadata missing under the workspace configuration.",
+      "fix": "Refresh API and Worker independent module metadata; add explicit optional Go and Python build-source arguments for restricted networks.",
+      "regression": "Both standalone Go module builds and all five Docker image builds passed."
+    },
+    {
+      "problem": "Docker supplies HOSTNAME automatically; Next standalone bound to the container hostname instead of loopback, and the original display image became unhealthy with connection refused.",
+      "fix": "Set HOSTNAME=0.0.0.0 in both frontend runtime images.",
+      "regression": "Existing runtime-image contract checks the fixed bind address; both rebuilt frontend image healthchecks passed."
+    },
+    {
+      "problem": "After the bind fix, public reads returned 200 but Next logged EACCES creating .next/cache under the nonroot user.",
+      "fix": "Precreate only each app's .next/cache directory owned by node; application source ownership remains unchanged.",
+      "regression": "Existing Dockerfile contract checks directory creation; both rebuilt images passed real UID-1000 write probes and same-origin reads without EACCES."
+    }
+  ],
+  "targeted_validation": {
+    "python": {
+      "command": ".venv/bin/python -m pytest -q infra/security/tests/test_dependency_security_contract.py infra/security/tests/test_compose_resource_budget_contract.py infra/reverse-proxy/tests/test_nginx_contract.py",
+      "passed": 30,
+      "failed": 0,
+      "new_top_level_tests": 0,
+      "note": "Existing tests were strengthened with assertions; this targeted count is separate from the parent task's full Python-suite evidence."
+    },
+    "ruff": {
+      "files": [
+        "infra/security/tests/test_dependency_security_contract.py",
+        "infra/reverse-proxy/tests/test_nginx_contract.py"
+      ],
+      "status": "passed"
+    },
+    "compose_rechecked_after_final_dockerfile_edits": true,
+    "git_diff_check": "passed"
+  },
+  "cleanup": {
+    "image_smoke_containers_removed": true,
+    "image_internal_network_removed": true,
+    "parent_postgres_extra_network_disconnected": true,
+    "nginx_check_containers_network_and_empty_volume_removed": true,
+    "temporary_synthetic_tls_certificate_and_key_removed": true,
+    "temporary_files_outside_acceptance_cache_created": false,
+    "retained_final_tagged_images": 5,
+    "build_cache_retained": true,
+    "superseded_three_known_untagged_image_ids": "Already absent at final read-only inspection; no image removal or global prune was needed.",
+    "parent_managed_resources": "Parent task removed the disposable PostgreSQL/Mailpit containers and the .cache/acceptance and .cache/core-e2e directories after preserving sanitized evidence; no acceptance containers or networks remain.",
+    "global_prune_performed": false
+  },
+  "limits": [
+    "No images were pushed to a registry and no public or production deployment was performed.",
+    "API image smoke ran in development configuration with identity disabled; it verified readiness and public database reads, not SMTP/authentication delivery.",
+    "Worker image smoke used Beijing mode with collection disabled; real SQL Worker contracts were accepted separately.",
+    "Media image smoke used synthetic provider settings on an internal network; no live S3/R2 or Cloudflare request was accepted.",
+    "Nginx passed real configuration parsing with synthetic TLS, not public TLS, Cloudflare Access, cross-region networking, maximum-media RSS or production-load acceptance."
+  ]
+}

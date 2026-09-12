@@ -55,20 +55,15 @@ func TestImageFromRenditionsSupportsSingleLegacyDerivative(t *testing.T) {
 }
 
 func TestReassignReviewTaskRoundTrip(t *testing.T) {
-	databaseURL := os.Getenv("PLATFORM_API_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("PLATFORM_API_TEST_DATABASE_URL is not set")
-	}
-	ctx := context.Background()
-	store, err := Open(ctx, databaseURL)
-	if err != nil {
-		t.Fatalf("open test database: %v", err)
-	}
+	harness := newInvitationContractHarness(t)
+	store, ctx := harness.store, harness.ctx
 
 	const taskID = "40000000-0000-4000-8000-000000000001"
-	const actorID = "90000000-0000-4000-8000-000000000002"
-	const nextAssigneeID = "90000000-0000-4000-8000-000000000001"
-	const requestID = "review-reassign-roundtrip"
+	actorEmail := harness.newEmail("reassign-actor")
+	assigneeEmail := harness.newEmail("reassign-target")
+	actorID := harness.insertUser(t, actorEmail, "admin", "active")
+	nextAssigneeID := harness.insertUser(t, assigneeEmail, "owner", "active")
+	requestID := "review-reassign-" + harness.newHash()[:24]
 	now := time.Date(2026, 9, 7, 9, 8, 7, 0, time.UTC)
 	command, err := store.pool.Exec(ctx, `
 UPDATE collector.review_tasks
@@ -85,14 +80,13 @@ WHERE review_task_id = $1::uuid`, taskID, actorID, now.Add(-time.Minute))
 UPDATE collector.review_tasks
 SET status = 'pending', assignee_id = NULL, claimed_at = NULL, completed_at = NULL
 WHERE review_task_id = $1::uuid`, taskID)
-		store.Close()
 	})
 
 	result, err := store.ReassignReviewTask(ctx, taskID, nextAssigneeID, actorID, "reviewer handoff", requestID, now)
 	if err != nil {
 		t.Fatalf("reassign review task: %v", err)
 	}
-	if result.AssigneeID == nil || *result.AssigneeID != nextAssigneeID || result.Assignee == nil || *result.Assignee != "owner@example.invalid" || result.ClaimedAt == nil || !result.ClaimedAt.Equal(now) {
+	if result.AssigneeID == nil || *result.AssigneeID != nextAssigneeID || result.Assignee == nil || *result.Assignee != assigneeEmail || result.ClaimedAt == nil || !result.ClaimedAt.Equal(now) {
 		t.Fatalf("unexpected reassigned task: %#v", result)
 	}
 
@@ -112,7 +106,7 @@ ORDER BY audit_id DESC LIMIT 1`, taskID, requestID).Scan(&beforeID, &afterID, &r
 		t.Fatalf("list audit timeline: %v", err)
 	}
 	if len(timeline) != 1 || timeline[0].RequestID != requestID || timeline[0].Action != "review_task.reassign" ||
-		timeline[0].Actor == nil || *timeline[0].Actor != "admin@example.invalid" {
+		timeline[0].Actor == nil || *timeline[0].Actor != actorEmail {
 		t.Fatalf("unexpected minimal audit timeline: %#v", timeline)
 	}
 	if _, err := store.ReassignReviewTask(ctx, taskID, nextAssigneeID, actorID, "repeat handoff", requestID+"-repeat", now.Add(time.Second)); !errors.Is(err, operations.ErrConflict) {

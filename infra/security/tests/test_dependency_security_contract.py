@@ -110,6 +110,12 @@ class DependencySecurityContractTests(unittest.TestCase):
             source = (ROOT / dockerfile).read_text(encoding="utf-8")
             self.assertIn("HEALTHCHECK --interval=30s", source)
             self.assertIn(signal, source)
+            if dockerfile.startswith("apps/"):
+                # Docker supplies HOSTNAME automatically. Next standalone must
+                # also bind loopback so the image's own healthcheck can reach it.
+                self.assertRegex(source, r"(?m)^ENV HOSTNAME=0\.0\.0\.0$")
+                cache = f"/app/{Path(dockerfile).parent.as_posix()}/.next/cache"
+                self.assertIn(f"RUN install -d -o node -g node {cache}", source)
 
         api_main = (ROOT / "services/platform-api/cmd/api/main.go").read_text(encoding="utf-8")
         worker_main = (ROOT / "services/platform-worker/cmd/worker/main.go").read_text(encoding="utf-8")

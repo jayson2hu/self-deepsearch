@@ -299,7 +299,8 @@ jobs:
           ORIGIN_CERT_FILE="$PWD/.ci-tls/tls.crt" \
           ORIGIN_KEY_FILE="$PWD/.ci-tls/tls.key" \
           docker compose --env-file infra/compose/japan/.env.example \
-            -f infra/compose/japan/compose.yaml --profile edge \
+            -f infra/compose/japan/compose.yaml \
+            -f infra/compose/japan/compose.nginx-check.yaml --profile edge \
             run --rm --no-deps edge nginx -t
 
   images:

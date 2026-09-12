@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "release": "A",
+  "status": "passed",
+  "evidence_date": "2026-09-12",
+  "generated_at": "2026-09-12T05:55:35.713Z",
+  "environment": {
+    "os": "Ubuntu 22.04",
+    "node": "22.22.2",
+    "npm": "10.9.7",
+    "next": "16.3.3",
+    "playwright": "1.63.0",
+    "chromium": "153.0.8010.12"
+  },
+  "boundary": "Local production Next.js standalone apps with synthetic in-memory API fixtures. The cache contract uses the real Go processor. This frontend evidence does not certify PostgreSQL, SMTP, S3/R2, Cloudflare, final HTTPS origins or target-server performance.",
+  "checks": {
+    "eslint": "passed",
+    "typescript": "passed",
+    "frontend_unit": {
+      "passed": 40,
+      "failed": 0
+    },
+    "tooling_contracts": {
+      "passed": 62,
+      "failed": 0
+    },
+    "production_build": {
+      "display_web": "passed after final CSS fix",
+      "ops_web": "passed"
+    },
+    "standalone_http_smoke": {
+      "status": "passed after final CSS fix",
+      "groups": 8
+    },
+    "go_next_cache_contract": {
+      "passed": 9,
+      "failed": 0
+    },
+    "npm_audit": {
+      "production_vulnerabilities": 0,
+      "all_dependency_vulnerabilities": 0
+    },
+    "playwright": {
+      "status": "passed",
+      "started_at": "2026-09-12T05:44:28.153Z",
+      "duration_ms": 375753.993,
+      "passed": 82,
+      "desktop": 41,
+      "mobile": 41,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "retries": 0,
+      "execution": "One complete run of the installed Playwright CLI with one worker; every native JSON result was checked for passed status and retry=0."
+    },
+    "visual": {
+      "status": "passed",
+      "captures": 12,
+      "broken_images": 0,
+      "horizontal_overflow": false,
+      "review": "All six routes at desktop/mobile were reviewed. After the rail CSS correction, all twelve captures were regenerated and the affected desktop images were reviewed again."
+    },
+    "browser_performance": {
+      "status": "passed",
+      "samples_per_scenario": 3,
+      "median_lcp_ms": {
+        "home_desktop": 332,
+        "work_desktop": 196,
+        "home_mobile": 184,
+        "work_mobile": 148
+      },
+      "median_mobile_cls": {
+        "home": 0,
+        "work": 0
+      }
+    },
+    "http_latency": {
+      "status": "passed",
+      "samples_per_endpoint": 20,
+      "public_api_p95_ms": 29.79,
+      "search_p95_ms": 9.1
+    }
+  },
+  "fixes": [
+    "Use platform-native paths in the standalone-path smoke test; its Windows-only expected separators failed on Ubuntu.",
+    "Upgrade the locked ESLint dependency js-yaml from 4.3.1 to 4.3.2 for GHSA-2883-xcg3-v3hh.",
+    "Replace vertical CJK rail text with horizontally rendered stacked labels; the tested Ubuntu Chromium font fallback gave vertical glyphs zero height and overlapped the text. The existing desktop browser scenario now asserts nonzero, nonoverlapping text boxes.",
+    "Write media-delivery browser screenshots through Playwright outputPath instead of overwriting a hard-coded historical evidence file."
+  ],
+  "execution_notes": [
+    "Sandbox child-process I/O returned EPERM; affected checks passed when executed with approved sandbox escalation.",
+    "The initial Go cache-contract attempt timed out during cold dependency/compilation work; after dependency download and compilation warm-up, all nine checks passed.",
+    "Two npm-wrapped E2E attempts ended with SIGTERM at different positions without assertion failures. The final direct-CLI run completed all 82 tests; a signal-only observer recorded no termination signal. The earlier signal source remains unconfirmed."
+  ],
+  "cleanup": {
+    "historical_evidence_restored": [
+      "release-a-media-delivery-desktop-2026-09-11.png"
+    ],
+    "generated_data_removed": [
+      "Two interrupted standalone copies (about 142 MiB)",
+      "Per-test screenshots and traces (about 3.1 MiB)",
+      "Cancelled partial Chromium archive (about 18 MiB)",
+      "Rail-layout diagnostic screenshot and signal trace"
+    ],
+    "raw_playwright_report": "Summarized, independently checked, then removed during parent cleanup."
+  },
+  "evidence": [
+    "release-a-cache-contract-ubuntu-2026-09-12.json",
+    "release-a-http-latency-2026-09-12.json",
+    "release-a-performance-2026-09-12.json",
+    "release-a-visual-2026-09-12/manifest.json"
+  ]
+}

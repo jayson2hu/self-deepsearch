@@ -36,12 +36,12 @@ func prepareInspection(ctx context.Context, begin func(context.Context, pgx.TxOp
 	// A crashed run is evidence of failure, never a completed zero-issue run.
 	if _, err := tx.Exec(ctx, `UPDATE audit.media_inspection_runs SET run_status = 'failed',
  error_code = 'interrupted', completed_at = $1
- WHERE run_status = 'running' AND started_at < $1 - interval '5 minutes'`, now); err != nil {
+ WHERE run_status = 'running' AND started_at < $1::timestamptz - interval '5 minutes'`, now); err != nil {
 		return "", err
 	}
 	var notDue bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM audit.media_inspection_runs
- WHERE started_at > $1 - interval '24 hours')`, now).Scan(&notDue); err != nil {
+ WHERE started_at > $1::timestamptz - interval '24 hours')`, now).Scan(&notDue); err != nil {
 		return "", err
 	}
 	if notDue {

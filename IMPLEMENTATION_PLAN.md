@@ -8,6 +8,8 @@
 
 ## 1. 交付目标
 
+2026-09-12 Ubuntu 验收更新：此前“缺少 PostgreSQL/Mailpit”和“本机 SQL 未执行”的记录已由本轮隔离 Docker 真实验收推进。当前结果与后续目标环境门槛统一见[Ubuntu 验收证据](./docs/evidence/release-a-ubuntu-acceptance-2026-09-12.md)及[发布就绪审计](./docs/RELEASE_A_READINESS.md)；本计划较早日期段落保留历史语境，M5 与公网仍待真实 R2/Cloudflare/目标主机验收。
+
 先交付一个可以真实录入、审核、发布和浏览的测试网站，再开发自动采集。第一版完成时必须具备：
 
 - 匿名用户可浏览、按番号搜索、查看最新与热门；

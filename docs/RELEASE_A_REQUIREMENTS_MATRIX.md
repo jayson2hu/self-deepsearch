@@ -62,6 +62,8 @@ Release A 的真实实现口径如下，避免把三种入口混称为“都支�
 
 ## 4. 当前未关闭事项
 
+2026-09-12：本机 Ubuntu Docker 已完成 PostgreSQL 16 迁移/权限、API 仓储和 Worker 并发合同、Mailpit 账号/邀请及异人审核发布、本地备份恢复。见[Ubuntu 验收记录](./evidence/release-a-ubuntu-acceptance-2026-09-12.md)。以下清单指目标环境剩余验收，不能继续把已通过的本机测试写成未执行；R2/Cloudflare、两地部署与公网尚未通过。
+
 ### 4.1 只缺真实环境验收
 
 - 日本 PostgreSQL 16 的 Schema v21 fresh/upgrade、运行账号、SQL 并发合同、受控 fixture 和恢复；
