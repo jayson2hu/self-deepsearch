@@ -6,16 +6,16 @@
 ## 放行结论
 
 Ubuntu 的真实 PostgreSQL / Mailpit 核心联调已通过，旧的“缺少数据库与邮件环境”阻塞已解除。
-这关闭了本地核心验收缺口；目标两地环境和公网发布仍有独立门槛。
+本次续验又关闭了两站真实浏览器/Worker 缓存和历史归档恢复缺口；目标两地环境和公网发布仍有独立门槛。
 
 | 范围 | 当前判定 | 放行条件 |
 | --- | --- | --- |
 | Ubuntu 隔离核心验收 | passed | 受限 SQL 仓储、核心账号/运营链和本地恢复已有实测 |
-| 本地代码与部署包 | go（本地隔离范围） | 最终代码回归、82 浏览器项及五镜像非 root 运行检查通过 |
+| 本地代码 | go（本地隔离范围） | 最新真实浏览器/归档及代码回归通过；正式制品须按新提交重建，旧五镜像证据不覆盖最新修改 |
 | 目标两机完整 Release A / M5 | no-go | 真实媒体、边缘、账单、跨区备份和资源验收未完成 |
 | 公网开放 | no-go | 最终域名、安全入口、邮件、真实资料与性能未验收 |
 
-本轮详细结果与命令见 [Ubuntu 验收证据](./evidence/release-a-ubuntu-acceptance-2026-09-12.md)。
+最新详细结果见 [未完成项续验](./evidence/release-a-followup-2026-09-12.md)，前次完整视觉与五镜像记录见 [Ubuntu 验收证据](./evidence/release-a-ubuntu-acceptance-2026-09-12.md)。
 逐项产品要求以 [需求与验收矩阵](./RELEASE_A_REQUIREMENTS_MATRIX.md)为索引。
 
 ## 当前证据矩阵
@@ -25,11 +25,13 @@ Ubuntu 的真实 PostgreSQL / Mailpit 核心联调已通过，旧的“缺少数
 | Schema v21 | PostgreSQL 16.15 的 21 迁移 up/down、权限和增强 seed 负向最终通过 | 目标已有库升级 |
 | API 数据库合同 | 59 顶层 + 109 子测试，0 skip / 0 fail | 最终公网入口端到端 |
 | Worker 数据库合同 | 7 顶层 + 16 子场景，0 skip / 0 fail | 真实跨区网络及对象供应商 |
-| 核心真实服务 | 8 项检查 passed | 前端浏览器接真实 API、Turnstile、真实 SMTP |
+| 核心真实服务 | 8 项检查 passed | Turnstile、真实 SMTP |
+| 两站真实浏览器 + Worker | 15 项浏览器检查全通过，发布/隐藏可见性 1480/1224ms；0 手动失效 | 真实内容、最终域名、Turnstile、对象存储和目标负载 |
+| 历史归档恢复 | 14 顶层 + 34 子测试及 race，通过 9 个真实 PG 场景 | 目标文件系统、复制和真实断电演练；恢复不得复活已清除历史 |
 | 本地备份恢复 | dump/校验/本地副本/空库恢复通过，非空目标拒绝 | 跨区 SFTP、目标调度、告警和长期保留演练 |
-| Python | 300 tests + 303 subtests，0 skip；Ruff/mypy 18 文件/OpenAPI 通过 | Nginx 新修改后最终全量复跑通过 |
+| Python | 最终 CI 原命令 315 tests + 339 subtests，0 skip；Ruff/mypy 19 文件/OpenAPI 通过 | 远端 Actions 以具体提交结果为准 |
 | Go | 最终 test/vet/race 通过 | SQL 由单独的真实数据库合同验收 |
-| 前端基本门禁 | 40 单元/62 工具、类型/lint/两站 build/HTTP 冒烟通过；布局修复后公开站重建、HTTP 再次通过 | 真实后端与最终运行入口 |
+| 前端基本门禁 | 最新 40 单元/76 工具、类型/lint 通过；运营站重建及桌面/移动录入 2/2 通过 | 本次未重复全部 82 项；完整套件继续由 CI 执行，前次 82/82 属于历史基线 |
 | Go → Next 缓存 | 9/9 通过 | 真实发布 API 与 Cloudflare 的完整链路 |
 | Playwright / 视觉 / 性能 | 最终 82/82，0 失败/跳过/重试；12 图复核及哈希校验、LCP/CLS、HTTP P95 均通过 | 真实资料、真实后端、最终域名和目标负载 |
 | Compose / edge | 三套静态解析、真实 nginx -t 通过 | 目标部署的健康检查、路由和运行资源 |
@@ -59,8 +61,8 @@ Ubuntu 的真实 PostgreSQL / Mailpit 核心联调已通过，旧的“缺少数
 5. 备份：日本定时生成、北京真实 SFTP 副本、独立目标空库恢复、保留策略和告警送达。
 6. 邮件：最终 SMTP、真实收件送达、权利邮箱，以及额度/熔断和通知恢复。
 7. 入口：最终域名、TLS、Turnstile hostname/action、后台固定 IP/VPN/Cloudflare Access。
-8. 全站：真实 Go API + 两站浏览器流程、公开/私有缓存、退出/重试、真实数据视觉和负载性能。
-9. 运维：历史归档与恢复、Prometheus/Alertmanager、版本标签、健康探针及 [上线执行记录](./RELEASE_A_GO_LIVE_RECORD.md)。
+8. 全站：最终入口的真实 Go API + 两站浏览器流程、公开/私有缓存、退出/重试、真实数据视觉和负载性能；本地真实浏览器闭环已通过。
+9. 运维：目标归档与恢复、Prometheus/Alertmanager、版本标签、健康探针及 [上线执行记录](./RELEASE_A_GO_LIVE_RECORD.md)；本地归档恢复合同已通过。
 
 Analytics、双桶字节检查、页面 CSP 或管理员确认都不是账户账单硬上限。
 权利下架与必要删除不应被非必要上传/扫描保护阻断。
@@ -71,6 +73,8 @@ Analytics、双桶字节检查、页面 CSP 或管理员确认都不是账户账
 - [核心 JSON](./evidence/release-a-core-e2e-ubuntu-2026-09-12.json)来自真实 Go API、PostgreSQL 和 Mailpit；其 not_covered 列表继续有效。
 - [后端汇总](./evidence/release-a-backend-ubuntu-2026-09-12.json)区分通用 race 回归与专项真实 SQL：通用运行的 47 个 opt-in 跳过项由数据库及缓存专项另测，不宣称 SQL 已在 race 模式执行。
 - [缓存 JSON](./evidence/release-a-cache-contract-ubuntu-2026-09-12.json)包含真实 Go/Next 进程，但目录 API 是合成替身。
+- 新增[真实浏览器 JSON](./evidence/release-a-real-stack-ubuntu-2026-09-12.json)不使用目录替身，实际串联 PostgreSQL、Mailpit、Go API/Worker 和两个生产前端；首页/详情/sitemap 验证缓存失效，`no-store` 搜索只验证可见性。它不把合成账号和资料冒充真实运营数据。
+- 新增[归档恢复 JSON](./evidence/release-a-history-archive-ubuntu-2026-09-12.json)使用真实 PG 和临时表逐字段恢复核对；目录同步故障注入不等于真实掉电测试。
 - [前端汇总](./evidence/release-a-frontend-ubuntu-2026-09-12.json)记录完整一轮 82/82 浏览器通过，桌面/移动各 41 项；js-yaml 更新至 4.3.2 后生产与全量依赖审计均为 0 漏洞。
 - [浏览器性能 JSON](./evidence/release-a-performance-2026-09-12.json)和 [HTTP 延迟 JSON](./evidence/release-a-http-latency-2026-09-12.json)属于 local-synthetic，最终布局版本已通过：首页/详情桌面 LCP 中位数 332/196ms、移动 184/148ms，移动 CLS 均为 0；首页 API/搜索 P95 为 29.79/9.10ms。
 - [视觉 manifest](./evidence/release-a-visual-2026-09-12/manifest.json)记录最终 12 张合成截图、视口与已核对的 SHA-256，布局和坏图检查通过，不能作为真实内容验收。

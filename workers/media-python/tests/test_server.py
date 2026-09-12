@@ -3,13 +3,15 @@ from __future__ import annotations
 import hashlib
 import http.client
 import json
+import os
 import sys
 import tempfile
 import threading
 import time
 import unittest
-from http.server import ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -140,6 +142,71 @@ class MediaDeleteTests(unittest.TestCase):
         self.assertEqual(captured[1], 10)
         self.assertEqual(request.get_header("Authorization"), "Bearer " + "t" * 24)
         self.assertEqual(json.loads(request.data), {"files": [public_url]})
+
+    def test_cloudflare_purge_rejects_redirects_without_forwarding_token_or_removing_backup(self) -> None:
+        requests: list[tuple[str, str, str | None]] = []
+        response_status = 302
+        destination = ""
+
+        class RedirectHandler(BaseHTTPRequestHandler):
+            def do_POST(self) -> None:
+                self.rfile.read(int(self.headers.get("Content-Length", "0")))
+                requests.append((self.command, self.path, self.headers.get("Authorization")))
+                if self.path == "/purge":
+                    self.send_response(response_status)
+                    self.send_header("Location", destination)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                else:
+                    body = b'{"success":true}'
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+
+            do_GET = do_POST
+
+            def log_message(self, _format: str, *args: object) -> None:
+                return None
+
+        origin = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
+        target = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
+        threads = [threading.Thread(target=server.serve_forever, daemon=True) for server in (origin, target)]
+        for thread in threads:
+            thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"NO_PROXY": "127.0.0.1,localhost", "no_proxy": "127.0.0.1,localhost"}):
+                root = Path(directory)
+                key = "media-public/test.webp"
+                backup = root / key
+                backup.parent.mkdir(parents=True)
+                token = "synthetic-local-purge-token-only"
+                purger = CloudflarePurger(zone_id="1234567890abcdef", api_token=token)
+                purger.endpoint = f"http://127.0.0.1:{origin.server_port}/purge"
+                store = FakeDeletingStore()
+                for response_status in (301, 302, 303, 307, 308):
+                    for cross_origin in (False, True):
+                        with self.subTest(status=response_status, cross_origin=cross_origin):
+                            destination = (f"http://localhost:{target.server_port}" if cross_origin else f"http://127.0.0.1:{origin.server_port}") + "/target"
+                            requests.clear()
+                            backup.write_bytes(b"synthetic-image")
+                            status, body = self.post_delete(DeleteService(store=store, backup_root=root, purger=purger), {
+                                "event_id": "11111111-1111-4111-8111-111111111111", "storage_scope": "public",
+                                "storage_key": key, "backup_path": key, "public_url": "https://media.example.test/" + key,
+                            })
+                            self.assertEqual(status, 503)
+                            self.assertEqual(body, {"error": "delete_unavailable"})
+                            self.assertEqual(requests, [("POST", "/purge", "Bearer " + token)])
+                            self.assertEqual(store.deleted[-1], key)
+                            self.assertEqual(backup.read_bytes(), b"synthetic-image")
+        finally:
+            for server in (origin, target):
+                server.shutdown()
+                server.server_close()
+            for thread in threads:
+                thread.join(timeout=3)
+                self.assertFalse(thread.is_alive(), "redirect test server did not stop")
 
     def test_signature_is_bound_to_exact_body_and_event(self) -> None:
         body = b'{"event_id":"11111111-1111-4111-8111-111111111111"}'

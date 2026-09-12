@@ -1,0 +1,72 @@
+{
+  "status": "passed",
+  "stage": "completed",
+  "checks": {
+    "api_readiness": "passed",
+    "worker_readiness": "passed",
+    "browser_anonymous_desktop_mobile_hidden": "passed",
+    "browser_anonymous_desktop_mobile_search_detail": "passed",
+    "browser_author_review_separation": "passed",
+    "browser_browser_loopback_only": "passed",
+    "browser_editor_browser_accept_invitation": "passed",
+    "browser_editor_ui_create_with_sources": "passed",
+    "browser_owner_browser_login": "passed",
+    "browser_owner_ui_claim_approve": "passed",
+    "browser_owner_ui_hide": "passed",
+    "browser_owner_ui_invitation_mailpit": "passed",
+    "browser_owner_ui_publish": "passed",
+    "browser_production_frontends_ready": "passed",
+    "browser_real_services_ready": "passed",
+    "browser_worker_hidden_cache_invalidation": "passed",
+    "browser_worker_publication_cache_invalidation": "passed",
+    "real_browser_flow": "passed"
+  },
+  "scope": "real-go-api-worker-postgresql-mailpit-production-next-playwright",
+  "started_at": "2026-09-12T08:21:27+00:00",
+  "not_covered": [
+    "real_content",
+    "turnstile",
+    "external_smtp",
+    "s3",
+    "cloudflare",
+    "target_servers",
+    "production_load"
+  ],
+  "browser_stage": "complete",
+  "cache": {
+    "ttl_seconds": 300,
+    "observation_timeout_seconds": 60,
+    "manual_revalidation_requests": 0,
+    "cached_surfaces": [
+      "home",
+      "detail",
+      "sitemap"
+    ],
+    "uncached_visibility_surfaces": [
+      "search"
+    ],
+    "publication_elapsed_ms": 1480,
+    "publication_surfaces": [
+      "home",
+      "search",
+      "detail",
+      "sitemap"
+    ],
+    "hidden_elapsed_ms": 1224,
+    "hidden_surfaces": [
+      "home",
+      "search",
+      "detail",
+      "sitemap"
+    ]
+  },
+  "browser_profiles": {
+    "owner": "desktop",
+    "editor": "mobile",
+    "anonymous": [
+      "desktop",
+      "mobile"
+    ]
+  },
+  "finished_at": "2026-09-12T08:22:01+00:00"
+}

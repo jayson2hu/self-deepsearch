@@ -603,6 +603,38 @@ CI 只上传 `release-a-core-e2e-ci.json`，包含阶段、检查结果、时间
 
 证据边界：即使该作业通过，也只证明真实 Go API/PostgreSQL/Mailpit 核心链路；不证明 Worker/outbox、两个前端与 API 的真实集成、Turnstile、S3/R2、Cloudflare 或日本/北京目标环境已验收。2026-09-12 已在 Ubuntu Docker 的隔离 PostgreSQL 16/Mailpit 环境执行并通过，见[本轮真实核心证据](./evidence/release-a-core-e2e-ubuntu-2026-09-12.json)。
 
+### 7.2 两站真实浏览器与 Worker CI 验收
+
+独立 `real-stack-e2e` 作业在 7.1 的基础上增加真实日本 Worker、两个生产构建的 Next 站点及 Chromium。它不使用目录 API 替身，也不直接调用内部 revalidate：owner 浏览器发邀请，editor 通过 Mailpit 验证码接受邀请并录入带来源作品，另一个 owner 审核发布，匿名桌面/移动浏览器检查搜索与详情，然后 owner 隐藏作品。
+
+发布前和隐藏前分别请求首页、搜索、详情、sitemap；Worker 消费真实 outbox 后，四种公开结果必须在 60 秒内变化（默认缓存 TTL 为 300 秒），不能等待 TTL 自然过期来冒充失效成功。首页、详情和 sitemap 是缓存失效检查；搜索 API 使用 `no-store`，只用于验证公开可见性，不称作缓存命中或失效证据。该流程不上传图片、不调用外部 SMTP、Turnstile、R2 或 Cloudflare。
+
+必须使用单独新建的 `self_deepsearch_core_e2e_test` 空库，不得与 7.1 复用已写入 owner 的库；CI 的两个作业运行在各自独立的服务容器。沿用 7.1 的迁移、运行账号及 Mailpit 准备，额外提供 `REAL_STACK_WORKER_DATABASE_URL`，使用 `platform_worker_login`，并与 API URL 指向同一个回环端口和数据库。运行器不会自行删除或重建数据库。
+
+```sh
+go build -trimpath -o .cache/core-e2e/platform-worker ./services/platform-worker/cmd/worker
+npm ci
+npm run build
+npx playwright install --with-deps chromium
+CONFIRM_RELEASE_A_REAL_STACK_E2E=disposable-database \
+  python scripts/release_a_real_stack_e2e.py --output docs/evidence/release-a-real-stack-local.json
+```
+
+需先按 7.1 构建 API 和 create-owner。运行器随机选择自身服务端口，限制浏览器只访问两个回环站点，并隔离子进程环境；只提交固定检查结果、脱敏失败阶段及缓存耗时，不保存账号、验证码、Cookie 或原始服务日志。完成后回收本次进程和前端隔离目录；数据库、Mailpit 由创建方销毁。本机 Ubuntu 验收不等于目标域名、跨区故障或真实负载通过。
+
+### 7.3 历史归档与只读恢复核验
+
+`migrations` CI 在专用 `self_deepsearch_worker_test` 库中串行执行历史归档 PostgreSQL 合同；使用受限 Worker 账号，覆盖软删除筛选、分批/行锁、幂等、manifest、文件校验、临时表逐字段恢复和失败回滚。历史源记录必须仍然不可见，不通过恢复操作撤销用户的清除选择。
+
+独立运行需提供 `HISTORY_ARCHIVE_CONTRACT_ADMIN_DATABASE_URL`、`HISTORY_ARCHIVE_CONTRACT_DATABASE_URL` 和 `CONFIRM_HISTORY_ARCHIVE_CONTRACT=disposable-database`，并先完成 Schema v21 迁移与角色配置。所有 URL 只允许固定名称的本地一次性测试库，不得使用生产库。
+
+```sh
+go test -count=1 -timeout=90s -v ./services/platform-worker/internal/historyarchive \
+  -run '^TestPostgresHistoryArchiveContract$'
+```
+
+离线归档校验工具 `worker history-archive-verify` 不连接数据库。它使用可信 manifest 导出核对 SHA-256、大小、gzip、严格 JSONL、用户范围和精确时间；具体参数及私有离线目录要求见[历史归档使用说明](../services/platform-worker/internal/historyarchive/README.md)。恢复演练只证明本地文件与数据库合同，目标存储的持久性、复制及运维演练仍需独立验收。
+
 ## 8. 备份策略
 
 低流量测试期每 7 天一次，正常保留最近 4 份 `pg_dump -Fc`、SHA-256 和北京副本；最后一份已验证恢复点与未验证文件受保护，必要时会暂时超过 4 份。正式生产前改为每日 7 份加每周 4 份，每月恢复到临时库并记录 RPO/RTO。未完成复制和恢复校验时，不得把备份状态标为 verified。

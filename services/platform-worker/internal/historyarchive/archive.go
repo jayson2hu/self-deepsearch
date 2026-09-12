@@ -93,10 +93,11 @@ func (runner Runner) runOnce(ctx context.Context) {
 }
 
 type PostgresRepository struct {
-	pool     *pgxpool.Pool
-	baseDir  string
-	fileMode os.FileMode
-	dirMode  os.FileMode
+	pool          *pgxpool.Pool
+	baseDir       string
+	fileMode      os.FileMode
+	dirMode       os.FileMode
+	syncDirectory func(string) error
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool, baseDir string) (*PostgresRepository, error) {
@@ -233,6 +234,9 @@ func (repository *PostgresRepository) writeArchive(records []Record, archivedAt 
 		return Result{}, err
 	}
 	keepTemporary = false
+	if err := syncArchiveDirectories(directory, repository.syncDirectory); err != nil {
+		return Result{}, err
+	}
 	info, err := os.Stat(finalPath)
 	if err != nil {
 		return Result{}, fmt.Errorf("stat history archive file: %w", err)
@@ -258,10 +262,16 @@ func encode(records []Record, destination io.Writer) error {
 }
 
 func installArchive(temporaryPath, finalPath string, expected hash.Hash) error {
-	if err := os.Rename(temporaryPath, finalPath); err == nil {
-		return nil
+	// Both files are in the same directory. Link installs the fully synced file
+	// atomically without replacement; Rename silently overwrites on Unix.
+	if err := os.Link(temporaryPath, finalPath); err == nil {
+		return os.Remove(temporaryPath)
 	} else if !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("install history archive file: %w", err)
+	}
+	info, err := os.Lstat(finalPath)
+	if err != nil || !info.Mode().IsRegular() {
+		return errors.New("existing history archive is not a regular file")
 	}
 	file, err := os.Open(finalPath)
 	if err != nil {
@@ -275,7 +285,37 @@ func installArchive(temporaryPath, finalPath string, expected hash.Hash) error {
 	if !equalDigest(digest, expected) {
 		return errors.New("existing history archive checksum mismatch")
 	}
-	return nil
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("sync existing history archive file: %w", err)
+	}
+	return os.Remove(temporaryPath)
+}
+
+// Sync the installed link/removal and every ancestor entry, including any
+// directory newly created by MkdirAll. Do this on retries too: existence does
+// not prove a previous attempt durably synced that directory. This visits only
+// the finite ancestor chain, not other filesystem entries.
+func syncArchiveDirectories(directory string, syncDirectory func(string) error) error {
+	if syncDirectory == nil {
+		syncDirectory = syncArchiveDirectory
+	}
+	for current := filepath.Clean(directory); ; current = filepath.Dir(current) {
+		if err := syncDirectory(current); err != nil {
+			return fmt.Errorf("sync history archive directory: %w", err)
+		}
+		if filepath.Dir(current) == current {
+			return nil
+		}
+	}
+}
+
+func syncArchiveDirectory(directory string) error {
+	file, err := os.Open(directory)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return file.Sync()
 }
 
 func equalDigest(left, right hash.Hash) bool {

@@ -15,7 +15,8 @@ export function NewWorkForm() {
     setBusy(true);
     setMessage("");
     setCreated(null);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const optional = (key: string) => String(form.get(key) ?? "").trim() || null;
 		const performerIDs = String(form.get("performer_ids") ?? "").split(/[\s,]+/).map((value) => value.trim()).filter(Boolean);
     try {
@@ -38,7 +39,7 @@ export function NewWorkForm() {
         return;
       }
       setCreated(body as OperationsEntity);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch {
       setMessage("无法连接运营服务");
     } finally {

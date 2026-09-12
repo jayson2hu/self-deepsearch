@@ -63,6 +63,7 @@ jobs:
           scripts/release_a_email_e2e.py
           scripts/release_a_catalog_e2e.py
           scripts/release_a_core_e2e.py
+          scripts/release_a_real_stack_e2e.py
       - name: Verify generated OpenAPI TypeScript types
         run: python scripts/generate_openapi_types.py --check
       - name: Run Python tests
@@ -145,6 +146,9 @@ jobs:
           MEDIA_UPLOAD_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
           MEDIA_UPLOAD_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
           CONFIRM_MEDIA_UPLOAD_CONTRACT: disposable-database
+          HISTORY_ARCHIVE_CONTRACT_ADMIN_DATABASE_URL: postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_worker_test
+          HISTORY_ARCHIVE_CONTRACT_DATABASE_URL: postgres://platform_worker_login:platform_worker_test_password@127.0.0.1:5432/self_deepsearch_worker_test
+          CONFIRM_HISTORY_ARCHIVE_CONTRACT: disposable-database
         run: |
           psql postgres://platform:platform_test@127.0.0.1:5432/postgres \
             -v ON_ERROR_STOP=1 -c 'CREATE DATABASE self_deepsearch_worker_test'
@@ -162,6 +166,8 @@ jobs:
             -run '^TestPostgresMediaUsage.*Contract$'
           go test -count=1 -timeout=90s -v ./services/platform-worker/internal/mediauploadcontrol \
             -run '^TestPostgresMediaUploadQueueContract$'
+          go test -count=1 -timeout=90s -v ./services/platform-worker/internal/historyarchive \
+            -run '^TestPostgresHistoryArchiveContract$'
 
   core-e2e:
     runs-on: ubuntu-latest
@@ -218,6 +224,77 @@ jobs:
         with:
           name: release-a-core-e2e-${{ github.sha }}
           path: docs/evidence/release-a-core-e2e-ci.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  real-stack-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: self_deepsearch_core_e2e_test
+          POSTGRES_USER: platform
+          POSTGRES_PASSWORD: platform_real_stack_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U platform -d self_deepsearch_core_e2e_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+      mailpit:
+        image: axllent/mailpit:v1.27
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      ADMIN_DATABASE_URL: postgres://platform:platform_real_stack_test@127.0.0.1:5432/self_deepsearch_core_e2e_test?sslmode=disable
+      CORE_E2E_DATABASE_URL: postgres://platform_api_login:real_stack_api_test_password@127.0.0.1:5432/self_deepsearch_core_e2e_test?sslmode=disable
+      REAL_STACK_WORKER_DATABASE_URL: postgres://platform_worker_login:real_stack_worker_test_password@127.0.0.1:5432/self_deepsearch_core_e2e_test?sslmode=disable
+      MIGRATION_DIR: db/migrations
+      PLATFORM_API_DB_PASSWORD: real_stack_api_test_password
+      PLATFORM_WORKER_DB_PASSWORD: real_stack_worker_test_password
+      CONFIRM_RELEASE_A_REAL_STACK_E2E: disposable-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: |
+            services/platform-api/go.sum
+            services/platform-worker/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Prepare isolated real-stack database
+        run: |
+          sh infra/database/migrate.sh
+          sh infra/database/provision_runtime_logins.sh
+      - name: Build real API, Worker and owner bootstrap
+        run: |
+          mkdir -p .cache/core-e2e
+          go build -trimpath -o .cache/core-e2e/platform-api ./services/platform-api/cmd/api
+          go build -trimpath -o .cache/core-e2e/platform-worker ./services/platform-worker/cmd/worker
+          go build -trimpath -o .cache/core-e2e/create-owner ./services/platform-api/cmd/create-owner
+      - run: npm ci
+      - name: Build production frontends
+        run: npm run build
+      - name: Install real-stack browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify real browser account, publication and Worker cache lifecycle
+        run: python scripts/release_a_real_stack_e2e.py
+      - name: Upload only sanitized real-stack evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-real-stack-${{ github.sha }}
+          path: docs/evidence/release-a-real-stack-ci.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -304,7 +381,7 @@ jobs:
             run --rm --no-deps edge nginx -t
 
   images:
-    needs: [go, python, migrations, core-e2e, web, compose]
+    needs: [go, python, migrations, core-e2e, real-stack-e2e, web, compose]
     runs-on: ubuntu-latest
     env:
       BUILD_VERSION: ci-${{ github.sha }}

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Callable, Protocol, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .upload_control import UploadControl
 from .upload_control_http import PATHS as CONTROL_PATHS
@@ -46,19 +46,26 @@ class PurgeHTTPResponse(Protocol):
     def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None: ...
 
 
+class _NoPurgeRedirect(HTTPRedirectHandler):
+    def redirect_request(self, _request: object, _file_pointer: object, _code: int, _message: str, _headers: object, _new_url: str) -> None:
+        # A purge must be accepted by the configured endpoint, never a redirect
+        # target. urllib otherwise forwards Authorization on POST -> GET redirects.
+        return None
+
+
 class CloudflarePurger:
     def __init__(
         self,
         *,
         zone_id: str,
         api_token: str,
-        opener: Callable[..., PurgeHTTPResponse] = cast(Callable[..., PurgeHTTPResponse], urlopen),
+        opener: Callable[..., PurgeHTTPResponse] | None = None,
     ) -> None:
         if not re.fullmatch(r"[A-Za-z0-9_-]{10,64}", zone_id) or len(api_token.strip()) < 20:
             raise ValueError("Cloudflare purge configuration is invalid")
         self.endpoint = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache"
         self.api_token = api_token.strip()
-        self.opener = opener
+        self.opener = opener if opener is not None else cast(Callable[..., PurgeHTTPResponse], build_opener(_NoPurgeRedirect()).open)
 
     def purge(self, public_url: str) -> None:
         body = json.dumps({"files": [public_url]}, separators=(",", ":")).encode()

@@ -1,15 +1,31 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import yaml
 
-from scripts.generate_openapi_types import OPENAPI_PATH, OUTPUT_PATH, TypeGenerator, generated_source
+SCRIPTS = Path(__file__).resolve().parents[1]
+# Console pytest does not add the repository root to sys.path like python -m
+# pytest does. Resolve this sibling tool from its file location in either case.
+sys.path.insert(0, str(SCRIPTS))
+
+from generate_openapi_types import OPENAPI_PATH, OUTPUT_PATH, TypeGenerator, generated_source  # noqa: E402
 
 
 class OpenAPITypesGeneratorTests(unittest.TestCase):
+    def test_collection_does_not_require_the_repository_on_python_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, "-I", "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", str(Path(__file__).resolve())],
+                cwd=directory, env={"PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}, capture_output=True, text=True, timeout=15,
+            )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("OpenAPITypesGeneratorTests::test_every_openapi_schema_is_exported", result.stdout)
+
     def test_release_a_generated_types_are_current(self) -> None:
         self.assertEqual(generated_source(), OUTPUT_PATH.read_text(encoding="utf-8"))
 

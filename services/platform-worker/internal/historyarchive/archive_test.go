@@ -7,9 +7,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -88,5 +90,111 @@ func TestRunnerUsesAgeAndBatch(t *testing.T) {
 	runner.runOnce(context.Background())
 	if !repository.cutoff.Equal(now.Add(-30*24*time.Hour)) || !repository.now.Equal(now) || repository.limit != 500 {
 		t.Fatalf("unexpected archive request: cutoff=%s now=%s limit=%d", repository.cutoff, repository.now, repository.limit)
+	}
+}
+
+func TestInstallArchiveNeverOverwritesExistingFile(t *testing.T) {
+	directory := t.TempDir()
+	temporary := filepath.Join(directory, "new.partial")
+	final := filepath.Join(directory, "archive.jsonl.gz")
+	if err := os.WriteFile(temporary, []byte("new archive"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(final, []byte("original evidence"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.New()
+	_, _ = digest.Write([]byte("new archive"))
+	if err := installArchive(temporary, final, digest); err == nil {
+		t.Fatal("existing different archive must be rejected, not replaced")
+	}
+	data, err := os.ReadFile(final)
+	if err != nil || string(data) != "original evidence" {
+		t.Fatal("archive installation overwrote existing evidence")
+	}
+}
+
+func TestInstallArchiveReusesMatchingFileAndRemovesTemporary(t *testing.T) {
+	directory := t.TempDir()
+	temporary := filepath.Join(directory, "new.partial")
+	final := filepath.Join(directory, "archive.jsonl.gz")
+	for _, path := range []string{temporary, final} {
+		if err := os.WriteFile(path, []byte("same archive"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	before, err := os.Stat(final)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.New()
+	_, _ = digest.Write([]byte("same archive"))
+	if err := installArchive(temporary, final, digest); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(final)
+	if err != nil || !os.SameFile(before, after) {
+		t.Fatal("matching archive must retain the existing inode")
+	}
+	if _, err := os.Stat(temporary); !os.IsNotExist(err) {
+		t.Fatal("temporary archive must be removed after successful reuse")
+	}
+}
+
+func TestWriteArchiveSyncsInstalledDirectoryAndAllAncestorsOnEveryAttempt(t *testing.T) {
+	repository := PostgresRepository{baseDir: filepath.Join(t.TempDir(), "new", "archive-root"), fileMode: 0o600, dirMode: 0o700}
+	now := time.Date(2026, 9, 12, 1, 2, 3, 0, time.UTC)
+	leaf := filepath.Join(repository.baseDir, "history", "2026", "09")
+	var expected []string
+	for current := leaf; ; current = filepath.Dir(current) {
+		expected = append(expected, current)
+		if filepath.Dir(current) == current {
+			break
+		}
+	}
+	for range 2 {
+		var synced []string
+		repository.syncDirectory = func(directory string) error {
+			// Directory persistence must happen after the final link is installed
+			// and the temporary link removed, before writeArchive reports success.
+			files, err := filepath.Glob(filepath.Join(leaf, "*.jsonl.gz"))
+			if err != nil || len(files) != 1 {
+				t.Fatal("directory synced before final archive installation")
+			}
+			partials, err := filepath.Glob(filepath.Join(leaf, ".history-*.partial"))
+			if err != nil || len(partials) != 0 {
+				t.Fatal("directory synced before temporary archive removal")
+			}
+			synced = append(synced, directory)
+			return syncArchiveDirectory(directory)
+		}
+		if _, err := repository.writeArchive(fixtureRecords(), now); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(synced, expected) {
+			t.Fatal("archive directory or ancestor persistence was omitted, reordered or skipped on retry")
+		}
+	}
+}
+
+func TestWriteArchivePropagatesDirectorySyncFailure(t *testing.T) {
+	now := time.Date(2026, 9, 12, 1, 2, 3, 0, time.UTC)
+	for _, failureLevel := range []string{"leaf", "parent", "base", "ancestor"} {
+		t.Run(failureLevel, func(t *testing.T) {
+			repository := PostgresRepository{baseDir: filepath.Join(t.TempDir(), "new-root"), fileMode: 0o600, dirMode: 0o700}
+			leaf := filepath.Join(repository.baseDir, "history", "2026", "09")
+			target := map[string]string{"leaf": leaf, "parent": filepath.Dir(leaf), "base": repository.baseDir, "ancestor": filepath.Dir(repository.baseDir)}[failureLevel]
+			injected := errors.New("synthetic directory persistence failure")
+			repository.syncDirectory = func(directory string) error {
+				if directory == target {
+					return injected
+				}
+				return syncArchiveDirectory(directory)
+			}
+			result, err := repository.writeArchive(fixtureRecords(), now)
+			if !errors.Is(err, injected) || result != (Result{}) {
+				t.Fatal("directory persistence failure was not propagated")
+			}
+		})
 	}
 }

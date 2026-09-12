@@ -92,7 +92,7 @@ class DependencySecurityContractTests(unittest.TestCase):
 
         workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
         image_job = workflow["jobs"]["images"]
-        self.assertEqual(set(image_job["needs"]), {"go", "python", "migrations", "core-e2e", "web", "compose"})
+        self.assertEqual(set(image_job["needs"]), {"go", "python", "migrations", "core-e2e", "real-stack-e2e", "web", "compose"})
         image_steps = image_job["steps"]
         image_commands = [step.get("run", "") for step in image_steps if isinstance(step, dict)]
         self.assertIn("docker buildx bake release-a --load", image_commands)
@@ -308,6 +308,33 @@ class DependencySecurityContractTests(unittest.TestCase):
         self.assertEqual(upload["if"], "always()")
         self.assertEqual(upload["with"]["path"], "docs/evidence/release-a-core-e2e-ci.json")
         self.assertIn("core-e2e", workflow["jobs"]["images"]["needs"])
+
+    def test_ci_gates_delivery_on_real_stack_browser_and_history_archive(self) -> None:
+        workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+        job = workflow["jobs"]["real-stack-e2e"]
+        self.assertEqual(job["services"]["postgres"]["image"], "postgres:16-alpine")
+        self.assertEqual(job["services"]["mailpit"]["image"], "axllent/mailpit:v1.27")
+        self.assertEqual(job["env"]["CONFIRM_RELEASE_A_REAL_STACK_E2E"], "disposable-database")
+        self.assertIn("platform_api_login:", job["env"]["CORE_E2E_DATABASE_URL"])
+        self.assertIn("platform_worker_login:", job["env"]["REAL_STACK_WORKER_DATABASE_URL"])
+        self.assertNotIn("continue-on-error", job)
+        commands = "\n".join(step.get("run", "") for step in job["steps"])
+        for command in (
+            "sh infra/database/migrate.sh", "sh infra/database/provision_runtime_logins.sh",
+            "go build -trimpath -o .cache/core-e2e/platform-worker ./services/platform-worker/cmd/worker",
+            "npm ci", "npm run build", "playwright install --with-deps chromium",
+            "python scripts/release_a_real_stack_e2e.py",
+        ):
+            self.assertIn(command, commands)
+        self.assertNotIn("frontend_smoke", commands)
+        upload = next(step for step in job["steps"] if step.get("uses") == "actions/upload-artifact@v4")
+        self.assertEqual(upload["if"], "always()")
+        self.assertEqual(upload["with"]["path"], "docs/evidence/release-a-real-stack-ci.json")
+        self.assertIn("real-stack-e2e", workflow["jobs"]["images"]["needs"])
+        archive = next(step for step in workflow["jobs"]["migrations"]["steps"] if "TestPostgresHistoryArchiveContract" in step.get("run", ""))
+        self.assertEqual(archive["env"]["CONFIRM_HISTORY_ARCHIVE_CONTRACT"], "disposable-database")
+        self.assertIn("platform_worker_login:", archive["env"]["HISTORY_ARCHIVE_CONTRACT_DATABASE_URL"])
+        self.assertLess(archive["run"].index("TestPostgresOutboxLeaseContract"), archive["run"].index("TestPostgresHistoryArchiveContract"))
 
     def test_ci_enables_real_go_python_media_acknowledgement_contract(self) -> None:
         workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))

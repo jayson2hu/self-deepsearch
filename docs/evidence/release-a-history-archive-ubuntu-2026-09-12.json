@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-12",
+  "status": "passed",
+  "scope": "Local historical-view archival and offline recovery verification; no production recovery or cross-region deployment",
+  "source": {
+    "state": "modified_worktree",
+    "base_revision": "011b7f5e9a521882b286a0f3431af0be82719812"
+  },
+  "environment": {
+    "os": "Ubuntu 22.04",
+    "go": "1.22",
+    "database": "Dedicated loopback self_deepsearch_worker_test",
+    "schema_version": 21,
+    "runtime_role": "platform_worker_login",
+    "synthetic_data_only": true
+  },
+  "fixed_defect": {
+    "description": "On Linux, os.Rename replaced an existing final archive instead of reaching the checksum-validation fallback.",
+    "before": "Both new installation regressions failed: different contents were overwritten, and matching contents replaced the existing inode.",
+    "after": "Same-directory os.Link installs without replacement; existing regular files must match SHA-256 before reuse. Successful reuse removes the partial file and retains the original inode.",
+    "filesystem_requirement": "The archive filesystem must support same-directory hard links. Installation fails closed rather than falling back to replacement."
+  },
+  "offline_tool": {
+    "command": "platform-worker history-archive-verify --archive-dir <offline-copy> --manifest <private-exported-manifest.json>",
+    "documentation": "services/platform-worker/internal/historyarchive/README.md",
+    "reads": "One explicitly exported trusted manifest and its archive file; no database connection",
+    "validation": [
+      "Schema version 1",
+      "Compressed SHA-256 and byte size",
+      "Single complete gzip member without trailing compressed data",
+      "Bounded JSONL decoding with known fields and supported content types",
+      "Record count and unique positive history IDs",
+      "Canonical viewing-time/history-ID order",
+      "Exact user UUID scope and viewed-time range",
+      "Canonical relative path inside selected directory; nested symlinks rejected"
+    ],
+    "limits": {
+      "max_records": 10000,
+      "max_compressed_bytes": 67108864,
+      "max_decompressed_bytes": 67108864
+    },
+    "private_records_in_command_output": false,
+    "database_modified": false,
+    "history_made_visible": false
+  },
+  "validation": {
+    "command": "go test -race -count=1 -json ./services/platform-worker/internal/historyarchive",
+    "opt_in_environment": [
+      "HISTORY_ARCHIVE_CONTRACT_ADMIN_DATABASE_URL",
+      "HISTORY_ARCHIVE_CONTRACT_DATABASE_URL",
+      "CONFIRM_HISTORY_ARCHIVE_CONTRACT=disposable-database"
+    ],
+    "passed_top_level_tests": 14,
+    "passed_subtests": 34,
+    "failed_tests": 0,
+    "skipped_tests": 0,
+    "postgres_contract": "TestPostgresHistoryArchiveContract",
+    "postgres_subtests": [
+      {
+        "name": "soft_delete_retains_rows_before_archiving",
+        "status": "passed"
+      },
+      {
+        "name": "locked_rows_are_skipped_and_batch_limit_respected",
+        "status": "passed"
+      },
+      {
+        "name": "remaining_batch_and_idempotent_retry",
+        "status": "passed"
+      },
+      {
+        "name": "manifest_file_and_temp_table_restore_match_exactly",
+        "status": "passed"
+      },
+      {
+        "name": "original_rows_retained_and_visibility_unchanged",
+        "status": "passed"
+      },
+      {
+        "name": "filesystem_failure_does_not_mark_rows",
+        "status": "passed"
+      },
+      {
+        "name": "directory_sync_failure_leaf_does_not_commit",
+        "status": "passed"
+      },
+      {
+        "name": "directory_sync_failure_base_parent_does_not_commit",
+        "status": "passed"
+      },
+      {
+        "name": "commit_failure_rolls_back_and_reuses_orphan_file",
+        "status": "passed"
+      }
+    ],
+    "worker_full_default_test_suite": "passed; other opt-in database contracts were not re-enabled in that invocation",
+    "worker_go_vet": "passed",
+    "git_diff_check": "passed"
+  },
+  "database_guards": [
+    "Explicit confirmation required; omitted environments skip, incomplete configurations fail.",
+    "Both URLs must target the same explicit 127.0.0.1 port and exact disposable database name; host-override parameters rejected.",
+    "Worker login is non-superuser, cannot bypass RLS, belongs to platform_worker and cannot read platform.users, delete history or update manifests.",
+    "Schema v21 and empty user/work/history/media/outbox tables required before fixtures.",
+    "Shared advisory guard requires serial execution with other Worker contracts."
+  ],
+  "recovery_proof": {
+    "flow": "Synthetic PostgreSQL rows -> SQL soft deletion -> real Worker archive -> trusted manifest verification -> isolated transaction-local TEMP recovery -> exact comparison to retained originals",
+    "preserved_fields": [
+      "history_id",
+      "user_id",
+      "content_type",
+      "content_id",
+      "viewed_at (microseconds)",
+      "deleted_at (microseconds)",
+      "is_deleted=true",
+      "archived_at"
+    ],
+    "protected_rows": [
+      "Visible history",
+      "Too-recent deletion",
+      "Previously archived history"
+    ],
+    "failure_injection": [
+      "Non-directory archive destination: no manifest or archived_at committed.",
+      "Actual deferred SQL constraint failure at COMMIT: manifest and archived_at roll back; installed orphan remains and retry reuses the same inode.",
+      "Leaf-directory and base-parent-directory fsync failures: no manifest or archived_at committed; retry reuses the installed inode and synchronizes the full directory chain."
+    ],
+    "corrupted_archive_copy": "Rejected",
+    "production_tables_restored_or_undeleted": false
+  },
+  "cleanup": {
+    "remaining_synthetic_users": 0,
+    "remaining_history_rows": 0,
+    "remaining_failure_triggers": 0,
+    "temporary_archive_files_and_recovery_tables": "Automatically removed by Go test cleanup and transaction-local TEMP-table lifecycle",
+    "append_only_test_manifests_remaining": 22,
+    "note": "The count includes repeated contract executions. These synthetic append-only manifests are deliberately not mutated; the parent task disposes of the dedicated database."
+  },
+  "boundaries": [
+    "The manifest must come from a trusted source; a checksum is not a signature.",
+    "Run the verifier on an offline copy without an untrusted concurrent directory writer.",
+    "The contract applies synthetic SQL soft deletion; it does not exercise an authenticated history-clearing browser/API request.",
+    "TEMP-table recovery proves byte/field preservation without inserting into official history tables or making deleted history visible.",
+    "No real user data, physical retention purge, live cross-region copy, production restore or external provider request was performed."
+  ],
+  "durability_hardening": {
+    "problem": "Syncing only the temporary file left directory entries from MkdirAll and Link/Remove unflushed before the database commit.",
+    "before_database_manifest_insert": [
+      "fsync the complete temporary gzip file",
+      "Install without replacement; fsync the actual existing inode when reusing matching content",
+      "Remove the temporary link",
+      "fsync the installed archive directory and each finite ancestor, leaf to filesystem root"
+    ],
+    "retry_policy": "Repeat directory synchronization even when paths already exist; a failed previous attempt may have created unsynced directories.",
+    "failure_policy": "Any file or directory synchronization failure returns before manifest INSERT and archived_at UPDATE; the database transaction rolls back.",
+    "proof": "Unit checks observe final installation before synchronization and exact leaf-to-root order on both first install and retry. Real PostgreSQL tests inject failures at the leaf and base-parent directory and verify unchanged rows/manifests plus same-inode successful retry.",
+    "boundary": "These are filesystem sync calls and injected failure contracts, not a hardware power-loss experiment."
+  }
+}

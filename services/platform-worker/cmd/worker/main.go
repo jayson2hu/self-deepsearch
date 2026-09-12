@@ -23,6 +23,9 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "history-archive-verify" {
+		os.Exit(historyarchive.RunVerifyCommand(os.Args[2:], os.Stdout, os.Stderr))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "media-upload-control" {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		code := mediauploadcontrol.RunCommand(ctx, os.Args[2:], os.Stdout, os.Stderr)

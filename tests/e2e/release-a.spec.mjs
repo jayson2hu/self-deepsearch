@@ -706,6 +706,9 @@ test("两个运营账号完成人工录入、审核、发布并公开搜索", as
   await page.getByLabel("录入理由").fill("验证人工录入审核发布闭环");
   await page.getByRole("button", { name: "保存并提交审核" }).click();
   await expect(page.getByText("作品已进入审核队列")).toBeVisible();
+  await expect(page.locator(".form-error")).toHaveCount(0);
+  await expect(page.getByLabel("作品番号", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("作品标题", { exact: true })).toHaveValue("");
   const createdState = await (await page.request.get(`${apiURL}/__test/operations`)).json();
   expect(createdState).toMatchObject({ has_work: true, task_status: "pending", assignee: null });
 

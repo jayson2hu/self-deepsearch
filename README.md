@@ -133,7 +133,7 @@ docker compose config --quiet
 
 Python 和真实 PostgreSQL 的命令见运行手册。真实环境准备好后，`scripts/release_a_email_e2e.py` 验证注册/重置/关闭/邀请，`scripts/release_a_catalog_e2e.py` 验证作品录入/异人审核/发布/番号搜索/隐藏；两个工具都不会输出密码，运营账号密码应只从本机环境变量读取。`.env.example` 只保存变量名和本地开发值，生产数据库、邮件、Turnstile、S3、session 和 HMAC 密钥不得进入 Git。
 
-CI 另设真实核心服务门槛 `core-e2e`：一次性 PostgreSQL 16 + Mailpit + 编译后的 Go API，通过 `scripts/release_a_core_e2e.py` 自动引导 owner、邮件邀请 editor，并串联账号和审核发布链路。失败会阻断镜像交付，只上传脱敏 JSON 结果；不启动 Worker 或前端，也不替代目标服务器、Turnstile、图片与 Cloudflare 验收。专用空库重跑要求和命令见 [运行手册 7.1](docs/RELEASE_A_RUNBOOK.md#71-真实核心服务-ci-验收)。2026-09-12 已在 Ubuntu 实际执行并通过全部 8 项核心检查，见[本轮核心证据](./docs/evidence/release-a-core-e2e-ubuntu-2026-09-12.json)；这不代表远端 CI 或目标部署已运行。
+CI 设有两个真实服务门槛：`core-e2e` 使用一次性 PostgreSQL 16 + Mailpit + Go API 验证账号及审核发布链；新增 `real-stack-e2e` 进一步启动真实 Worker 和两个生产前端，通过 Chromium 验证邀请、异人审核、发布/隐藏及 outbox 驱动的公开缓存失效。任一失败都会阻断五镜像交付，只上传脱敏 JSON。历史归档另有受限 Worker 账号的真实 PostgreSQL 合同和离线只读校验命令。专用空库及重跑要求见 [运行手册 7.1–7.3](docs/RELEASE_A_RUNBOOK.md#71-真实核心服务-ci-验收)；这些门槛不替代目标服务器、Turnstile、真实图片存储和 Cloudflare 验收。
 
 复制生产模板并在服务器私有目录填好真实值后，先做只读环境检查再启动 Compose。`core` 检查日本核心服务，`full` 在持有两份私有配置的受控管理机上核对日本/北京共享媒体密钥、公开图片基地址、版本号、双 bucket 和 10 GiB 上限；`--check-files` 在日本服务器上额外检查 Origin Certificate、私钥和 metrics token 文件。检查器只输出变量名和问题，不输出变量值；不要为了检查而在日本、北京服务器之间复制整份私有 env。直接检查仓库 `.env.example` 会因为仍含占位符而按设计失败。
 
