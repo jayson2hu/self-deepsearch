@@ -3,6 +3,9 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  // Detached builds can produce an empty TypeScript --showConfig stream.
+  // Use the compiler API so production builds still perform type checking.
+  experimental: { useTypeScriptCli: false },
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,

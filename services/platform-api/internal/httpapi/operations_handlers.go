@@ -1251,9 +1251,9 @@ func validOptionalRange(value *int, minimum, maximum int) bool {
 
 func validRevisionPayload(entityType string, payload map[string]any) bool {
 	allowed := map[string]map[string]bool{
-		"work":      {"canonical_code": true, "compact_code": true, "title": true, "title_original": true, "release_date": true, "studio_id": true, "summary": true, "performer_ids": true},
-		"performer": {"display_name": true, "name_original": true, "romanized_name": true, "aliases": true, "adult_status": true, "activity_status": true, "agency": true, "birth_year": true, "height_cm": true, "measurements": true, "debut_year": true},
-		"studio":    {"name": true, "normalized_name": true},
+		"work":      {"canonical_code": true, "compact_code": true, "title": true, "title_original": true, "release_date": true, "studio_id": true, "summary": true, "performer_ids": true, "content_classification": true, "seo_quality_status": true},
+		"performer": {"display_name": true, "name_original": true, "romanized_name": true, "aliases": true, "adult_status": true, "activity_status": true, "agency": true, "birth_year": true, "height_cm": true, "measurements": true, "debut_year": true, "content_classification": true, "seo_quality_status": true},
+		"studio":    {"name": true, "normalized_name": true, "content_classification": true, "seo_quality_status": true},
 	}[entityType]
 	if allowed == nil {
 		return false
@@ -1293,6 +1293,9 @@ func revisionFieldAllowsNull(entityType, field string) bool {
 }
 
 func validRevisionPayloadValues(entityType string, payload map[string]any) bool {
+	if !validSEOPolicyPayload(payload) {
+		return false
+	}
 	switch entityType {
 	case "work":
 		_, hasCode := payload["canonical_code"]
@@ -1321,6 +1324,23 @@ func validRevisionPayloadValues(entityType string, payload map[string]any) bool 
 	default:
 		return false
 	}
+}
+
+func validSEOPolicyPayload(payload map[string]any) bool {
+	classification, hasClassification := payload["content_classification"]
+	quality, hasQuality := payload["seo_quality_status"]
+	if !hasClassification && !hasQuality {
+		return true
+	}
+	classificationText, classificationOK := classification.(string)
+	qualityText, qualityOK := quality.(string)
+	if !hasClassification || !hasQuality || !classificationOK || !qualityOK {
+		return false
+	}
+	if classificationText == "unknown" || qualityText == "unknown" {
+		return classificationText == "unknown" && qualityText == "unknown"
+	}
+	return oneOf(classificationText, "non_explicit", "explicit") && oneOf(qualityText, "eligible", "ineligible")
 }
 
 func validRequiredString(payload map[string]any, key string, maximum int) bool {

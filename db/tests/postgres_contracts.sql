@@ -14,8 +14,8 @@ BEGIN
     SELECT metadata.schema_version INTO schema_version
     FROM platform.system_metadata AS metadata
     WHERE metadata.singleton;
-    IF schema_version <> 21 THEN
-        RAISE EXCEPTION 'expected schema version 21, got %', schema_version;
+    IF schema_version <> 22 THEN
+        RAISE EXCEPTION 'expected schema version 22, got %', schema_version;
     END IF;
 
     SELECT count(*) INTO business_objects

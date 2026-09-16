@@ -36,6 +36,8 @@ export function RevisionEditor({ latest }: { latest: ContentRevision }) {
     } else {
       revisionPayload = { name: optional("name") };
     }
+    revisionPayload.content_classification = optional("content_classification") ?? "unknown";
+    revisionPayload.seo_quality_status = optional("seo_quality_status") ?? "unknown";
     try {
       const base = "";
       const response = await fetch(`${base}/admin/v1/entities/${latest.entity_id}/revisions`, {
@@ -74,6 +76,8 @@ export function RevisionEditor({ latest }: { latest: ContentRevision }) {
         <label><span>身体参数</span><input defaultValue={text("measurements")} maxLength={200} name="measurements" /></label>
       </> : null}
       {latest.entity_type === "studio" ? <label className="wide"><span>厂牌名称</span><input defaultValue={text("name")} maxLength={200} name="name" required /></label> : null}
+      <label><span>内容分级</span><select defaultValue={text("content_classification") || "unknown"} name="content_classification"><option value="unknown">待分类（禁止索引）</option><option value="non_explicit">非露骨内容</option><option value="explicit">露骨成人内容</option></select></label>
+      <label><span>SEO 质量审查</span><select defaultValue={text("seo_quality_status") || "unknown"} name="seo_quality_status"><option value="unknown">待审查（禁止索引）</option><option value="eligible">符合索引条件</option><option value="ineligible">不符合索引条件</option></select></label>
       <SourceEvidenceFields />
       <label className="wide"><span>修订理由</span><textarea maxLength={1000} minLength={2} name="reason" required rows={3} /></label>
     </div>{message ? <p className="form-error">{message}</p> : null}<div className="form-actions"><button className="primary" disabled={busy} type="submit"><Save size={17} />{busy ? "提交中" : "提交审核"}</button></div></form>

@@ -56,6 +56,7 @@ func (store *Store) ReplacePrimaryMedia(ctx context.Context, input operations.Re
 func replacePrimaryMedia(ctx context.Context, begin func(context.Context, pgx.TxOptions) (pgx.Tx, error), input operations.ReplacePrimaryMediaInput, actorID, requestID string, now time.Time) (operations.PrimaryMediaReplacement, error) {
 	empty := operations.PrimaryMediaReplacement{}
 	manifest := input.Manifest
+	normalizeMediaPreviewPolicy(&manifest)
 	if !validMediaAssociation(manifest) || !manifest.IsPrimary ||
 		input.ExpectedAssetID == "" || strings.EqualFold(input.ExpectedAssetID, manifest.AssetID) {
 		return empty, operations.ErrInvalidInput

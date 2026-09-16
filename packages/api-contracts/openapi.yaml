@@ -1913,8 +1913,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/ImageRendition"
         - type: object
-          required: [renditions]
+          required: [renditions, external_preview_allowed]
           properties:
+            external_preview_allowed:
+              type: boolean
+              description: Whether this image may be exposed in external search and social previews. This does not affect on-site display permission.
             renditions:
               type: array
               minItems: 1
@@ -1926,9 +1929,24 @@ components:
     WorkImage:
       allOf:
         - $ref: "#/components/schemas/ResponsiveImage"
+    SEOProfile:
+      type: object
+      additionalProperties: false
+      required: [indexable, sitemap_eligible, adult_rating, image_preview_mode]
+      properties:
+        indexable:
+          type: boolean
+          description: Final entity-level decision after content classification and quality review; environment release gates still apply.
+        sitemap_eligible:
+          type: boolean
+        adult_rating:
+          type: [string, "null"]
+          enum: [adult, null]
+        image_preview_mode:
+          enum: [standard, none]
     WorkDetailResponse:
       type: object
-      required: [id, code, title, title_original, release_date, studio_name, summary, performers, images, related_works]
+      required: [id, code, title, title_original, release_date, studio_name, summary, performers, images, related_works, seo]
       properties:
         id:
           type: string
@@ -1968,9 +1986,10 @@ components:
           maxItems: 8
           items:
             $ref: "#/components/schemas/HomeItem"
+        seo: { $ref: "#/components/schemas/SEOProfile" }
     PerformerDetailResponse:
       type: object
-      required: [id, name, name_original, romanized_name, aliases, activity_status, agency, birth_year, height_cm, measurements, debut_year, image_url, works, images]
+      required: [id, name, name_original, romanized_name, aliases, activity_status, agency, birth_year, height_cm, measurements, debut_year, image_url, works, images, seo]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -1995,6 +2014,7 @@ components:
           description: Most recent formal publication time of the currently public text profile.
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
         images: { type: array, items: { $ref: "#/components/schemas/WorkImage" } }
+        seo: { $ref: "#/components/schemas/SEOProfile" }
     StudioSummary:
       type: object
       required: [id, name, href]
@@ -2010,7 +2030,7 @@ components:
         next_cursor: { type: [string, "null"], maxLength: 256 }
     StudioDetailResponse:
       type: object
-      required: [id, name, works]
+      required: [id, name, works, seo]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -2019,6 +2039,7 @@ components:
           format: date-time
           description: Most recent formal publication time of the currently public text profile.
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
+        seo: { $ref: "#/components/schemas/SEOProfile" }
     MessageResponse:
       type: object
       required: [message]
@@ -2694,7 +2715,7 @@ components:
     MediaManifestRequest:
       type: object
       additionalProperties: false
-      required: [asset_id, entity_type, entity_id, asset_type, source_type, checked_at, confidence, purpose, position, is_primary, reason, tool_version, objects]
+      required: [asset_id, entity_type, entity_id, asset_type, source_type, checked_at, confidence, purpose, position, is_primary, reason, tool_version, content_classification, external_preview_permission, objects]
       properties:
         asset_id: { type: string, format: uuid }
         entity_type: { enum: [work, performer] }
@@ -2709,6 +2730,10 @@ components:
         is_primary: { type: boolean, description: "Must be true for cover/avatar and false for gallery." }
         reason: { type: string, minLength: 2, maxLength: 1000 }
         tool_version: { const: media-python/1 }
+        content_classification: { enum: [unknown, non_explicit, explicit] }
+        external_preview_permission:
+          enum: [unknown, allow, deny]
+          description: allow is valid only for non_explicit content; unknown is fail-closed and disables external previews.
         objects:
           type: array
           minItems: 4

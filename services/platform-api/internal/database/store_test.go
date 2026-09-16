@@ -54,6 +54,31 @@ func TestImageFromRenditionsSupportsSingleLegacyDerivative(t *testing.T) {
 	}
 }
 
+func TestSEOPolicyFailsClosedAndSeparatesOnSiteMedia(t *testing.T) {
+	unknown := seoProfile("unknown", "unknown", []catalog.Image{{ExternalPreviewAllowed: true}})
+	if unknown.Indexable || unknown.SitemapEligible || unknown.ImagePreviewMode != "none" {
+		t.Fatalf("unknown policy must fail closed: %#v", unknown)
+	}
+	explicit := seoProfile("explicit", "eligible", []catalog.Image{{ExternalPreviewAllowed: true}})
+	if !explicit.Indexable || !explicit.AdultRating || explicit.ImagePreviewMode != "none" {
+		t.Fatalf("explicit content may be indexable but must not expose image previews: %#v", explicit)
+	}
+	standard := seoProfile("non_explicit", "eligible", []catalog.Image{{ExternalPreviewAllowed: true}})
+	if !standard.Indexable || standard.AdultRating || standard.ImagePreviewMode != "standard" {
+		t.Fatalf("reviewed non-explicit media should allow standard previews: %#v", standard)
+	}
+}
+
+func TestImageFromJSONPreservesExternalPreviewDecision(t *testing.T) {
+	image, err := imageFromJSON([]byte(`[{
+		"url":"https://media.example.test/cover-w640.webp","rendition":"w640","width":640,"height":400,
+		"mime_type":"image/webp","external_preview_allowed":true
+	}]`))
+	if err != nil || image == nil || !image.ExternalPreviewAllowed {
+		t.Fatalf("external preview decision was lost: image=%#v err=%v", image, err)
+	}
+}
+
 func TestReassignReviewTaskRoundTrip(t *testing.T) {
 	harness := newInvitationContractHarness(t)
 	store, ctx := harness.store, harness.ctx

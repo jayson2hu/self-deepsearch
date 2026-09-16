@@ -8,8 +8,8 @@
 - 9 份文档已编制：入口、审核原文、决策、产品设计、技术设计、开发计划、DEV-01 基线、验收计划、本台账；待产品负责人复核实现解释。
 - 本次 SEO 范围的文档链接、编号/状态/映射和差异空白检查通过；全仓检查另发现采集相关文档 3 处缺失链接，未改动该范围，详见最新日志。首版通过结果保留历史。
 - 新版产品代码已实施 DEV-02～11：查询、认证续接、广告、推荐、匿名说明、搜索、关联分页及“我的”入口/反馈状态均完成代码、类型、构建和重点合同验证；没有执行生产迁移、部署、真实广告启用、账号数据清理或搜索引擎提交。
-- 开发工作包：1 / 15 已验收；11 项待验收、2 项未开始、1 项待决策。DEV-02～11、DEV-13 均缺各自真实浏览器、正式配置或完整发布链门禁，不计完成。
-- 下一步保留 DEV-12 的历史生命周期决策门禁并推进 DEV-14 内容分类/媒体预览合同，同时继续 DEV-02～11/13 的补验。DEV-14 实际对外提交等待部署条件具备。
+- 开发工作包：1 / 15 已验收；12 项待验收、1 项未开始、1 项待决策。DEV-02～11、DEV-13/14 均缺各自真实浏览器、正式配置或完整发布链门禁，不计完成。
+- 下一步保留 DEV-12 的历史生命周期决策门禁并推进 DEV-15 集成验收，同时继续 DEV-02～11/13/14 的补验。DEV-14 实际对外提交等待部署条件具备。
 
 ## 2. 状态规则
 
@@ -34,7 +34,7 @@
 | DEV-11 | 待验收 | Codex / 2026-09-16 | “我的”总入口、收藏/关注空态与去向、最多 12 条关注作品准确说明、反馈中文真实状态及本人/内部备注隔离已实现；缺真实浏览器账号闭环 | [证据与剩余门禁](../evidence/redesign-2026-09-16-dev-11/README.md) |
 | DEV-12 | 待决策 | 产品负责人 / 待确认 | Q-01：历史默认/期限/迁移/恢复未定；已提供签署模板，没有开发假开关或清理数据 | [决策门禁](./DEV12_DECISION_GATE.md)、[核对记录](../evidence/redesign-2026-09-16-dev-12/README.md) |
 | DEV-13 | 待验收 | Codex / 2026-09-16 | fail-closed 环境门禁、真实 HTTP、分页 canonical、50,001 sitemap 分片/50 MB 边界、公开过滤及面包屑结构化数据已实现；缺真实 Chrome、最终 HTTPS/边缘和 DEV-14 分类媒体合同 | [证据与剩余门禁](../evidence/redesign-2026-09-16-dev-13/README.md) |
-| DEV-14 | 未开始 | 待认领 / 未排期 | 产品规则已定；下一步分类/资格/预览合同及测试；正式域名/工具权限在部署阶段落实 | 无；没有连接账号或提交 sitemap |
+| DEV-14 | 待验收 | Codex / 2026-09-16 | Schema v22、实体资格/成人标记、媒体外部预览许可、运营审核与 fail-closed 输出已实现；缺生产回填、最终 HTTPS、真实 Chrome 与 Search Console 所有者提交 | [放行单](./DEV14_SEO_RELEASE_GATE.md)、[证据与剩余门禁](../evidence/redesign-2026-09-16-dev-14/README.md) |
 | DEV-15 | 未开始 | 待认领 / 未排期 | 冻结实际交付范围后跑本轮完整验收 | 无；旧版 passed 不迁移到此行 |
 
 ## 4. 决策阻塞与非阻塞事项
@@ -158,3 +158,9 @@ AC、执行环境、通过/失败/跳过、证据路径：
 执行：Codex；状态：未开始 → 进行中 → 待验收。新增正式环境+显式双开关+HTTPS origin 的 fail-closed 索引门禁；统一运行时 metadata origin、目录/详情/分页 canonical 与 robots；proxy 在流式正文前返回真实 301/400/404/503。sitemap API 增加确定性分页和总量，XML 按 50,000 URL/50 MB 分片，空目录与依赖故障不生成不完整地图，隐藏/下架由公开视图移除。三类详情新增可见面包屑及一致的 BreadcrumbList，未提前实现 DEV-14 的分类/媒体许可。
 
 验证：SEO/基线/公开说明 Node 合同、20 条 Python 环境合同、OpenAPI 类型、display-web lint/typecheck/build、两 Go 模块全包、最终 standalone HTTP smoke 通过。一次性 PostgreSQL 16 / Schema v21 / 受限账号验证确定性跨页、公开过滤、真实 lastmod 和隐藏后移除；容器已删除。Playwright 定向用例已发现，但服务器缺 `/opt/google/chrome/chrome` 未进入浏览器；最终 HTTPS/边缘、内容分类和图片预览许可留 DEV-14/15。详见[DEV-13 记录](../evidence/redesign-2026-09-16-dev-13/README.md)。
+
+### 2026-09-16｜DEV-14 SEO 正式策略
+
+执行：Codex；状态：未开始 → 进行中 → 待验收。新增 Schema v22，把实体内容分类/SEO 质量结论与媒体内容分类/外部预览权限作为持久、可审核合同；旧数据默认 unknown。sitemap、公开 DTO、robots、成人标记、OG/JSON-LD 图片使用同一 fail-closed 决策；站内展示与外部预览分离。运营修订/发布、媒体 manifest、媒体处理器与后台导入均可录入结论并留审计，公开端不泄露审核人或内部理由。
+
+验证：Go 单元包、三端 TypeScript、OpenAPI 生成、SEO Node、Python 迁移与媒体 pipeline 通过；独立 PostgreSQL 16 容器完成 Schema v22 全量 Up/Down、夹具/可见性/备份合同和最终 schema/role 清理，另一空库以受限账号和 owner URL 一次性通过完整 API 数据库合同；DEV-14 专用真实 SQL 通过 unknown 排除、eligible 入图、成人标记/禁图与非法许可约束；media-python 81/81（含回环 HTTP）通过，全仓 pytest 为 325 passed / 348 subtests passed。真实 Chrome、生产存量回填、最终 HTTPS 与 Search Console 所有者权限仍缺，因此 AC-25/28/30 未完整通过。详见[DEV-14 记录](../evidence/redesign-2026-09-16-dev-14/README.md)。

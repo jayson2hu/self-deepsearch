@@ -110,7 +110,7 @@ jobs:
             MIGRATION_DIR=db/migrations sh infra/database/migrate.sh
           ADMIN_DATABASE_URL=postgres://platform:platform_test@127.0.0.1:5432/self_deepsearch_migrate_test \
             MIGRATION_DIR=db/migrations sh infra/database/migrate.sh | tee migration-rerun.txt
-          grep -Fx 'schema_version=21' migration-rerun.txt
+          grep -Fx 'schema_version=22' migration-rerun.txt
           grep -Fx 'applied=0' migration-rerun.txt
       - name: Run API repository contracts against PostgreSQL 16
         env:

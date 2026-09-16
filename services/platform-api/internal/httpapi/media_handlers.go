@@ -30,20 +30,22 @@ type mediaObjectRequest struct {
 }
 
 type mediaManifestRequest struct {
-	AssetID     string               `json:"asset_id"`
-	EntityType  string               `json:"entity_type"`
-	EntityID    string               `json:"entity_id"`
-	AssetType   string               `json:"asset_type"`
-	SourceType  string               `json:"source_type"`
-	SourceURL   *string              `json:"source_url"`
-	CheckedAt   string               `json:"checked_at"`
-	Confidence  float64              `json:"confidence"`
-	Purpose     string               `json:"purpose"`
-	Position    int                  `json:"position"`
-	IsPrimary   bool                 `json:"is_primary"`
-	Reason      string               `json:"reason"`
-	ToolVersion string               `json:"tool_version"`
-	Objects     []mediaObjectRequest `json:"objects"`
+	AssetID                   string               `json:"asset_id"`
+	EntityType                string               `json:"entity_type"`
+	EntityID                  string               `json:"entity_id"`
+	AssetType                 string               `json:"asset_type"`
+	SourceType                string               `json:"source_type"`
+	SourceURL                 *string              `json:"source_url"`
+	CheckedAt                 string               `json:"checked_at"`
+	Confidence                float64              `json:"confidence"`
+	Purpose                   string               `json:"purpose"`
+	Position                  int                  `json:"position"`
+	IsPrimary                 bool                 `json:"is_primary"`
+	Reason                    string               `json:"reason"`
+	ToolVersion               string               `json:"tool_version"`
+	ContentClassification     string               `json:"content_classification"`
+	ExternalPreviewPermission string               `json:"external_preview_permission"`
+	Objects                   []mediaObjectRequest `json:"objects"`
 }
 
 type mediaManifestResponse struct {
@@ -80,10 +82,13 @@ func validateMediaManifest(request mediaManifestRequest, publicBaseURL string) (
 	empty := operations.MediaManifestInput{}
 	checkedAt, err := time.Parse(time.RFC3339, request.CheckedAt)
 	request.Reason, request.SourceType = strings.TrimSpace(request.Reason), strings.TrimSpace(request.SourceType)
+	request.ContentClassification = strings.TrimSpace(request.ContentClassification)
+	request.ExternalPreviewPermission = strings.TrimSpace(request.ExternalPreviewPermission)
 	if err != nil || !uuidPattern.MatchString(request.AssetID) || !uuidPattern.MatchString(request.EntityID) || !oneOf(request.EntityType, "work", "performer") ||
 		!validMediaIdentity(request) || len(request.Reason) < 2 || len(request.Reason) > 1000 ||
 		len(request.SourceType) < 1 || len(request.SourceType) > 100 || request.Confidence < 0 || request.Confidence > 1 ||
-		request.Position < 0 || request.Position > 100 || request.ToolVersion != "media-python/1" || len(request.Objects) != 4 {
+		request.Position < 0 || request.Position > 100 || request.ToolVersion != "media-python/1" || len(request.Objects) != 4 ||
+		!validMediaPreviewPolicy(request.ContentClassification, request.ExternalPreviewPermission) {
 		return empty, errors.New("图片清单不符合要求")
 	}
 	if request.SourceURL != nil && !validHTTPURL(*request.SourceURL) {
@@ -120,8 +125,19 @@ func validateMediaManifest(request mediaManifestRequest, publicBaseURL string) (
 		AssetID: request.AssetID, EntityType: request.EntityType, EntityID: request.EntityID, AssetType: request.AssetType,
 		SourceType: request.SourceType, SourceURL: cleanOptional(request.SourceURL), CheckedAt: checkedAt.UTC(),
 		Confidence: request.Confidence, Purpose: request.Purpose, Position: request.Position,
-		IsPrimary: request.IsPrimary, Reason: request.Reason, ToolVersion: request.ToolVersion, Objects: objects,
+		IsPrimary: request.IsPrimary, Reason: request.Reason, ToolVersion: request.ToolVersion,
+		ContentClassification: request.ContentClassification, ExternalPreviewPermission: request.ExternalPreviewPermission, Objects: objects,
 	}, nil
+}
+
+func validMediaPreviewPolicy(classification, permission string) bool {
+	if classification == "unknown" || permission == "unknown" {
+		return classification == "unknown" && permission == "unknown"
+	}
+	if !oneOf(classification, "non_explicit", "explicit") || !oneOf(permission, "allow", "deny") {
+		return false
+	}
+	return permission != "allow" || classification == "non_explicit"
 }
 
 func mediaManifestDTO(item operations.MediaManifest) mediaManifestResponse {

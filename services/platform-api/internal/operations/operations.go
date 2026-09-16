@@ -324,20 +324,22 @@ type MediaObjectInput struct {
 }
 
 type MediaManifestInput struct {
-	AssetID     string
-	EntityType  string
-	EntityID    string
-	AssetType   string
-	SourceType  string
-	SourceURL   *string
-	CheckedAt   time.Time
-	Confidence  float64
-	Purpose     string
-	Position    int
-	IsPrimary   bool
-	Reason      string
-	ToolVersion string
-	Objects     []MediaObjectInput
+	AssetID                   string
+	EntityType                string
+	EntityID                  string
+	AssetType                 string
+	SourceType                string
+	SourceURL                 *string
+	CheckedAt                 time.Time
+	Confidence                float64
+	Purpose                   string
+	Position                  int
+	IsPrimary                 bool
+	Reason                    string
+	ToolVersion               string
+	ContentClassification     string
+	ExternalPreviewPermission string
+	Objects                   []MediaObjectInput
 }
 
 type MediaManifest struct {

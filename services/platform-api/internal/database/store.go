@@ -90,12 +90,13 @@ LEFT JOIN LATERAL (
         'rendition', rendition,
         'width', width,
         'height', height,
-        'mime_type', mime_type
+        'mime_type', mime_type,
+        'external_preview_allowed', external_preview_allowed
       )
       ORDER BY CASE rendition WHEN 'w320' THEN 1 WHEN 'w640' THEN 2 WHEN 'w960' THEN 3 ELSE 4 END
     ) AS renditions
     FROM (
-      SELECT DISTINCT ON (rendition) public_url, rendition, width, height, mime_type
+      SELECT DISTINCT ON (rendition) public_url, rendition, width, height, mime_type, external_preview_allowed
       FROM platform.public_entity_media
       WHERE entity_type = 'work'
         AND entity_id = work.work_id
@@ -120,12 +121,13 @@ LEFT JOIN LATERAL (
         'rendition', rendition,
         'width', width,
         'height', height,
-        'mime_type', mime_type
+        'mime_type', mime_type,
+        'external_preview_allowed', external_preview_allowed
       )
       ORDER BY CASE rendition WHEN 'w320' THEN 1 WHEN 'w640' THEN 2 WHEN 'w960' THEN 3 ELSE 4 END
     ) AS renditions
     FROM (
-      SELECT DISTINCT ON (rendition) public_url, rendition, width, height, mime_type
+      SELECT DISTINCT ON (rendition) public_url, rendition, width, height, mime_type, external_preview_allowed
       FROM platform.public_entity_media
       WHERE entity_type = 'performer'
         AND entity_id = performer.performer_id
@@ -180,10 +182,13 @@ func (store *Store) SitemapEntries(ctx context.Context, entityType string, offse
 	rows, err := store.pool.Query(ctx, `
 SELECT entity_type, canonical_slug, updated_at FROM (
   SELECT 'work'::text AS entity_type, canonical_slug, updated_at FROM platform.public_published_works
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
   UNION ALL
   SELECT 'performer'::text, canonical_slug, updated_at FROM platform.public_published_performers
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
   UNION ALL
   SELECT 'studio'::text, canonical_slug, updated_at FROM platform.public_published_studios
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
 ) entries
 WHERE $1 = 'all' OR entity_type = $1
 ORDER BY entity_type, canonical_slug
@@ -208,8 +213,11 @@ func (store *Store) SitemapCount(ctx context.Context, entityType string) (int, e
 	err := store.pool.QueryRow(ctx, `
 SELECT count(*) FROM (
   SELECT 'work'::text AS entity_type FROM platform.public_published_works
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
   UNION ALL SELECT 'performer'::text FROM platform.public_published_performers
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
   UNION ALL SELECT 'studio'::text FROM platform.public_published_studios
+  WHERE seo_quality_status = 'eligible' AND content_classification <> 'unknown'
 ) entries WHERE $1 = 'all' OR entity_type = $1`, entityType).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("count sitemap entries: %w", err)
@@ -538,7 +546,8 @@ func (store *Store) StudioBySlug(ctx context.Context, slug string) (catalog.Stud
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var detail catalog.StudioDetail
-	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug, published_at FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &detail.PublicUpdatedAt); errors.Is(err, pgx.ErrNoRows) {
+	var contentClassification, qualityStatus string
+	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug, published_at, content_classification, seo_quality_status FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &detail.PublicUpdatedAt, &contentClassification, &qualityStatus); errors.Is(err, pgx.ErrNoRows) {
 		return catalog.StudioDetail{}, catalog.ErrNotFound
 	} else if err != nil {
 		return catalog.StudioDetail{}, fmt.Errorf("query studio detail: %w", err)
@@ -552,6 +561,7 @@ WHERE work.studio_id = $1::uuid ORDER BY work.release_date DESC NULLS LAST, work
 	if err := tx.Commit(ctx); err != nil {
 		return catalog.StudioDetail{}, fmt.Errorf("commit studio detail: %w", err)
 	}
+	detail.SEO = seoProfile(contentClassification, qualityStatus, nil)
 	return detail, nil
 }
 
@@ -569,17 +579,18 @@ func (store *Store) PerformerBySlug(ctx context.Context, slug string) (catalog.P
 	defer func() { _ = tx.Rollback(ctx) }()
 	var detail catalog.PerformerDetail
 	var primaryRenditions []byte
+	var contentClassification, qualityStatus string
 	err = tx.QueryRow(ctx, `SELECT `+performerSummaryColumns+`,
        performer.name_original, performer.romanized_name,
        performer.activity_status, performer.agency, performer.birth_year,
        performer.height_cm, performer.measurements, performer.debut_year,
-       performer.published_at
+	       performer.published_at, performer.content_classification, performer.seo_quality_status
 FROM platform.public_published_performers performer
 `+performerSummaryJoins+`
 WHERE performer.canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &primaryRenditions,
 		&detail.NameOriginal, &detail.RomanizedName, &detail.ActivityStatus, &detail.Agency,
 		&detail.BirthYear, &detail.HeightCM, &detail.Measurements, &detail.DebutYear,
-		&detail.PublicUpdatedAt)
+		&detail.PublicUpdatedAt, &contentClassification, &qualityStatus)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.PerformerDetail{}, catalog.ErrNotFound
 	}
@@ -606,6 +617,7 @@ WHERE performer.canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &deta
 	if err := tx.Commit(ctx); err != nil {
 		return catalog.PerformerDetail{}, fmt.Errorf("commit performer detail transaction: %w", err)
 	}
+	detail.SEO = seoProfile(contentClassification, qualityStatus, detail.Images)
 	return detail, nil
 }
 
@@ -715,11 +727,13 @@ func (store *Store) WorkBySlug(ctx context.Context, slug string) (catalog.WorkDe
 	var detail catalog.WorkDetail
 	var primaryRenditions []byte
 	var studioID, studioName, studioSlug *string
+	var contentClassification, qualityStatus string
 	err = tx.QueryRow(ctx, `
 SELECT work.work_id::text, work.canonical_code, work.title, work.release_date,
        coalesce(studio.name, ''), work.canonical_slug, media.renditions,
-       work.title_original, work.summary, work.published_at,
-       studio.studio_id::text, studio.name, studio.canonical_slug
+	       work.title_original, work.summary, work.published_at,
+       studio.studio_id::text, studio.name, studio.canonical_slug,
+       work.content_classification, work.seo_quality_status
 FROM platform.public_published_works AS work
 `+workSummaryJoins+`
 WHERE work.canonical_slug = $1`, slug).Scan(
@@ -727,6 +741,7 @@ WHERE work.canonical_slug = $1`, slug).Scan(
 		&detail.StudioName, &detail.Slug, &primaryRenditions,
 		&detail.TitleOriginal, &detail.Summary, &detail.PublicUpdatedAt,
 		&studioID, &studioName, &studioSlug,
+		&contentClassification, &qualityStatus,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.WorkDetail{}, catalog.ErrNotFound
@@ -758,6 +773,7 @@ WHERE work.canonical_slug = $1`, slug).Scan(
 	if err := tx.Commit(ctx); err != nil {
 		return catalog.WorkDetail{}, fmt.Errorf("commit work detail transaction: %w", err)
 	}
+	detail.SEO = seoProfile(contentClassification, qualityStatus, detail.Images)
 	return detail, nil
 }
 
@@ -979,14 +995,15 @@ WITH eligible_media AS (
   LIMIT 4
 ), selected_renditions AS (
   SELECT DISTINCT ON (media.asset_id, media.rendition)
-         media.asset_id, media.public_url, media.rendition, media.width, media.height, media.mime_type
+         media.asset_id, media.public_url, media.rendition, media.width, media.height, media.mime_type,
+         media.external_preview_allowed
   FROM eligible_media AS media
   JOIN selected_assets AS asset ON asset.asset_id = media.asset_id
   WHERE media.entity_type = $1 AND media.entity_id = $2::uuid
   ORDER BY media.asset_id, media.rendition, media.public_url
 )
 SELECT rendition.asset_id::text, rendition.public_url, rendition.rendition,
-       rendition.width, rendition.height, rendition.mime_type
+       rendition.width, rendition.height, rendition.mime_type, rendition.external_preview_allowed
 FROM selected_renditions AS rendition
 JOIN selected_assets AS asset ON asset.asset_id = rendition.asset_id
 ORDER BY asset.is_primary DESC, asset.position, asset.asset_id,
@@ -1010,7 +1027,7 @@ func queryEntityImages(ctx context.Context, queryer rowQuerier, entityType, enti
 	for rows.Next() {
 		var assetID string
 		var rendition catalog.ImageRendition
-		if err := rows.Scan(&assetID, &rendition.URL, &rendition.Rendition, &rendition.Width, &rendition.Height, &rendition.MimeType); err != nil {
+		if err := rows.Scan(&assetID, &rendition.URL, &rendition.Rendition, &rendition.Width, &rendition.Height, &rendition.MimeType, &rendition.ExternalPreviewAllowed); err != nil {
 			return nil, fmt.Errorf("scan %s image: %w", entityType, err)
 		}
 		if currentAssetID != "" && currentAssetID != assetID {
@@ -1084,8 +1101,28 @@ func imageFromRenditions(renditions []catalog.ImageRendition) *catalog.Image {
 	return &catalog.Image{
 		URL: preferred.URL, Rendition: preferred.Rendition, Width: preferred.Width,
 		Height: preferred.Height, MimeType: preferred.MimeType,
-		Renditions: append([]catalog.ImageRendition(nil), renditions...),
+		Renditions: append([]catalog.ImageRendition(nil), renditions...), ExternalPreviewAllowed: preferred.ExternalPreviewAllowed,
 	}
+}
+
+func seoProfile(classification, quality string, images []catalog.Image) catalog.SEOProfile {
+	indexable := quality == "eligible" && classification != "unknown"
+	profile := catalog.SEOProfile{
+		Indexable:        indexable,
+		SitemapEligible:  indexable,
+		AdultRating:      classification == "explicit",
+		ImagePreviewMode: "none",
+	}
+	if !indexable || profile.AdultRating {
+		return profile
+	}
+	for _, item := range images {
+		if item.ExternalPreviewAllowed {
+			profile.ImagePreviewMode = "standard"
+			break
+		}
+	}
+	return profile
 }
 
 func preferredRendition(candidate, current string) bool {

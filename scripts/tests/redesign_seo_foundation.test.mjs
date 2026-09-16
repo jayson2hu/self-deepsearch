@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { canonicalWithCursor, seoReleaseEnabled } from "../../apps/display-web/lib/seo-policy.ts";
+import { canonicalWithCursor, resolvePublicSEOProfile, seoReleaseEnabled } from "../../apps/display-web/lib/seo-policy.ts";
 import { maximumSitemapBytes, sitemapPageSize, sitemapShardPaths, sitemapWithinLimits } from "../../apps/display-web/lib/sitemap-policy.ts";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -26,6 +26,16 @@ test("SEO release gate is fail-closed and requires the formal HTTPS origin", () 
 test("legal cursor pages keep a distinct canonical", () => {
   assert.equal(canonicalWithCursor("/studios", ""), "/studios");
   assert.equal(canonicalWithCursor("/studios", "next+/="), "/studios?cursor=next%2B%2F%3D");
+});
+
+test("public SEO profile fails closed on missing or malformed policy", () => {
+  assert.deepEqual(resolvePublicSEOProfile(undefined), {
+    indexable: false, sitemap_eligible: false, adult_rating: null, image_preview_mode: "none",
+  });
+  assert.equal(resolvePublicSEOProfile({ indexable: true }).indexable, false);
+  assert.deepEqual(resolvePublicSEOProfile({
+    indexable: true, sitemap_eligible: true, adult_rating: "adult", image_preview_mode: "none",
+  }), { indexable: true, sitemap_eligible: true, adult_rating: "adult", image_preview_mode: "none" });
 });
 
 test("50,001 sitemap records split without truncating the second shard", () => {

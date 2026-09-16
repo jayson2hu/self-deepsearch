@@ -32,6 +32,8 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--primary", action="store_true")
     prepare.add_argument("--confidence", type=float, default=1.0)
     prepare.add_argument("--asset-id")
+    prepare.add_argument("--content-classification", choices=("unknown", "non_explicit", "explicit"), default="unknown")
+    prepare.add_argument("--external-preview-permission", choices=("unknown", "allow", "deny"), default="unknown")
     prepare.add_argument("--backup-root", type=Path, required=True)
     prepare.add_argument("--output", type=Path, required=True)
     prepare.add_argument("--site-id", default="default")
@@ -97,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
                                            public_bucket=args.public_bucket, upload_lock_file=lock_file),
                 storage_limit_bytes=args.storage_limit_bytes,
                 manifest_path=args.output,
+                content_classification=args.content_classification,
+                external_preview_permission=args.external_preview_permission,
             )
         elif args.command == "upload-status":
             result = upload_status(validate_lock_path(args.upload_lock_file))

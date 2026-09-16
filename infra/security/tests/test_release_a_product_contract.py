@@ -67,7 +67,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
     def test_invitation_sql_contract_uses_safe_repeatable_restricted_fixtures(self) -> None:
         contract = (ROOT / "services" / "platform-api" / "internal" / "database" / "invitation_store_test.go").read_text(encoding="utf-8")
         self.assertIn("validIdentityContractURL(databaseURL)", contract)
-        self.assertIn("schemaVersion != 21", contract)
+        self.assertIn("schemaVersion != 22", contract)
         self.assertIn("NOT rolsuper AND NOT rolbypassrls", contract)
         self.assertIn("identity.NewSessionToken()", contract)
         self.assertNotIn("DELETE FROM", contract)
@@ -90,7 +90,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
             if method.lower() in {"get", "post", "put", "patch", "delete"}
         }
 
-        self.assertEqual(len(router_operations), 87)
+        self.assertEqual(len(router_operations), 91)
         self.assertSetEqual(router_operations, openapi_operations)
 
         def resolve_local_reference(value: dict) -> dict:
@@ -123,9 +123,9 @@ class ReleaseAProductContractTests(unittest.TestCase):
                     f"{method.upper()} {path} path parameters do not match",
                 )
 
-        self.assertEqual(len(operation_ids), 87)
+        self.assertEqual(len(operation_ids), 91)
         self.assertNotIn(None, operation_ids)
-        self.assertEqual(len(set(operation_ids)), 87)
+        self.assertEqual(len(set(operation_ids)), 91)
 
     def test_openapi_recent_auth_contract_matches_go_high_risk_policy(self) -> None:
         spec = yaml.safe_load((ROOT / "packages" / "api-contracts" / "openapi.yaml").read_text(encoding="utf-8"))
@@ -322,7 +322,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("status IN ('active', 'paused', 'removed')", migration)
 
         alerts = (ROOT / "infra" / "monitoring" / "alerts.yml").read_text(encoding="utf-8")
-        self.assertIn("self_deepsearch_schema_version != 21", alerts)
+        self.assertIn("self_deepsearch_schema_version != 22", alerts)
         self.assertNotIn("self_deepsearch_schema_version != 10", alerts)
 
     def test_hidden_work_contract_is_private_and_complete(self) -> None:
@@ -351,9 +351,10 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("normalizeSearchQuery", handler)
         self.assertIn("character - 0xfee0", handler)
         search_client = client.split("export async function searchWorks", 1)[1].split("export async function getPopularWorks", 1)[0]
-        self.assertIn("fetchPlatformNoStore<WorkSearchResponse>", search_client)
-        self.assertIn("async function fetchPlatformNoStore", client)
-        no_store_helper = client.split("async function fetchPlatformNoStore", 1)[1].split("function platformRequest", 1)[0]
+        self.assertIn('searchCatalog<WorkSearchResponse, "work">', search_client)
+        self.assertIn("const response = await platformNoStoreRequest(path)", search_client)
+        self.assertIn("function platformNoStoreRequest", client)
+        no_store_helper = client.split("function platformNoStoreRequest", 1)[1].split("function platformRequest", 1)[0]
         self.assertIn('cache: "no-store"', no_store_helper)
 
         spec = yaml.safe_load((ROOT / "packages" / "api-contracts" / "openapi.yaml").read_text(encoding="utf-8"))
@@ -424,9 +425,12 @@ class ReleaseAProductContractTests(unittest.TestCase):
     def test_sitemaps_are_split_by_public_entity_type(self) -> None:
         index = (ROOT / "apps" / "display-web" / "app" / "sitemap.xml" / "route.ts").read_text(encoding="utf-8")
         entities = (ROOT / "apps" / "display-web" / "app" / "sitemaps" / "[entity]" / "route.ts").read_text(encoding="utf-8")
+        shards = (ROOT / "apps" / "display-web" / "app" / "sitemaps" / "[entity]" / "[page]" / "route.ts").read_text(encoding="utf-8")
         handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "handlers.go").read_text(encoding="utf-8")
-        self.assertIn('"works", "performers", "studios"', index)
-        self.assertIn("getSitemapEntries(entityType)", entities)
+        self.assertIn('const types = ["work", "performer", "studio"] as const', index)
+        self.assertIn("sitemapShardPaths", index)
+        self.assertIn("NextResponse.redirect", entities)
+        self.assertIn("entitySitemapResponse(entity as SitemapEntity", shards)
         self.assertIn('oneOf(entityType, "all", "work", "performer", "studio")', handler)
 
     def test_public_detail_pages_emit_safe_json_ld(self) -> None:
@@ -452,7 +456,11 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("type pageCursor", pagination)
         self.assertIn("Scope", pagination)
         self.assertIn("After", pagination)
-        self.assertNotIn("OFFSET", store)
+        self.assertEqual(store.count("OFFSET"), 1)
+        self.assertIn("OFFSET $2 LIMIT $3`, entityType, offset, limit", store)
+        self.assertIn("FROM platform.public_published_works AS cursor", store)
+        self.assertIn("FROM platform.public_published_performers AS cursor", store)
+        self.assertIn("FROM platform.public_published_studios AS cursor", store)
         for page in ("search", "latest", "recent", "popular", "performers", "studios"):
             content = (ROOT / "apps" / "display-web" / "app" / page / "page.tsx").read_text(encoding="utf-8")
             self.assertIn("next_cursor", content)
@@ -534,14 +542,16 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("目录服务暂时不可用", home)
         for source in (home, robots, sitemap):
             self.assertIn('dynamic = "force-dynamic"', source)
-        self.assertNotIn("metadataBase: siteURL()", layout)
+        self.assertIn('dynamic = "force-dynamic"', layout)
+        self.assertIn("export function generateMetadata()", layout)
+        self.assertIn("metadataBase: siteURL()", layout)
         self.assertIn('process.env.NODE_ENV === "production"', site)
         self.assertIn("production ? undefined : process.env.NEXT_PUBLIC_SITE_URL", site)
         self.assertIn("SITE_URL must be configured as an HTTP(S) origin in production", site)
         self.assertIn('SITE_URL: displayOrigin', smoke)
         self.assertIn('NEXT_PUBLIC_SITE_URL: displayOrigin', smoke)
         self.assertIn('NEXT_PUBLIC_SITE_URL: "https://build-time.invalid"', smoke)
-        self.assertIn("expected HTTP 500", smoke)
+        self.assertIn("expected fail-closed HTTP 200 robots", smoke)
 
     def test_work_csv_error_download_neutralizes_spreadsheet_formulas(self) -> None:
         component = (ROOT / "apps" / "ops-web" / "components" / "work-csv-preflight.tsx").read_text(encoding="utf-8")
@@ -578,7 +588,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
                 "APP_ENV", "CACHE_HMAC_SECRET", "NEXT_PUBLIC_SITE_URL", "PLATFORM_API_URL",
                 "RIGHTS_CONTACT_EMAIL", "SITE_URL", "TURNSTILE_BYPASS", "TURNSTILE_SITE_KEY", "MEDIA_DELIVERY_MODE",
                 "MEDIA_DELIVERY_DYNAMIC_MODE", "DISPLAY_ADS_ENABLED", "DISPLAY_AD_SLOTS_JSON",
-                "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS",
+                "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS", "SEO_INDEXING_ENABLED",
+                "SEO_CONTENT_POLICY_READY",
             },
         )
         self.assertEqual(set(japan_services["ops-web"]["environment"]), {"APP_ENV", "PLATFORM_API_URL"})

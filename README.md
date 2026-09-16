@@ -4,7 +4,7 @@
 
 产品边界见 [PRODUCT_PLAN.md](./PRODUCT_PLAN.md)，服务与部署边界见 [ARCHITECTURE.md](./ARCHITECTURE.md)，实施和验收项见 [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)。自动采集属于 Release B，广告联盟属于 Release C，两者在当前版本均关闭。
 
-后续开发从[RD v1 重设计文档包](./docs/redesign/README.md)开始：已按 2026-09-16 用户审核落地[产品设计](./docs/redesign/PRODUCT_DESIGN.md)、[架构与接口](./docs/redesign/TECHNICAL_DESIGN.md)、[15 个开发工作包](./docs/redesign/DEVELOPMENT_PLAN.md)、[30 个验收用例组](./docs/redesign/ACCEPTANCE_PLAN.md)及[进度台账](./docs/redesign/PROGRESS.md)。DEV-01 已验收；DEV-02～11、DEV-13 已实现并通过各自重点自动检查，等待完整浏览器/配置/发布链验收。DEV-14 继续落实正式分类与媒体预览策略，历史数据策略仍局部待确认。
+后续开发从[RD v1 重设计文档包](./docs/redesign/README.md)开始：已按 2026-09-16 用户审核落地[产品设计](./docs/redesign/PRODUCT_DESIGN.md)、[架构与接口](./docs/redesign/TECHNICAL_DESIGN.md)、[15 个开发工作包](./docs/redesign/DEVELOPMENT_PLAN.md)、[30 个验收用例组](./docs/redesign/ACCEPTANCE_PLAN.md)及[进度台账](./docs/redesign/PROGRESS.md)。DEV-01 已验收；DEV-02～11、DEV-13/14 已实现并通过各自重点自动检查，等待完整浏览器/配置/发布链验收。下一步 DEV-15 集成验收；历史数据策略仍局部待确认。
 
 原[用户体验评审](./docs/PRODUCT_REVIEW_2026-09-16.md)、[候选任务书](./docs/PRODUCT_REDESIGN_BRIEF.md)、[候选实施清单](./docs/PRODUCT_REDESIGN_BACKLOG.md)保留为历史建议；[SEO 参考方案](./docs/PRODUCT_SEO_PLAN.md)已说明最新覆盖关系。旧[HTML 审查页](./docs/product-review/index.html)保留原评审快照与意见导出用途，不作为新版开发计划或进度看板，也不会自动回填本次会话审核。访问方式见[审查页说明](./docs/product-review/README.md)。
 

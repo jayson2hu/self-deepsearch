@@ -10,21 +10,22 @@ import (
 )
 
 type performerDetailResponse struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	NameOriginal    *string         `json:"name_original"`
-	RomanizedName   *string         `json:"romanized_name"`
-	Aliases         []string        `json:"aliases"`
-	ActivityStatus  string          `json:"activity_status"`
-	Agency          *string         `json:"agency"`
-	BirthYear       *int            `json:"birth_year"`
-	HeightCM        *int            `json:"height_cm"`
-	Measurements    *string         `json:"measurements"`
-	DebutYear       *int            `json:"debut_year"`
-	ImageURL        *string         `json:"image_url"`
-	PublicUpdatedAt *string         `json:"public_updated_at"`
-	Works           []homeItem      `json:"works"`
-	Images          []imageResponse `json:"images"`
+	ID              string             `json:"id"`
+	Name            string             `json:"name"`
+	NameOriginal    *string            `json:"name_original"`
+	RomanizedName   *string            `json:"romanized_name"`
+	Aliases         []string           `json:"aliases"`
+	ActivityStatus  string             `json:"activity_status"`
+	Agency          *string            `json:"agency"`
+	BirthYear       *int               `json:"birth_year"`
+	HeightCM        *int               `json:"height_cm"`
+	Measurements    *string            `json:"measurements"`
+	DebutYear       *int               `json:"debut_year"`
+	ImageURL        *string            `json:"image_url"`
+	PublicUpdatedAt *string            `json:"public_updated_at"`
+	Works           []homeItem         `json:"works"`
+	Images          []imageResponse    `json:"images"`
+	SEO             seoProfileResponse `json:"seo"`
 }
 
 func (s *Server) performerList(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +71,7 @@ func (s *Server) performerDetail(w http.ResponseWriter, r *http.Request) {
 		HeightCM: detail.HeightCM, Measurements: detail.Measurements, DebutYear: detail.DebutYear,
 		ImageURL: detail.ImageURL, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt),
 		Works: workItems(detail.Works), Images: make([]imageResponse, 0, len(detail.Images)),
+		SEO: seoResponseFromCatalog(detail.SEO),
 	}
 	for _, image := range detail.Images {
 		response.Images = append(response.Images, *imageResponseFromCatalog(&image))

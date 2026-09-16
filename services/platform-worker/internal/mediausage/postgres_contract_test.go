@@ -78,7 +78,7 @@ func TestPostgresMediaUsageStateContract(t *testing.T) {
 	if err := admin.QueryRow(ctx, `SELECT schema_version,(SELECT count(*) FROM platform.users)+(SELECT count(*) FROM platform.works)+
  (SELECT count(*) FROM platform.media_assets)+(SELECT count(*) FROM platform.outbox_events)+
  (SELECT count(*) FROM platform.media_usage_state)+(SELECT count(*) FROM audit.media_usage_runs)
- FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 21 || existing != 0 {
+ FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 22 || existing != 0 {
 		t.Fatal("schema 21 and empty disposable worker/usage inventory required")
 	}
 	var restricted bool

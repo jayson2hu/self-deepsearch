@@ -76,6 +76,7 @@ type StudioDetail struct {
 	StudioSummary
 	PublicUpdatedAt *time.Time
 	Works           []WorkSummary
+	SEO             SEOProfile
 }
 
 type PerformerDetail struct {
@@ -92,6 +93,7 @@ type PerformerDetail struct {
 	DebutYear       *int
 	Works           []WorkSummary
 	Images          []Image
+	SEO             SEOProfile
 }
 
 type WorkDetail struct {
@@ -103,23 +105,33 @@ type WorkDetail struct {
 	Performers      []PerformerSummary
 	Images          []Image
 	RelatedWorks    []WorkSummary
+	SEO             SEOProfile
+}
+
+type SEOProfile struct {
+	Indexable        bool
+	SitemapEligible  bool
+	AdultRating      bool
+	ImagePreviewMode string
 }
 
 type Image struct {
-	URL        string
-	Rendition  string
-	Width      int
-	Height     int
-	MimeType   string
-	Renditions []ImageRendition
+	URL                    string
+	Rendition              string
+	Width                  int
+	Height                 int
+	MimeType               string
+	Renditions             []ImageRendition
+	ExternalPreviewAllowed bool
 }
 
 type ImageRendition struct {
-	URL       string `json:"url"`
-	Rendition string `json:"rendition"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	MimeType  string `json:"mime_type"`
+	URL                    string `json:"url"`
+	Rendition              string `json:"rendition"`
+	Width                  int    `json:"width"`
+	Height                 int    `json:"height"`
+	MimeType               string `json:"mime_type"`
+	ExternalPreviewAllowed bool   `json:"external_preview_allowed"`
 }
 
 type SitemapEntry struct {

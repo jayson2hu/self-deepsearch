@@ -6,6 +6,7 @@ export function mediaManifest() {
     asset_id: asset, entity_type: "work", entity_id: entity, asset_type: "work_image",
     source_type: "manual", source_url: null, checked_at: "2026-09-10T12:00:00Z", confidence: 1,
     purpose: "cover", position: 0, is_primary: true, reason: "Synthetic primary replacement", tool_version: "media-python/1",
+    content_classification: "non_explicit", external_preview_permission: "allow",
     objects: ["master", "w320", "w640", "w960"].map((rendition) => {
       const storage_key = rendition === "master" ? `media-master/${asset}/v1/master.webp` : `media-public/default/works/${entity}/${asset}/v1/cover-${rendition}.webp`;
       return { rendition, storage_scope: rendition === "master" ? "private" : "public", storage_key, backup_path: storage_key,

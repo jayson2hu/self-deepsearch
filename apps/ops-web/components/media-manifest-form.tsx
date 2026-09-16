@@ -15,6 +15,10 @@ function readManifest(value: unknown): MediaManifestRequest {
   if (!item.asset_id || !UUID.test(item.asset_id) || !item.entity_id || !UUID.test(item.entity_id)) throw new Error("资产或资料 ID 不符合要求");
   if (item.tool_version !== "media-python/1") throw new Error("清单不是由当前媒体处理器生成");
   if (item.entity_type !== "work" && item.entity_type !== "performer") throw new Error("资料类型不符合要求");
+  const policyValid = item.content_classification === "unknown" && item.external_preview_permission === "unknown"
+    || (item.content_classification === "non_explicit" || item.content_classification === "explicit")
+      && (item.external_preview_permission === "deny" || item.content_classification === "non_explicit" && item.external_preview_permission === "allow");
+  if (!policyValid) throw new Error("内容分级与外部图片预览权限不符合安全规则");
   const validDisplaySlot = Number.isInteger(item.position) && (
     item.entity_type === "work" && item.purpose === "cover" && item.is_primary === true && item.position === 0
     || item.entity_type === "work" && item.purpose === "gallery" && item.is_primary === false && item.position! >= 1 && item.position! <= 3
@@ -113,6 +117,7 @@ export function MediaManifestForm() {
         <div><dt>资产</dt><dd><code>{manifest.asset_id}</code></dd></div>
         <div><dt>来源</dt><dd>{manifest.source_type}{manifest.source_url ? ` / ${manifest.source_url}` : ""}</dd></div>
         <div><dt>用途</dt><dd>{manifest.purpose} / {manifest.is_primary ? "主图" : `位置 ${manifest.position}`}</dd></div>
+        <div><dt>外部预览</dt><dd>{manifest.content_classification} / {manifest.external_preview_permission}</dd></div>
       </dl>
       <div aria-label="图片对象清单，可横向滚动" className="table-wrap manifest-objects" role="region" tabIndex={0}><table><thead><tr><th>版本</th><th>存储</th><th>尺寸</th><th>大小</th><th>哈希</th><th>公开</th></tr></thead><tbody>{manifest.objects.map((object) => <tr key={object.rendition}><td>{object.rendition}</td><td>{object.storage_scope}</td><td>{object.width} x {object.height}</td><td>{Math.ceil(object.byte_size / 1024)} KiB</td><td><code>{object.sha256.slice(0, 12)}...</code></td><td>{object.public_url ? "是" : "否"}</td></tr>)}</tbody></table></div>
       {manifest.is_primary ? <section aria-label="主图替换确认" className="manifest-replacement">
@@ -131,7 +136,7 @@ export function MediaManifestForm() {
         </> : null}
         <button disabled={busy || lookup === "loading"} onClick={() => { if (manifest) { setMessage(""); void readPrimary(manifest, ++sequence.current); } }} type="button">刷新当前主图</button>
       </section> : null}
-      <label className="check-label manifest-confirm"><input checked={confirmed} disabled={busy} onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" /><span><ShieldCheck size={16} />已核对来源、展示权利、实体关联和北京副本</span></label>
+      <label className="check-label manifest-confirm"><input checked={confirmed} disabled={busy} onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" /><span><ShieldCheck size={16} />已核对来源、站内展示权利、外部预览权限、实体关联和北京副本</span></label>
     </section> : <p className="empty-copy">先在北京媒体处理器完成安全解码、S3 上传和备份，再导入生成的 JSON 清单。</p>}
     {message ? <p aria-live="polite" className="form-error">{message}</p> : null}
     {created ? <div aria-live="polite" className="form-success"><p>{created.replacement ? "主图已切换" : "图片资产已发布"}：<code>{created.media.asset_id}</code>，登记 {created.media.object_count} 个对象。</p>{created.replacement ? <p>{created.replacement.old_asset_retired ? `旧公开图删除已排队；私有母版保留至 ${created.replacement.private_retained_until}。实际删除尚未确认。` : "旧图仍有其他公开关联，旧资产及其对象已保留，未安排删除。"}</p> : null}<p>公开展示仍以资料发布状态为准，缓存刷新异步执行。</p></div> : null}

@@ -573,6 +573,7 @@ const processorMediaManifestJSON = `{
   "entity_type":"work","entity_id":"10000000-0000-4000-8000-000000000001",
   "asset_type":"work_image","source_type":"manual","source_url":null,"checked_at":"2026-08-18T00:00:00Z",
   "confidence":1,"purpose":"cover","position":0,"is_primary":true,"reason":"manual image review","tool_version":"media-python/1",
+  "content_classification":"non_explicit","external_preview_permission":"allow",
   "objects":[
     {"rendition":"master","storage_scope":"private","storage_key":"media-master/20000000-0000-4000-8000-000000000001/v1/master.webp","backup_path":"media-master/20000000-0000-4000-8000-000000000001/v1/master.webp","public_url":null,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mime_type":"image/webp","width":960,"height":600,"byte_size":1200},
     {"rendition":"w320","storage_scope":"public","storage_key":"media-public/default/works/10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/v1/cover-w320.webp","backup_path":"media-public/default/works/10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/v1/cover-w320.webp","public_url":"https://media.example.test/media-public/default/works/10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/v1/cover-w320.webp","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","mime_type":"image/webp","width":320,"height":200,"byte_size":400},

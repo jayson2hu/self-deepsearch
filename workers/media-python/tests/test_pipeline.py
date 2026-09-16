@@ -64,6 +64,25 @@ def write_image(path: Path, *, size: tuple[int, int] = (1200, 800), image_format
 
 
 class MediaPipelineTests(unittest.TestCase):
+    def test_prepare_rejects_unsafe_external_preview_policy_before_decode(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for classification, permission in [("explicit", "allow"), ("unknown", "deny"), ("non_explicit", "unknown")]:
+                with self.subTest(classification=classification, permission=permission):
+                    store = FakeStore()
+                    with self.assertRaisesRegex(MediaRejected, "external preview permission"):
+                        prepare_manifest(
+                            input_path=root / "missing.jpg", entity_type="work",
+                            entity_id="11111111-1111-4111-8111-111111111111", purpose="cover",
+                            source_type="manual", source_url=None, reason="reviewed source",
+                            position=0, is_primary=True, confidence=1.0, asset_id=None,
+                            site_id="default", backup_root=root / "backup",
+                            public_base_url="https://media.example.test", object_store=store,
+                            content_classification=classification,
+                            external_preview_permission=permission,
+                        )
+                    self.assertEqual(store.objects, {})
+
     def test_prepare_rejects_invalid_display_slot_before_decode_backup_or_upload(self) -> None:
         cases = [
             ("work", "cover", False, 0),

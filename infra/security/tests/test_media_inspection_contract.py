@@ -45,7 +45,7 @@ def test_sql_contracts_are_guarded_and_run_serially_after_other_worker_contracts
     assert "^TestPostgresInspection.*Contract$" in step["run"]
     schedule = read("services/platform-worker/internal/mediainspect/postgres_contract_test.go")
     snapshot = read("services/platform-worker/internal/mediainspect/snapshot_contract_test.go")
-    for marker in ("validInspectionContractURL", "version != 21", "waiting == 2", "winners != 1 || notDue != 1"):
+    for marker in ("validInspectionContractURL", "version != 22", "waiting == 2", "winners != 1 || notDue != 1"):
         assert marker in schedule
     for marker in ("SET LOCAL ROLE platform_worker_login", "ROLLBACK TO SAVEPOINT scenario", "rights-not-withdrawn", "dead-retirement"):
         assert marker in snapshot

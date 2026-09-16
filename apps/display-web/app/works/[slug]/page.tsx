@@ -11,20 +11,22 @@ import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkActions } from "../../../components/work-actions";
 import { SafeImage } from "../../../components/safe-image";
 import { getWork } from "../../../lib/api";
-import { pageRobots } from "../../../lib/seo-policy";
+import { pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
 	const slug = (await params).slug;
 	const result = await getWork(slug);
   if (result.status !== "ok") return { title: "作品资料", robots: { index: false, follow: false } };
-  const primaryImage = result.data.images[0];
+  const seo = resolvePublicSEOProfile(result.data.seo);
+  const primaryImage = result.data.images.find((image) => image.external_preview_allowed);
   const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
 	return {
 		title: `${result.data.code} ${result.data.title}`,
 		description: `${result.data.code} 的公开发行与人物资料。`,
 		alternates: { canonical: `/works/${slug}` },
-		robots: pageRobots(true),
+		robots: pageRobots(seo.indexable, seo.image_preview_mode),
+		other: seo.adult_rating ? { rating: seo.adult_rating } : undefined,
 		openGraph: {
 			type: "article", url: `/works/${slug}`, title: `${result.data.code} ${result.data.title}`,
 			description: `${result.data.code} 的公开发行与人物资料。`,
@@ -43,6 +45,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   }
 
   const work = result.data;
+  const seo = resolvePublicSEOProfile(work.seo);
   const images = work.images.slice(0, 4);
   const primaryImage = images[0];
   const canonicalURL = new URL(`/works/${slug}`, siteURL()).toString();
@@ -58,11 +61,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 		alternateName: work.title_original ?? undefined,
 		description: work.summary ?? `${work.code} 的公开发行与人物资料。`,
 		datePublished: work.release_date ?? undefined,
-		image: images.map((image) => image.url),
+		image: images.filter((image) => image.external_preview_allowed).map((image) => image.url),
 		publisher: (work.studio?.name ?? work.studio_name) ? { "@type": "Organization", name: work.studio?.name ?? work.studio_name } : undefined,
 		contributor: work.performers.map((performer) => ({ "@type": "Person", name: performer.name })),
-		isFamilyFriendly: false,
-		audience: { "@type": "PeopleAudience", suggestedMinAge: 18 },
+		isFamilyFriendly: seo.adult_rating ? false : undefined,
+		audience: seo.adult_rating ? { "@type": "PeopleAudience", suggestedMinAge: 18 } : undefined,
 		mainEntityOfPage: canonicalURL,
 	  }} />
 	  <PageViewReporter contentType="work" contentID={work.id} />

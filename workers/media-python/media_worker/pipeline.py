@@ -138,7 +138,8 @@ def prepare_manifest(
     source_url: str | None, reason: str, position: int, is_primary: bool, confidence: float,
     asset_id: str | None, site_id: str, backup_root: Path, public_base_url: str,
     object_store: ObjectStore, storage_limit_bytes: int = DEFAULT_STORAGE_LIMIT_BYTES,
-    manifest_path: Path | None = None,
+    manifest_path: Path | None = None, content_classification: str = "unknown",
+    external_preview_permission: str = "unknown",
 ) -> dict[str, object]:
     # Hold one shared admission from before decoding/capacity inspection until
     # every remote write is confirmed (or fenced for manual reconciliation).
@@ -151,6 +152,8 @@ def prepare_manifest(
             is_primary=is_primary, confidence=confidence, asset_id=asset_id, site_id=site_id,
             backup_root=backup_root, public_base_url=public_base_url, object_store=object_store,
             storage_limit_bytes=storage_limit_bytes,
+            content_classification=content_classification,
+            external_preview_permission=external_preview_permission,
         )
         # The CLI must durably preserve the handoff manifest before clearing
         # upload admission. A failed local handoff retains remote/backups and
@@ -187,6 +190,7 @@ def _prepare_manifest(
     source_url: str | None, reason: str, position: int, is_primary: bool, confidence: float,
     asset_id: str | None, site_id: str, backup_root: Path, public_base_url: str,
     object_store: ObjectStore, storage_limit_bytes: int,
+    content_classification: str, external_preview_permission: str,
 ) -> dict[str, object]:
     if entity_type not in {"work", "performer"} or not UUID_PATTERN.fullmatch(entity_id):
         raise MediaRejected("entity identity is invalid")
@@ -199,6 +203,15 @@ def _prepare_manifest(
     )
     if not valid_association:
         raise MediaRejected("purpose, primary flag and position do not form a valid display slot")
+    policy_valid = (
+        content_classification == "unknown" and external_preview_permission == "unknown"
+    ) or (
+        content_classification in {"non_explicit", "explicit"}
+        and external_preview_permission in {"allow", "deny"}
+        and (external_preview_permission != "allow" or content_classification == "non_explicit")
+    )
+    if not policy_valid:
+        raise MediaRejected("content classification and external preview permission are inconsistent")
     if not 0 <= confidence <= 1:
         raise MediaRejected("confidence is outside the allowed range")
     if storage_limit_bytes < 1:
@@ -279,5 +292,7 @@ def _prepare_manifest(
         "checked_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "confidence": confidence, "purpose": purpose, "position": position,
         "is_primary": is_primary, "reason": reason.strip(), "tool_version": TOOL_VERSION,
+        "content_classification": content_classification,
+        "external_preview_permission": external_preview_permission,
         "objects": objects,
     }

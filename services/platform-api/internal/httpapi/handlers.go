@@ -20,7 +20,7 @@ import (
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 var publicEntityPathPattern = regexp.MustCompile(`^/(?:works|performers|studios)/[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
-const requiredDatabaseSchemaVersion = 21
+const requiredDatabaseSchemaVersion = 22
 
 type healthResponse struct {
 	Status  string `json:"status"`
@@ -100,12 +100,20 @@ type imageRenditionResponse struct {
 }
 
 type imageResponse struct {
-	URL        string                   `json:"url"`
-	Rendition  string                   `json:"rendition"`
-	Width      int                      `json:"width"`
-	Height     int                      `json:"height"`
-	MimeType   string                   `json:"mime_type"`
-	Renditions []imageRenditionResponse `json:"renditions"`
+	URL                    string                   `json:"url"`
+	Rendition              string                   `json:"rendition"`
+	Width                  int                      `json:"width"`
+	Height                 int                      `json:"height"`
+	MimeType               string                   `json:"mime_type"`
+	Renditions             []imageRenditionResponse `json:"renditions"`
+	ExternalPreviewAllowed bool                     `json:"external_preview_allowed"`
+}
+
+type seoProfileResponse struct {
+	Indexable        bool    `json:"indexable"`
+	SitemapEligible  bool    `json:"sitemap_eligible"`
+	AdultRating      *string `json:"adult_rating"`
+	ImagePreviewMode string  `json:"image_preview_mode"`
 }
 
 type workDetailResponse struct {
@@ -121,6 +129,7 @@ type workDetailResponse struct {
 	Performers      []performerResponse    `json:"performers"`
 	Images          []imageResponse        `json:"images"`
 	RelatedWorks    []homeItem             `json:"related_works"`
+	SEO             seoProfileResponse     `json:"seo"`
 }
 
 type sitemapEntryResponse struct {
@@ -612,6 +621,7 @@ func (s *Server) workDetail(w http.ResponseWriter, r *http.Request) {
 		Performers:      make([]performerResponse, 0, len(detail.Performers)),
 		Images:          make([]imageResponse, 0, len(detail.Images)),
 		RelatedWorks:    workItems(detail.RelatedWorks),
+		SEO:             seoResponseFromCatalog(detail.SEO),
 	}
 	if detail.Studio != nil {
 		response.Studio = &studioSummaryResponse{ID: detail.Studio.ID, Name: detail.Studio.Name, Href: "/studios/" + detail.Studio.Slug}
@@ -679,13 +689,25 @@ func imageResponseFromCatalog(image *catalog.Image) *imageResponse {
 	response := &imageResponse{
 		URL: image.URL, Rendition: image.Rendition, Width: image.Width,
 		Height: image.Height, MimeType: image.MimeType,
-		Renditions: make([]imageRenditionResponse, 0, len(renditions)),
+		Renditions: make([]imageRenditionResponse, 0, len(renditions)), ExternalPreviewAllowed: image.ExternalPreviewAllowed,
 	}
 	for _, rendition := range renditions {
 		response.Renditions = append(response.Renditions, imageRenditionResponse{
 			URL: rendition.URL, Rendition: rendition.Rendition,
 			Width: rendition.Width, Height: rendition.Height, MimeType: rendition.MimeType,
 		})
+	}
+	return response
+}
+
+func seoResponseFromCatalog(profile catalog.SEOProfile) seoProfileResponse {
+	response := seoProfileResponse{
+		Indexable: profile.Indexable, SitemapEligible: profile.SitemapEligible,
+		ImagePreviewMode: profile.ImagePreviewMode,
+	}
+	if profile.AdultRating {
+		adult := "adult"
+		response.AdultRating = &adult
 	}
 	return response
 }

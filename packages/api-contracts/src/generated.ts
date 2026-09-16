@@ -219,6 +219,7 @@ export type ResponsiveImage = {
   width: number;
   height: number;
   mime_type: "image/jpeg" | "image/png" | "image/webp";
+  external_preview_allowed: boolean;
   renditions: Array<ImageRendition>;
 };
 
@@ -228,7 +229,15 @@ export type WorkImage = {
   width: number;
   height: number;
   mime_type: "image/jpeg" | "image/png" | "image/webp";
+  external_preview_allowed: boolean;
   renditions: Array<ImageRendition>;
+};
+
+export type SEOProfile = {
+  indexable: boolean;
+  sitemap_eligible: boolean;
+  adult_rating: "adult" | null;
+  image_preview_mode: "standard" | "none";
 };
 
 export type WorkDetailResponse = {
@@ -244,6 +253,7 @@ export type WorkDetailResponse = {
   performers: Array<PerformerSummary>;
   images: Array<WorkImage>;
   related_works: Array<HomeItem>;
+  seo: SEOProfile;
 };
 
 export type PerformerDetailResponse = {
@@ -262,6 +272,7 @@ export type PerformerDetailResponse = {
   public_updated_at?: string | null;
   works: Array<HomeItem>;
   images: Array<WorkImage>;
+  seo: SEOProfile;
 };
 
 export type StudioSummary = {
@@ -280,6 +291,7 @@ export type StudioDetailResponse = {
   name: string;
   public_updated_at?: string | null;
   works: Array<HomeItem>;
+  seo: SEOProfile;
 };
 
 export type MessageResponse = {
@@ -791,6 +803,8 @@ export type MediaManifestRequest = {
   is_primary: boolean;
   reason: string;
   tool_version: "media-python/1";
+  content_classification: "unknown" | "non_explicit" | "explicit";
+  external_preview_permission: "unknown" | "allow" | "deny";
   objects: Array<MediaManifestObject>;
 };
 

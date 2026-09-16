@@ -97,11 +97,13 @@ WITH entity AS (
 ), publication AS (
   INSERT INTO platform.publications (
     entity_type, entity_id, current_revision_id, publication_status, canonical_slug,
-    published_at, hidden_at, takedown_at
+    published_at, hidden_at, takedown_at, content_classification, seo_quality_status,
+    seo_reviewed_at, seo_reviewed_by
   ) SELECT 'studio', entity_id, revision_id, $4, $3,
            CASE WHEN $4 = 'published' THEN now() ELSE NULL END,
            CASE WHEN $4 = 'hidden' THEN now() ELSE NULL END,
-           CASE WHEN $4 = 'takedown' THEN now() ELSE NULL END
+           CASE WHEN $4 = 'takedown' THEN now() ELSE NULL END,
+           'non_explicit', 'eligible', now(), $6::uuid
     FROM revision RETURNING publication_id, entity_id
 )
 SELECT entity_id::text, publication_id::text FROM publication`, name, normalized, slug, status, h.actorID, reviewerID).Scan(&id, &publicationID)

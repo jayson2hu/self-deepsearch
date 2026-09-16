@@ -1,6 +1,35 @@
 import type { Metadata } from "next";
 type Environment = Record<string, string | undefined>;
 
+export type PublicSEOProfile = {
+  indexable: boolean;
+  sitemap_eligible: boolean;
+  adult_rating: "adult" | null;
+  image_preview_mode: "standard" | "none";
+};
+
+const SAFE_DEFAULT_PROFILE: PublicSEOProfile = {
+  indexable: false,
+  sitemap_eligible: false,
+  adult_rating: null,
+  image_preview_mode: "none",
+};
+
+export function resolvePublicSEOProfile(value: unknown): PublicSEOProfile {
+  if (!value || typeof value !== "object") return SAFE_DEFAULT_PROFILE;
+  const profile = value as Partial<PublicSEOProfile>;
+  if (typeof profile.indexable !== "boolean" || typeof profile.sitemap_eligible !== "boolean" ||
+      ![null, "adult"].includes(profile.adult_rating ?? null) || !["standard", "none"].includes(profile.image_preview_mode ?? "")) {
+    return SAFE_DEFAULT_PROFILE;
+  }
+  return {
+    indexable: profile.indexable,
+    sitemap_eligible: profile.sitemap_eligible,
+    adult_rating: profile.adult_rating ?? null,
+    image_preview_mode: profile.image_preview_mode as "standard" | "none",
+  };
+}
+
 export function seoReleaseEnabled(environment: Environment = process.env): boolean {
   if (environment.APP_ENV?.trim().toLowerCase() !== "production") return false;
   if (environment.SEO_INDEXING_ENABLED?.trim().toLowerCase() !== "true") return false;

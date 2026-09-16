@@ -240,7 +240,7 @@ class DependencySecurityContractTests(unittest.TestCase):
         self.assertIn("注册验证码流程建立会话，并可退出登录", browser_suite)
         self.assertIn("忘记密码必须完成邮箱验证码后才能重置", browser_suite)
         self.assertIn("关闭账号展示保留说明并要求邮箱验证码", browser_suite)
-        self.assertIn("注册用户可以收藏关注隐藏、查看历史并提交反馈", browser_suite)
+        self.assertIn("注册用户可以收藏关注、管理推荐偏好、查看历史并提交反馈", browser_suite)
         self.assertIn("运营账号错误密码被拒绝，正确密码进入后台", browser_suite)
         self.assertIn("两个运营账号完成人工录入、审核、发布并公开搜索", browser_suite)
         self.assertIn("owner 邀请管理员并由受邀邮箱验证码建立后台账号", browser_suite)
@@ -360,7 +360,7 @@ class DependencySecurityContractTests(unittest.TestCase):
         self.assertEqual(step["env"]["MEDIA_RECONCILE_CONTRACT_ADMIN_DATABASE_URL"], step["env"]["WORKER_CONTRACT_ADMIN_DATABASE_URL"])
         self.assertNotIn("continue-on-error", step)
         contract = (ROOT / "services/platform-worker/internal/mediareconcile/postgres_contract_test.go").read_text(encoding="utf-8")
-        for marker in ("validReconcileContractURL", "NOT rolsuper AND NOT rolbypassrls", "waiting == 2", "version != 21", "winners != 1 || notDue != 1"):
+        for marker in ("validReconcileContractURL", "NOT rolsuper AND NOT rolbypassrls", "waiting == 2", "version != 22", "winners != 1 || notDue != 1"):
             self.assertIn(marker, contract)
         http_contract = (ROOT / "services/platform-worker/internal/mediareconcile/python_contract_test.go").read_text(encoding="utf-8")
         self.assertIn("MEDIA_CONTRACT_PYTHON", http_contract)

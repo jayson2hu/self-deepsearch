@@ -917,6 +917,10 @@ WHERE entity_type = $1 AND entity_id = $2::uuid AND revision_status = 'approved'
 	if err := applyRevision(ctx, tx, input.EntityType, entityID, payload); err != nil {
 		return operations.Entity{}, err
 	}
+	contentClassification, seoQualityStatus, err := seoPolicyFromRevision(payload)
+	if err != nil {
+		return operations.Entity{}, err
+	}
 	if input.EntityType == "performer" || input.EntityType == "studio" {
 		table, idColumn, _ := entityTable(input.EntityType)
 		query := fmt.Sprintf("UPDATE platform.%s SET canonical_slug = $2 WHERE %s = $1::uuid", table, idColumn)
@@ -960,13 +964,21 @@ RETURNING revision_id::text`, input.EntityType, entityID, payload, revisionAutho
 	var publicationID string
 	err = tx.QueryRow(ctx, `
 INSERT INTO platform.publications (
-    entity_type, entity_id, site, current_revision_id, publication_status, canonical_slug, published_at
-) VALUES ($1, $2::uuid, 'main', $3::uuid, 'published', $4, $5)
+    entity_type, entity_id, site, current_revision_id, publication_status, canonical_slug, published_at,
+    content_classification, seo_quality_status, seo_reviewed_at, seo_reviewed_by
+) VALUES ($1, $2::uuid, 'main', $3::uuid, 'published', $4, $5, $6, $7,
+          CASE WHEN $6 = 'unknown' THEN NULL ELSE $5 END,
+          CASE WHEN $6 = 'unknown' THEN NULL ELSE $8::uuid END)
 ON CONFLICT (entity_type, entity_id, site) DO UPDATE
 SET current_revision_id = EXCLUDED.current_revision_id,
     publication_status = 'published', canonical_slug = EXCLUDED.canonical_slug,
-    published_at = EXCLUDED.published_at, hidden_at = NULL, takedown_at = NULL
-RETURNING publication_id::text`, input.EntityType, entityID, revisionID, input.CanonicalSlug, now).Scan(&publicationID)
+    published_at = EXCLUDED.published_at, hidden_at = NULL, takedown_at = NULL,
+    content_classification = EXCLUDED.content_classification,
+    seo_quality_status = EXCLUDED.seo_quality_status,
+    seo_reviewed_at = EXCLUDED.seo_reviewed_at,
+    seo_reviewed_by = EXCLUDED.seo_reviewed_by
+RETURNING publication_id::text`, input.EntityType, entityID, revisionID, input.CanonicalSlug, now,
+		contentClassification, seoQualityStatus, actorID).Scan(&publicationID)
 	if err != nil {
 		return operations.Entity{}, mapConstraintError(err)
 	}
@@ -985,7 +997,8 @@ ON CONFLICT (event_type, dedupe_key) DO NOTHING`, input.EntityType, entityID, in
 	}
 	if err := insertAudit(ctx, tx, actorID, action, input.EntityType, entityID,
 		map[string]any{"revision_id": previousRevisionID},
-		map[string]any{"revision_id": revisionID, "rollback_source_revision_id": rollbackSourceRevisionID, "canonical_slug": input.CanonicalSlug}, input.Reason, requestID, now); err != nil {
+		map[string]any{"revision_id": revisionID, "rollback_source_revision_id": rollbackSourceRevisionID, "canonical_slug": input.CanonicalSlug,
+			"content_classification": contentClassification, "seo_quality_status": seoQualityStatus}, input.Reason, requestID, now); err != nil {
 		return operations.Entity{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -1259,6 +1272,7 @@ func (store *Store) RegisterMediaManifest(ctx context.Context, input operations.
 }
 
 func registerMediaManifest(ctx context.Context, begin func(context.Context, pgx.TxOptions) (pgx.Tx, error), input operations.MediaManifestInput, actorID, requestID string, now time.Time) (operations.MediaManifest, error) {
+	normalizeMediaPreviewPolicy(&input)
 	if !validMediaAssociation(input) {
 		return operations.MediaManifest{}, operations.ErrInvalidInput
 	}
@@ -1301,6 +1315,7 @@ func lockMediaParent(ctx context.Context, tx pgx.Tx, input operations.MediaManif
 // Caller owns the transaction and parent lock. Adding a manifest never hides
 // an existing primary; replacement must explicitly do that before this insert.
 func insertMediaManifest(ctx context.Context, tx pgx.Tx, input operations.MediaManifestInput, actorID, requestID string, now time.Time) (operations.MediaManifest, error) {
+	normalizeMediaPreviewPolicy(&input)
 	if !validMediaAssociation(input) {
 		return operations.MediaManifest{}, operations.ErrInvalidInput
 	}
@@ -1339,10 +1354,13 @@ WHERE entity_type = $1 AND entity_id = $2::uuid AND publication_status = 'publis
 	err = tx.QueryRow(ctx, `
 INSERT INTO platform.media_assets (
     asset_id, asset_type, current_version, source_type, source_url, checked_at, operator_id,
-    confidence, rights_status, asset_status
-) VALUES ($1::uuid, $2, 1, $3, $4, $5, $6::uuid, $7, 'allowed', 'published')
+    confidence, rights_status, asset_status, content_classification, external_preview_permission,
+    preview_reviewed_at, preview_reviewed_by
+) VALUES ($1::uuid, $2, 1, $3, $4, $5, $6::uuid, $7, 'allowed', 'published', $8, $9,
+          CASE WHEN $8::text = 'unknown' THEN NULL::timestamptz ELSE $10::timestamptz END,
+          CASE WHEN $8 = 'unknown' THEN NULL ELSE $6::uuid END)
 RETURNING asset_id::text, created_at`, input.AssetID, input.AssetType, input.SourceType, input.SourceURL,
-		input.CheckedAt, actorID, input.Confidence).Scan(&result.AssetID, &result.CreatedAt)
+		input.CheckedAt, actorID, input.Confidence, input.ContentClassification, input.ExternalPreviewPermission, now).Scan(&result.AssetID, &result.CreatedAt)
 	if err != nil {
 		return operations.MediaManifest{}, mapConstraintError(err)
 	}
@@ -1398,16 +1416,27 @@ ON CONFLICT (event_type, dedupe_key) DO NOTHING`, input.EntityType, input.Entity
 		return operations.MediaManifest{}, fmt.Errorf("enqueue media publication refresh: %w", err)
 	}
 	if err := insertAudit(ctx, tx, actorID, "media.manifest_publish", "media_asset", result.AssetID, nil,
-		map[string]any{"entity_type": input.EntityType, "entity_id": input.EntityID, "object_count": len(input.Objects)}, input.Reason, requestID, now); err != nil {
+		map[string]any{"entity_type": input.EntityType, "entity_id": input.EntityID, "object_count": len(input.Objects),
+			"content_classification": input.ContentClassification, "external_preview_permission": input.ExternalPreviewPermission}, input.Reason, requestID, now); err != nil {
 		return operations.MediaManifest{}, err
 	}
 	return result, nil
 }
 
 func validMediaAssociation(input operations.MediaManifestInput) bool {
-	return (input.EntityType == "work" && input.AssetType == "work_image" && input.Purpose == "cover" && input.IsPrimary && input.Position == 0) ||
+	policyValid := (input.ContentClassification == "unknown" && input.ExternalPreviewPermission == "unknown") ||
+		((input.ContentClassification == "non_explicit" || input.ContentClassification == "explicit") &&
+			(input.ExternalPreviewPermission == "deny" || (input.ExternalPreviewPermission == "allow" && input.ContentClassification == "non_explicit")))
+	return policyValid && ((input.EntityType == "work" && input.AssetType == "work_image" && input.Purpose == "cover" && input.IsPrimary && input.Position == 0) ||
 		(input.EntityType == "work" && input.AssetType == "work_image" && input.Purpose == "gallery" && !input.IsPrimary && input.Position >= 1 && input.Position <= 3) ||
-		(input.EntityType == "performer" && input.AssetType == "performer_avatar" && input.Purpose == "avatar" && input.IsPrimary && input.Position == 0)
+		(input.EntityType == "performer" && input.AssetType == "performer_avatar" && input.Purpose == "avatar" && input.IsPrimary && input.Position == 0))
+}
+
+func normalizeMediaPreviewPolicy(input *operations.MediaManifestInput) {
+	if input.ContentClassification == "" && input.ExternalPreviewPermission == "" {
+		input.ContentClassification = "unknown"
+		input.ExternalPreviewPermission = "unknown"
+	}
 }
 
 func (store *Store) ListTakedownRequests(ctx context.Context, status string, limit int) ([]operations.TakedownRequest, error) {
@@ -1726,7 +1755,9 @@ func snapshotRevisionPayload(ctx context.Context, tx pgx.Tx, entityType, entityI
   'title_original', title_original, 'release_date', release_date,
   'studio_id', studio_id, 'summary', summary,
   'performer_ids', coalesce((SELECT jsonb_agg(link.performer_id ORDER BY link.position, link.performer_id)
-    FROM platform.work_performers link WHERE link.work_id = works.work_id), '[]'::jsonb)
+    FROM platform.work_performers link WHERE link.work_id = works.work_id), '[]'::jsonb),
+  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'work' AND entity_id = works.work_id AND site = 'main'), 'unknown'),
+  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'work' AND entity_id = works.work_id AND site = 'main'), 'unknown')
 ) || $2::jsonb FROM platform.works WHERE work_id = $1::uuid`
 	case "performer":
 		query = `SELECT jsonb_build_object(
@@ -1734,10 +1765,14 @@ func snapshotRevisionPayload(ctx context.Context, tx pgx.Tx, entityType, entityI
   'adult_status', adult_status, 'activity_status', activity_status, 'agency', agency,
   'birth_year', birth_year, 'height_cm', height_cm, 'measurements', measurements, 'debut_year', debut_year,
   'aliases', coalesce((SELECT jsonb_agg(alias.raw_value ORDER BY alias.raw_value)
-    FROM platform.performer_aliases alias WHERE alias.performer_id = performers.performer_id), '[]'::jsonb)
+    FROM platform.performer_aliases alias WHERE alias.performer_id = performers.performer_id), '[]'::jsonb),
+  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'performer' AND entity_id = performers.performer_id AND site = 'main'), 'unknown'),
+  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'performer' AND entity_id = performers.performer_id AND site = 'main'), 'unknown')
 ) || $2::jsonb FROM platform.performers WHERE performer_id = $1::uuid`
 	case "studio":
-		query = `SELECT jsonb_build_object('name', name, 'normalized_name', normalized_name) || $2::jsonb
+		query = `SELECT jsonb_build_object('name', name, 'normalized_name', normalized_name,
+  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'studio' AND entity_id = studios.studio_id AND site = 'main'), 'unknown'),
+  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'studio' AND entity_id = studios.studio_id AND site = 'main'), 'unknown')) || $2::jsonb
 FROM platform.studios WHERE studio_id = $1::uuid`
 	default:
 		return nil, operations.ErrInvalidInput
@@ -1749,6 +1784,30 @@ FROM platform.studios WHERE studio_id = $1::uuid`
 		return nil, fmt.Errorf("snapshot %s revision: %w", entityType, err)
 	}
 	return snapshot, nil
+}
+
+func seoPolicyFromRevision(payload []byte) (string, string, error) {
+	var values map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &values); err != nil {
+		return "", "", operations.ErrInvalidInput
+	}
+	classification, quality := "unknown", "unknown"
+	if raw, ok := values["content_classification"]; ok {
+		if err := json.Unmarshal(raw, &classification); err != nil {
+			return "", "", operations.ErrInvalidInput
+		}
+	}
+	if raw, ok := values["seo_quality_status"]; ok {
+		if err := json.Unmarshal(raw, &quality); err != nil {
+			return "", "", operations.ErrInvalidInput
+		}
+	}
+	validUnknown := classification == "unknown" && quality == "unknown"
+	validReviewed := (classification == "non_explicit" || classification == "explicit") && (quality == "eligible" || quality == "ineligible")
+	if !validUnknown && !validReviewed {
+		return "", "", operations.ErrInvalidInput
+	}
+	return classification, quality, nil
 }
 
 func applyRevision(ctx context.Context, tx pgx.Tx, entityType, entityID string, payload []byte) error {

@@ -11,7 +11,7 @@ import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkCard } from "../../../components/work-card";
 import { SafeImage } from "../../../components/safe-image";
 import { getPerformer, getPerformerWorks } from "../../../lib/api";
-import { canonicalWithCursor, pageRobots } from "../../../lib/seo-policy";
+import { canonicalWithCursor, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
@@ -19,14 +19,16 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
 	const cursor = (await searchParams).cursor?.trim() ?? "";
 	const result = await getPerformer(slug);
 	const works = cursor && result.status === "ok" ? await getPerformerWorks(slug, cursor) : null;
-	const pageIndexable = !cursor || works?.status === "ok" && works.data.items.length > 0;
+	const seo = resolvePublicSEOProfile(result.status === "ok" ? result.data.seo : null);
+	const pageIndexable = seo.indexable && (!cursor || works?.status === "ok" && works.data.items.length > 0);
 	const canonical = canonicalWithCursor(`/performers/${slug}`, pageIndexable ? cursor : "");
-	const primaryImage = result.status === "ok" ? result.data.images[0] : undefined;
+	const primaryImage = result.status === "ok" ? result.data.images.find((item) => item.external_preview_allowed) : undefined;
 	const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
-	const image = result.status === "ok" ? socialImage?.url ?? result.data.image_url : null;
+	const image = result.status === "ok" ? socialImage?.url ?? null : null;
 	return result.status === "ok" ? {
 		title: result.data.name, description: `${result.data.name} 的公开资料与作品列表。`,
-		alternates: { canonical }, robots: pageRobots(pageIndexable),
+		alternates: { canonical }, robots: pageRobots(pageIndexable, seo.image_preview_mode),
+		other: seo.adult_rating ? { rating: seo.adult_rating } : undefined,
 		openGraph: { type: "profile", url: canonical, title: result.data.name, description: `${result.data.name} 的公开资料与作品列表。`, images: image ? [{ url: image }] : undefined },
 	} : { title: "人物资料", robots: { index: false, follow: false } };
 }
@@ -39,16 +41,17 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
   if (result.status === "degraded") return <main className="shell service-state"><h1>资料暂时无法加载</h1><p>服务暂时不可用，请稍后重试。</p><Link className="button button--quiet" href="/performers">返回人物列表</Link></main>;
   if (worksResult.status === "not_found") notFound();
   const performer = result.data;
+  const seo = resolvePublicSEOProfile(performer.seo);
   const primaryImage = performer.images[0];
   const primary = primaryImage?.url ?? performer.image_url;
   const canonicalURL = new URL(`/performers/${slug}`, siteURL()).toString();
   return <main><JsonLD data={{
     "@context": "https://schema.org", "@type": "Person", "@id": canonicalURL, url: canonicalURL,
     name: performer.name, alternateName: [performer.name_original, performer.romanized_name, ...performer.aliases].filter((value): value is string => Boolean(value)),
-    image: primary ?? undefined,
+    image: primaryImage?.external_preview_allowed ? primary ?? undefined : undefined,
     height: performer.height_cm ? { "@type": "QuantitativeValue", value: performer.height_cm, unitCode: "CMT" } : undefined,
     memberOf: performer.agency ? { "@type": "Organization", name: performer.agency } : undefined,
-    mainEntityOfPage: canonicalURL,
+    mainEntityOfPage: canonicalURL, isFamilyFriendly: seo.adult_rating ? false : undefined,
   }} /><PageViewReporter contentType="performer" contentID={performer.id} /><div className="shell content-with-rails detail-layout"><div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
     <article className="content-column work-detail"><AdSlot label="顶部横幅" placement="banner" />
       <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "人物资料", href: "/performers" }, { label: performer.name }]} />

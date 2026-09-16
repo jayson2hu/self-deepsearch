@@ -44,8 +44,8 @@ BEGIN
     SELECT schema_version INTO current_schema_version
     FROM platform.system_metadata
     WHERE singleton;
-    IF current_schema_version IS DISTINCT FROM 21 THEN
-        RAISE EXCEPTION 'Release A fixtures require schema version 21, got %', current_schema_version;
+    IF current_schema_version IS DISTINCT FROM 22 THEN
+        RAISE EXCEPTION 'Release A fixtures require schema version 22, got %', current_schema_version;
     END IF;
 
     IF EXISTS (
@@ -412,3 +412,15 @@ FROM platform.content_revisions AS revision
 CROSS JOIN LATERAL jsonb_object_keys(revision.payload) AS field(field_name)
 WHERE revision.reason = 'Release A deterministic fixture'
 ON CONFLICT (provenance_id) DO NOTHING;
+
+-- Synthetic fixtures are explicitly classified so sitemap and metadata
+-- contracts exercise the reviewed path. Production rows remain fail-closed
+-- at the migration defaults until an operator publishes a reviewed revision.
+UPDATE platform.publications
+SET content_classification = 'non_explicit',
+    seo_quality_status = 'eligible',
+    seo_reviewed_at = coalesce(published_at, now()),
+    seo_reviewed_by = '90000000-0000-4000-8000-000000000002'::uuid
+WHERE publication_status = 'published'
+  AND content_classification = 'unknown'
+  AND seo_quality_status = 'unknown';
