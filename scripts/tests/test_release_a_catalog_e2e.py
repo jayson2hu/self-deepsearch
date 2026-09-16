@@ -41,7 +41,9 @@ class ReleaseACatalogE2ETests(unittest.TestCase):
         entity_id = "10000000-0000-4000-8000-000000000001"
         slug = f"{slug_base}-00000001"
         revision_id = "20000000-0000-4000-8000-000000000001"
+        seo_revision_id = "20000000-0000-4000-8000-000000000002"
         task_id = "30000000-0000-4000-8000-000000000001"
+        seo_task_id = "30000000-0000-4000-8000-000000000002"
         query_path = "/api/v1/search/works?q=E2E-20260908-ABC123"
         sitemap_path = "/api/v1/site/sitemap?entity_type=work"
 
@@ -55,6 +57,9 @@ class ReleaseACatalogE2ETests(unittest.TestCase):
                 ("POST", "/admin/v1/works"): [
                     result(201, {"id": entity_id, "revision_id": revision_id})
                 ],
+                ("POST", f"/admin/v1/entities/{entity_id}/revisions"): [
+                    result(201, {"id": entity_id, "revision_id": seo_revision_id})
+                ],
                 ("GET", query_path): [
                     result(200, {"items": [{"id": entity_id}], "next_cursor": None}),
                     result(200, {"items": [], "next_cursor": None}),
@@ -64,6 +69,7 @@ class ReleaseACatalogE2ETests(unittest.TestCase):
                     result(404, {"code": "WORK_NOT_FOUND"}),
                 ],
                 ("GET", sitemap_path): [
+                    result(200, {"items": []}),
                     result(200, {"items": [{"entity_type": "work", "slug": slug}]}),
                     result(200, {"items": []}),
                 ],
@@ -75,12 +81,15 @@ class ReleaseACatalogE2ETests(unittest.TestCase):
                     result(200, {"user": {"id": "reviewer-id", "role": "owner", "email": "owner@example.test"}})
                 ],
                 ("GET", "/admin/v1/review-tasks?status=pending"): [
-                    result(200, {"items": [{"id": task_id, "entity_id": entity_id}]})
+                    result(200, {"items": [{"id": task_id, "entity_id": entity_id}]}),
+                    result(200, {"items": [{"id": seo_task_id, "entity_id": entity_id}]}),
                 ],
                 ("POST", f"/admin/v1/review-tasks/{task_id}/claim"): [result(200, {"id": task_id})],
-                ("POST", "/api/v1/auth/reauth"): [result(200, {"message": "ok"})],
+                ("POST", f"/admin/v1/review-tasks/{seo_task_id}/claim"): [result(200, {"id": seo_task_id})],
+                ("POST", "/api/v1/auth/reauth"): [result(200, {"message": "ok"}), result(200, {"message": "ok"})],
                 ("POST", f"/admin/v1/review-tasks/{task_id}/approve"): [result(200, {"id": task_id})],
-                ("POST", f"/admin/v1/entities/{entity_id}/publish"): [result(200, {"id": entity_id})],
+                ("POST", f"/admin/v1/review-tasks/{seo_task_id}/approve"): [result(200, {"id": seo_task_id})],
+                ("POST", f"/admin/v1/entities/{entity_id}/publish"): [result(200, {"id": entity_id}), result(200, {"id": entity_id})],
                 ("POST", f"/admin/v1/entities/{entity_id}/hide"): [result(200, {"id": entity_id})],
             }
         )
@@ -99,6 +108,12 @@ class ReleaseACatalogE2ETests(unittest.TestCase):
 
         self.assertEqual(output["final_state"], "hidden")
         self.assertEqual(output["entity_id"], entity_id)
+        self.assertEqual(output["revision_id"], seo_revision_id)
+        revision_call = next(call for call in editor.calls if call[1].endswith("/revisions"))
+        self.assertEqual(
+            revision_call[2]["payload"],
+            {"content_classification": "non_explicit", "seo_quality_status": "eligible"},
+        )
         reauth_index = next(i for i, call in enumerate(reviewer.calls) if call[1] == "/api/v1/auth/reauth")
         approve_index = next(i for i, call in enumerate(reviewer.calls) if call[1].endswith("/approve"))
         publish_index = next(i for i, call in enumerate(reviewer.calls) if call[1].endswith("/publish"))

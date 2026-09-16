@@ -176,30 +176,33 @@ def run_catalog_flow(
     revision_id = require_string(created, "revision_id", "create work")
     slug = canonical_slug(slug, entity_id)
 
-    pending = require_items(
-        expect(reviewer.request("GET", "/admin/v1/review-tasks?status=pending"), 200, "list pending review tasks"),
-        "list pending review tasks",
-    )
-    matching_tasks = [item for item in pending if item.get("entity_id") == entity_id]
-    if len(matching_tasks) != 1:
-        raise E2EFailure(f"list pending review tasks: expected one task for {entity_id}, got {len(matching_tasks)}")
-    task_id = require_string(matching_tasks[0], "id", "list pending review tasks")
+    def approve_pending_revision(stage: str) -> str:
+        pending = require_items(
+            expect(reviewer.request("GET", "/admin/v1/review-tasks?status=pending"), 200, f"list {stage} review tasks"),
+            f"list {stage} review tasks",
+        )
+        matching_tasks = [item for item in pending if item.get("entity_id") == entity_id]
+        if len(matching_tasks) != 1:
+            raise E2EFailure(f"list {stage} review tasks: expected one task for {entity_id}, got {len(matching_tasks)}")
+        current_task_id = require_string(matching_tasks[0], "id", f"list {stage} review tasks")
+        expect(reviewer.request("POST", f"/admin/v1/review-tasks/{current_task_id}/claim"), 200, f"claim {stage} review task")
+        expect(
+            reviewer.request("POST", "/api/v1/auth/reauth", {"password": reviewer_password}),
+            200,
+            f"reviewer recent password confirmation for {stage}",
+        )
+        expect(
+            reviewer.request(
+                "POST",
+                f"/admin/v1/review-tasks/{current_task_id}/approve",
+                {"reason": f"Release A catalog E2E {stage} approval"},
+            ),
+            200,
+            f"approve {stage} review task",
+        )
+        return current_task_id
 
-    expect(reviewer.request("POST", f"/admin/v1/review-tasks/{task_id}/claim"), 200, "claim review task")
-    expect(
-        reviewer.request("POST", "/api/v1/auth/reauth", {"password": reviewer_password}),
-        200,
-        "reviewer recent password confirmation",
-    )
-    expect(
-        reviewer.request(
-            "POST",
-            f"/admin/v1/review-tasks/{task_id}/approve",
-            {"reason": "Release A catalog E2E approval"},
-        ),
-        200,
-        "approve review task",
-    )
+    task_id = approve_pending_revision("initial")
 
     published = False
     hidden = False
@@ -236,12 +239,52 @@ def run_catalog_flow(
         if detail.get("id") != entity_id or detail.get("code") != code:
             raise E2EFailure("read published work: detail identity does not match the created entity")
 
-        sitemap_items = require_items(
+        unreviewed_sitemap = require_items(
             expect(editor.request("GET", "/api/v1/site/sitemap?entity_type=work"), 200, "read work sitemap"),
             "read work sitemap",
         )
-        if not contains_slug(sitemap_items, slug):
-            raise E2EFailure("read work sitemap: published slug is missing")
+        if contains_slug(unreviewed_sitemap, slug):
+            raise E2EFailure("read work sitemap: unreviewed SEO content must fail closed")
+
+        seo_revision = require_object(
+            expect(
+                editor.request(
+                    "POST",
+                    f"/admin/v1/entities/{entity_id}/revisions",
+                    {
+                        "entity_type": "work",
+                        "payload": {"content_classification": "non_explicit", "seo_quality_status": "eligible"},
+                        "sources": [source],
+                        "reason": "Release A catalog E2E SEO review",
+                    },
+                ),
+                201,
+                "submit SEO review revision",
+            ),
+            "submit SEO review revision",
+        )
+        revision_id = require_string(seo_revision, "revision_id", "submit SEO review revision")
+        task_id = approve_pending_revision("SEO")
+        expect(
+            reviewer.request(
+                "POST",
+                f"/admin/v1/entities/{entity_id}/publish",
+                {
+                    "entity_type": "work",
+                    "revision_id": revision_id,
+                    "canonical_slug": slug,
+                    "reason": "Release A catalog E2E SEO publication",
+                },
+            ),
+            200,
+            "publish SEO-reviewed work",
+        )
+        reviewed_sitemap = require_items(
+            expect(editor.request("GET", "/api/v1/site/sitemap?entity_type=work"), 200, "read reviewed work sitemap"),
+            "read reviewed work sitemap",
+        )
+        if not contains_slug(reviewed_sitemap, slug):
+            raise E2EFailure("read reviewed work sitemap: eligible published slug is missing")
 
         expect(
             reviewer.request("POST", f"/admin/v1/entities/{entity_id}/hide", hide_payload),
