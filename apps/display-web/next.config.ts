@@ -4,6 +4,10 @@ import { mediaContentSecurityPolicy } from "./lib/media-policy";
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  // The CLI capture path can return an empty --showConfig stream in detached
+  // build environments. The compiler API performs the same type check without
+  // skipping errors and keeps production builds reproducible here.
+  experimental: { useTypeScriptCli: false },
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,

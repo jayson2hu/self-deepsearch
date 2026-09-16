@@ -225,9 +225,11 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   });
 
   await page.goto(displayURL);
-  await expect(page.getByRole("heading", { name: "按番号找到作品公开资料" })).toBeVisible();
-  await expect(page.getByText("登录后查看关注人物的新作品")).toBeVisible();
-  await expect(page.getByText("关注动态暂时无法加载")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "查询番号或名称，确认公开资料" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "主导航" }).getByRole("link", { name: "查询" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "最新发行" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "继续查找资料" })).toBeVisible();
+  await expect(page.getByText("运营人工维护")).toHaveCount(0);
   await expect(page.locator('[data-ad-state="placeholder"]')).toHaveCount(5);
   await expect(page.getByText("18+ · 仅展示公开资料，不提供资源")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -251,7 +253,7 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
     expect(readableRailText).toBe(true);
   }
 
-  await page.getByLabel("搜索番号、标题或人物").fill("TEST-001");
+  await page.getByLabel("搜索番号、标题、人物或厂牌").fill("TEST-001");
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page).toHaveURL(/\/search\?q=TEST-001$/);
   await expect(page.getByRole("link", { name: "查看 TEST-001" })).toBeVisible();
@@ -259,7 +261,7 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   await expect(page.getByRole("heading", { name: "示例作品资料：春日档案" })).toBeVisible();
 
   await page.goto(displayURL);
-  await page.getByLabel("搜索番号、标题或人物").fill("TEST-JSONLD");
+  await page.getByLabel("搜索番号、标题、人物或厂牌").fill("TEST-JSONLD");
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page).toHaveURL(/\/search\?q=TEST-JSONLD$/);
   await expect(page.getByRole("heading", { name: "“TEST-JSONLD” 的结果" })).toBeVisible();

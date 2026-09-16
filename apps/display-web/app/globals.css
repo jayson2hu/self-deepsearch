@@ -35,6 +35,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .main-nav { display: flex; align-self: stretch; gap: 22px; }
 .main-nav a { display: grid; place-items: center; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; }
 .main-nav a:hover, .main-nav a.active { color: var(--ink); border-color: var(--accent); }
+.header-search-link { min-height: 38px; display: none; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 13px; font-weight: 700; }
 .header-search { margin-left: auto; width: min(310px, 25vw); height: 38px; display: grid; grid-template-columns: 1fr 42px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; background: #f4f5f6; }
 .header-search input { min-width: 0; padding: 0 12px; border: 0; outline: 0; background: transparent; }
 .header-search button { display: grid; place-items: center; color: white; border: 0; background: var(--accent); cursor: pointer; }
@@ -87,6 +88,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .section-heading h2, .split-band h2 { margin: 0; font-size: 21px; }
 .section-heading > a { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .section-kicker { display: flex; align-items: center; gap: 6px; color: var(--teal); }
+.browse-paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.browse-path { min-width: 0; min-height: 96px; display: grid; grid-template-columns: 24px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: white; }
+.browse-path:hover { border-color: #b6c9c6; background: #f8fbfa; }
+.browse-path > svg:first-child { color: var(--teal); }
+.browse-path > svg:last-child { color: var(--muted); }
+.browse-path span { min-width: 0; display: grid; gap: 4px; }
+.browse-path strong { font-size: 14px; }
+.browse-path small { color: var(--muted); font-size: 11px; line-height: 1.45; }
 .degraded-note { margin: -6px 0 16px; padding: 8px 10px; color: #75500f; border-left: 3px solid #d39b31; background: #fff4dc; font-size: 12px; }
 .work-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .pagination-next { width: fit-content; margin: 24px auto 0; display: flex; }
@@ -253,9 +262,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .site-header__inner { min-height: 60px; gap: 10px; flex-wrap: wrap; padding: 10px 0; }
   .main-nav { margin-top: 1px; }
   .brand span, .header-search { display: none; }
+  .header-search-link { display: inline-flex; margin-left: auto; }
   .account-actions .button { padding-inline: 9px; }
-  .account-actions { margin-left: auto; }
-  .account-menu { margin-left: auto; }
+  .account-actions, .account-menu { margin-left: 0; }
   .search-band__inner { min-height: 240px; grid-template-columns: 1fr; gap: 20px; padding: 26px 0; }
   .page-band__inner { min-height: 214px; grid-template-columns: 1fr; gap: 12px; padding: 24px 0; }
   .search-band h1 { font-size: 24px; }
@@ -268,6 +277,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .discovery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .performer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .browse-paths { grid-template-columns: 1fr; }
   .studio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .studio-link:nth-child(3n) { border-right: 1px solid var(--line); }
   .studio-link:nth-child(2n) { border-right: 0; }
@@ -283,6 +293,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 }
 
 @media (max-width: 420px) {
+  .header-search-link span { display: none; }
+  .header-search-link { width: 38px; justify-content: center; padding: 0; }
+  .account-actions .button { width: 38px; padding: 0; font-size: 0; }
+  .account-actions .button svg { width: 17px; height: 17px; }
+  .account-actions .button--primary { display: none; }
   .studio-grid { grid-template-columns: 1fr; }
   .studio-link, .studio-link:nth-child(2n), .studio-link:nth-child(3n) { border-right: 0; }
 }

@@ -1391,7 +1391,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
 
     const failures = [
       ...pageFailures("公开首页", home, {
-        includes: ["按番号找到作品公开资料", "资料和图片来自经审核的公开来源", "仅限 18 岁以上用户", "示例作品资料：春日档案"],
+        includes: ["查询番号或名称，确认公开资料", "本站整理公开可访问的文字和图片资料", "仅限 18 岁以上用户", "示例作品资料：春日档案"],
       }),
       ...pageFailures("公开登录入口", login, { includes: ["登录", "/register"] }),
       ...pageFailures("公开注册入口", register, { includes: ["注册账号", "邮箱验证"] }),

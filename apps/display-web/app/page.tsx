@@ -1,9 +1,6 @@
-import { ArrowRight, BarChart3, CalendarDays, Flame, Search, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, History, Search, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { AdSlot } from "../components/ad-slot";
-import { DiscoveryGrid } from "../components/discovery-grid";
-import { FollowedWorksSection } from "../components/followed-works-section";
-import { PerformerCard } from "../components/performer-card";
 import { PersonalizedWorkGrid } from "../components/personalized-work-grid";
 import { getHome } from "../lib/api";
 
@@ -14,26 +11,21 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const { data, degraded } = await getHome();
-  const discovery = data.sections.find((section) => section.key === "discovery")?.items ?? [];
   const latest = data.sections.find((section) => section.key === "latest")?.items ?? [];
-  const editorial = data.sections.find((section) => section.key === "editorial")?.items ?? [];
-  const performers = data.sections.find((section) => section.key === "performers")?.items ?? [];
-  const trending = data.sections.find((section) => section.key === "trending")?.items ?? [];
-  const mostViewed = data.sections.find((section) => section.key === "most_viewed")?.items ?? [];
 
   return (
     <main>
         <section className="search-band" aria-labelledby="search-title">
           <div className="shell search-band__inner">
             <div>
-              <p className="eyebrow">作品资料查询</p>
-              <h1 id="search-title">按番号找到作品公开资料</h1>
-              <p>支持连字符、空格和大小写差异。搜索结果仅包含已经审核发布的资料。</p>
+              <p className="eyebrow">先查询，再浏览</p>
+              <h1 id="search-title">查询番号或名称，确认公开资料</h1>
+              <p>现阶段返回作品结果；输入人物或厂牌名称也可查找关联作品。</p>
             </div>
             <form className="primary-search" action="/search" role="search">
-              <label className="sr-only" htmlFor="primary-query">搜索番号、标题或人物</label>
+              <label className="sr-only" htmlFor="primary-query">搜索番号、标题、人物或厂牌</label>
               <Search size={22} aria-hidden="true" />
-              <input id="primary-query" name="q" placeholder="例如 TEST-001" autoComplete="off" />
+              <input id="primary-query" name="q" placeholder="输入番号或名称" autoComplete="off" />
               <button type="submit">查询</button>
             </form>
           </div>
@@ -42,17 +34,10 @@ export default async function HomePage() {
         <div className="shell content-with-rails">
           <div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
           <div className="content-column">
-            <AdSlot label="顶部横幅" placement="banner" />
-
-            <section className="section-block" aria-labelledby="discovery-title">
-              <div className="section-heading"><div><p className="section-kicker"><Sparkles size={15} /> 最新作品与人物混排</p><h2 id="discovery-title">发现</h2></div></div>
-              <DiscoveryGrid items={discovery} />
-            </section>
-
             <section className="section-block" aria-labelledby="latest-title">
               <div className="section-heading">
                 <div>
-                  <p className="section-kicker"><CalendarDays size={15} /> 按实际发行日期</p>
+                  <p className="section-kicker"><CalendarDays size={15} /> 主要目录 · 按实际发行日期</p>
                   <h2 id="latest-title">最新发行</h2>
                 </div>
                 <Link href="/latest">查看全部 <ArrowRight size={16} /></Link>
@@ -61,44 +46,34 @@ export default async function HomePage() {
               <PersonalizedWorkGrid items={latest} emptyText="暂无已发布作品" />
             </section>
 
-            {editorial.length > 0 ? <section className="section-block" aria-labelledby="editorial-title">
+            <section className="section-block" aria-labelledby="browse-title">
               <div className="section-heading">
-                <div><p className="section-kicker"><Sparkles size={15} /> 运营人工维护</p><h2 id="editorial-title">编辑推荐</h2></div>
+                <div>
+                  <p className="section-kicker">关联浏览</p>
+                  <h2 id="browse-title">继续查找资料</h2>
+                </div>
               </div>
-              <PersonalizedWorkGrid items={editorial} emptyText="暂无编辑推荐" />
-            </section> : null}
+              <div className="browse-paths">
+                <Link className="browse-path" href="/recent">
+                  <History aria-hidden="true" size={20} />
+                  <span><strong>最近收录</strong><small>包括发行日期暂缺的公开资料</small></span>
+                  <ArrowRight aria-hidden="true" size={17} />
+                </Link>
+                <Link className="browse-path" href="/performers">
+                  <UsersRound aria-hidden="true" size={20} />
+                  <span><strong>人物资料</strong><small>按名称进入关联作品</small></span>
+                  <ArrowRight aria-hidden="true" size={17} />
+                </Link>
+                <Link className="browse-path" href="/studios">
+                  <Building2 aria-hidden="true" size={20} />
+                  <span><strong>厂牌资料</strong><small>查看厂牌及其关联作品</small></span>
+                  <ArrowRight aria-hidden="true" size={17} />
+                </Link>
+              </div>
+            </section>
 
-            <FollowedWorksSection />
-
+            <AdSlot label="正文后横幅" placement="banner" />
             <AdSlot label="信息流展示位" placement="infeed" />
-
-            <section className="section-block" aria-labelledby="performers-title">
-              <div className="section-heading">
-                <div><p className="section-kicker"><UsersRound size={15} /> 继续浏览</p><h2 id="performers-title">人物资料</h2></div>
-                <Link href="/performers">查看全部 <ArrowRight size={16} /></Link>
-              </div>
-              {performers.length > 0 ? (
-                <div className="performer-grid">{performers.map((item) => <PerformerCard key={item.id} item={item} />)}</div>
-              ) : (
-                <div className="empty-copy">暂无已发布人物资料</div>
-              )}
-            </section>
-
-            <section className="section-block" aria-labelledby="trending-title">
-              <div className="section-heading">
-                <div><p className="section-kicker"><Flame size={15} /> 最近 7 天详情请求</p><h2 id="trending-title">近期热门</h2></div>
-              </div>
-              {trending.length > 0 ? (
-                <PersonalizedWorkGrid items={trending} emptyText="暂无足够的近期浏览数据" />
-              ) : (
-                <div className="empty-copy">暂无足够的近期浏览数据</div>
-              )}
-            </section>
-
-            <section className="section-block" aria-labelledby="most-viewed-title">
-              <div className="section-heading"><div><p className="section-kicker"><BarChart3 size={15} /> 最近 30 天详情请求</p><h2 id="most-viewed-title">浏览最多</h2></div><Link href="/popular">查看排行 <ArrowRight size={16} /></Link></div>
-              {mostViewed.length > 0 ? <PersonalizedWorkGrid items={mostViewed} emptyText="暂无足够的浏览数据" /> : <div className="empty-copy">暂无足够的浏览数据</div>}
-            </section>
           </div>
           <div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div>
         </div>
