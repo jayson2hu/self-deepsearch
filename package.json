@@ -25,7 +25,7 @@
     "probe:performance:release-a:build": "node scripts/release_a_performance_probe.mjs --build",
     "probe:http-latency:release-a": "node scripts/release_a_http_latency_probe.mjs",
     "probe:http-latency:release-a:build": "node scripts/release_a_http_latency_probe.mjs --build",
-    "test:frontend:smoke": "node --test scripts/tests/display_security_policy.test.mjs scripts/tests/release_a_frontend_smoke.test.mjs scripts/tests/work_csv_errors.test.mjs scripts/tests/media_policy.test.mjs scripts/tests/media_upload_client.test.mjs scripts/tests/media_edge_gateway.test.mjs scripts/tests/ops_security_policy.test.mjs",
+    "test:frontend:smoke": "node --test scripts/tests/display_security_policy.test.mjs scripts/tests/release_a_frontend_smoke.test.mjs scripts/tests/work_csv_errors.test.mjs scripts/tests/media_policy.test.mjs scripts/tests/media_upload_client.test.mjs scripts/tests/media_edge_gateway.test.mjs scripts/tests/ops_security_policy.test.mjs scripts/tests/redesign_handoff.test.mjs",
     "test:preview": "node --test scripts/tests/release_a_preview.test.mjs",
     "test:visual-capture": "node --test scripts/tests/release_a_visual_capture.test.mjs",
     "test:performance-probe": "node --test scripts/tests/release_a_performance_probe.test.mjs",
