@@ -232,6 +232,10 @@ export function getFollows(): Promise<ItemListResponse | null> {
   return privateGet<ItemListResponse>("/api/v1/me/follows");
 }
 
+export function getFollowedWorks(): Promise<ItemListResponse | null> {
+  return privateGet<ItemListResponse>("/api/v1/me/followed-works");
+}
+
 export function getHiddenWorks(): Promise<ItemListResponse | null> {
   return privateGet<ItemListResponse>("/api/v1/me/hidden-works");
 }

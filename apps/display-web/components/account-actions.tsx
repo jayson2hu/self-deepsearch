@@ -35,7 +35,7 @@ export function AccountActions() {
   if (session.status === "loading") return <GuestActions status="loading" />;
   if (session.status === "unavailable") return <GuestActions status="unavailable" onRetry={() => { setSession({ status: "loading" }); setAttempt((current) => current + 1); }} />;
   if (session.status === "anonymous") return <GuestActions status="anonymous" />;
-  return <details className="account-menu"><summary className="button button--quiet"><UserRound size={16} />我的账号</summary><nav aria-label="账号菜单"><span>{session.user.email}</span><Link href="/account/favorites">收藏作品</Link><Link href="/account/follows">关注人物</Link><Link href="/account/hidden">推荐偏好</Link><Link href="/account/history">浏览历史</Link><Link href="/account/feedback">我的反馈</Link><Link href="/account/settings">账号设置</Link><form action="/auth/logout" method="post"><button type="submit">退出登录</button></form></nav></details>;
+  return <details className="account-menu"><summary className="button button--quiet"><UserRound size={16} />我的账号</summary><nav aria-label="账号菜单"><span>{session.user.email}</span><Link href="/account">账号概览</Link><Link href="/account/favorites">收藏作品</Link><Link href="/account/follows">关注人物</Link><Link href="/account/hidden">推荐偏好</Link><Link href="/account/history">浏览历史</Link><Link href="/account/feedback">我的反馈</Link><Link href="/account/settings">账号设置</Link><form action="/auth/logout" method="post"><button type="submit">退出登录</button></form></nav></details>;
 }
 
 function GuestActions({ status, onRetry }: { status: "loading" | "anonymous" | "unavailable"; onRetry?: () => void }) {

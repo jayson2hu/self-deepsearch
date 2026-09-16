@@ -37,6 +37,7 @@ test("returnTo only accepts known same-site routes and whitelisted query keys", 
     ["/performers/person_1", "/performers/person_1"],
     ["/studios/studio.example", "/studios/studio.example"],
     ["/account/favorites", "/account/favorites"],
+    ["/account/follows/works", "/account/follows/works"],
     ["/search?q=中文&type=work", "/search?q=%E4%B8%AD%E6%96%87&type=work"],
   ];
   for (const [input, expected] of valid) assert.equal(targets.sanitizeReturnTo(input), expected, input);

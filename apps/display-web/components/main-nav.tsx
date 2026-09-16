@@ -7,7 +7,7 @@ const links = [
   { href: "/search", label: "查询", matches: ["/search"] },
   { href: "/latest", label: "浏览", matches: ["/latest", "/recent", "/popular", "/studios"] },
   { href: "/performers", label: "人物", matches: ["/performers"] },
-  { href: "/account/favorites", label: "我的", matches: ["/account"] },
+  { href: "/account", label: "我的", matches: ["/account"] },
 ] as const;
 
 /** Keep the current section discoverable for keyboard and assistive-technology users. */

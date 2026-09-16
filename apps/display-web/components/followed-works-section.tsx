@@ -34,10 +34,10 @@ export function FollowedWorksSection() {
   }, [loadAttempt]);
 
   return <section aria-busy={loadState === "loading"} className="section-block" aria-labelledby="followed-works-title">
-    <div className="section-heading"><div><p className="section-kicker"><Bell size={15} /> 关注人物动态</p><h2 id="followed-works-title">关注人物的新作品</h2></div></div>
+    <div className="section-heading"><div><p className="section-kicker"><Bell size={15} /> 关注人物作品</p><h2 id="followed-works-title">关注人物的已发布作品</h2></div><Link href="/account/follows/works">查看最多 12 条及说明</Link></div>
     {loadState === "loading" ? <div className="personalized-state" role="status"><LoaderCircle aria-hidden="true" size={17} />正在加载关注动态…</div> : null}
-    {loadState === "anonymous" ? <div className="personalized-state"><span>登录后查看关注人物的新作品</span><Link className="button button--quiet" href="/login"><LogIn aria-hidden="true" size={15} />登录</Link></div> : null}
+    {loadState === "anonymous" ? <div className="personalized-state"><span>登录后查看关注人物的已发布作品；这里不提供未读数量。</span><Link className="button button--quiet" href="/login"><LogIn aria-hidden="true" size={15} />登录</Link></div> : null}
     {loadState === "unavailable" ? <div className="personalized-state personalized-state--error" role="alert"><span>关注动态暂时无法加载</span><button className="button button--quiet" onClick={() => { setLoadState("loading"); setLoadAttempt((current) => current + 1); }} type="button"><RefreshCw aria-hidden="true" size={15} />重试</button></div> : null}
-    {loadState === "ready" ? <PersonalizedWorkGrid context="catalog" items={items} emptyText="关注人物暂时没有新的已发布作品" /> : null}
+    {loadState === "ready" ? <PersonalizedWorkGrid context="catalog" items={items} emptyText="关注人物当前没有可展示的已发布作品" /> : null}
   </section>;
 }

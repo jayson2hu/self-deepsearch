@@ -541,6 +541,10 @@ test("关闭账号展示保留说明并要求邮箱验证码", async ({ page }) 
 
 test("注册用户可以收藏关注、管理推荐偏好、查看历史并提交反馈", async ({ page }) => {
   await registerBrowserUser(page);
+  await page.goto(`${displayURL}/account`);
+  await expect(page.getByRole("heading", { name: "我的账号" })).toBeVisible();
+  await expect(page.getByText("这里不提供未读数量或新消息角标", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: /收藏作品/ })).toHaveAttribute("href", "/account/favorites");
   await page.goto(`${displayURL}/works/test-jsonld-00000001`);
 
   const favorite = page.getByRole("button", { name: "收藏作品" });
@@ -552,6 +556,7 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await page.getByLabel("说明").fill("浏览器端合成资料纠错测试");
   await page.getByRole("button", { name: "提交反馈" }).click();
   await expect(page.getByRole("status")).toContainText("管理员审核后会更新状态");
+  await expect(page.getByRole("link", { name: "查看我的反馈状态" })).toHaveAttribute("href", "/account/feedback");
 
   await page.getByRole("button", { name: "不再推荐" }).click();
   await expect(page.getByRole("status")).toContainText("已减少这部作品的推荐，仍可搜索找到");
@@ -578,12 +583,30 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await page.goto(`${displayURL}/account/follows`);
   await expect(page.getByRole("heading", { name: "关注人物" })).toBeVisible();
   await expect(page.getByRole("link", { name: "查看 测试人物 的人物资料" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看关注人物的已发布作品" })).toHaveAttribute("href", "/account/follows/works");
+  await page.getByRole("link", { name: "查看关注人物的已发布作品" }).click();
+  await expect(page.getByRole("heading", { name: "关注人物的已发布作品" })).toBeVisible();
+  await expect(page.getByText("最多展示按发行日期排序的 12 条作品", { exact: false })).toBeVisible();
+  await expect(page.getByText("卡片日期是作品发行日期", { exact: false })).toBeVisible();
+  await expect(page.getByText("当前接口不公开本站收录时间", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
   const followedWorks = await page.evaluate(async () => {
     const response = await fetch("/api/v1/me/followed-works", { credentials: "same-origin", cache: "no-store" });
     return { status: response.status, body: await response.json() };
   });
   expect(followedWorks.status).toBe(200);
   expect(followedWorks.body.items.map((item) => item.code)).toContain("TEST-JSONLD");
+
+  await page.goto(`${displayURL}/works/test-jsonld-00000001`);
+  await page.getByRole("button", { name: "已收藏" }).click();
+  await expect(page.getByRole("button", { name: "收藏作品" })).toBeVisible();
+  await page.goto(`${displayURL}/account/favorites`);
+  await expect(page.getByText("还没有收藏作品", { exact: true })).toBeVisible();
+  await page.goto(`${displayURL}/performers/test-jsonld-00000001`);
+  await page.getByRole("button", { name: "已关注" }).click();
+  await expect(page.getByRole("button", { name: "关注人物" })).toBeVisible();
+  await page.goto(`${displayURL}/account/follows/works`);
+  await expect(page.getByText("关注人物暂无已发布关联作品", { exact: true })).toBeVisible();
 
   await page.goto(`${displayURL}/account/hidden`);
   await expect(page.getByRole("heading", { name: "推荐偏好" })).toBeVisible();
@@ -599,7 +622,8 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await page.goto(`${displayURL}/account/feedback`);
   await expect(page.getByRole("heading", { name: "我的反馈" })).toBeVisible();
   await expect(page.getByText("浏览器端合成资料纠错测试")).toBeVisible();
-  await expect(page.getByText("pending")).toBeVisible();
+  await expect(page.getByText("已收到", { exact: true })).toBeVisible();
+  await expect(page.getByText("内部审核备注和其他用户反馈不会下发", { exact: false })).toBeVisible();
 });
 
 test("说明页匿名可读并从注册和页脚可达", async ({ page }) => {
@@ -1063,7 +1087,8 @@ test("用户反馈由 editor 领取并由 admin 完成审核", async ({ page }) 
   await expect(page).toHaveURL(`${displayURL}/`);
   await page.goto(`${displayURL}/account/feedback`);
   await expect(page.getByText("需要运营审核的浏览器反馈")).toBeVisible();
-  await expect(page.getByText("accepted", { exact: true })).toBeVisible();
+  await expect(page.getByText("已采纳", { exact: true })).toBeVisible();
+  await expect(page.getByText("反馈内容属实并纳入资料修订")).toHaveCount(0);
 });
 
 test("权利下架限制 editor 操作并从公开搜索撤下作品", async ({ page }) => {

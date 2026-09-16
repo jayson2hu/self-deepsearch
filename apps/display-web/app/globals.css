@@ -239,6 +239,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .check-row { grid-template-columns: 18px 1fr !important; align-items: start; color: var(--ink) !important; font-weight: 500 !important; }
 .check-row input { width: 16px; height: 16px; margin: 2px 0 0; }
 .private-grid { margin-top: 28px; }
+.account-link-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+.account-link-card { min-height: 150px; display: grid; align-content: start; gap: 9px; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: white; }
+.account-link-card:hover { border-color: var(--teal); box-shadow: 0 8px 20px rgba(20, 46, 50, .08); }
+.account-link-card strong { font-size: 16px; }
+.account-link-card span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.account-link-card em { margin-top: auto; color: var(--teal); font-size: 12px; font-style: normal; font-weight: 700; }
 .account-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
 .retention-note { margin: 18px 0; padding: 10px 12px; border-left: 3px solid var(--teal); color: var(--muted); background: #e9f5f3; font-size: 12px; }
 .history-list { display: grid; gap: 14px; }
@@ -325,6 +331,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .auth-links { flex-direction: column; gap: 8px; }
   .account-heading { align-items: flex-start; flex-direction: column; }
   .history-list > div { grid-template-columns: 1fr; }
+  .account-link-grid { grid-template-columns: 1fr; }
   .split-band, .footer-grid { grid-template-columns: 1fr; gap: 28px; }
   .footer-bottom { align-items: flex-start; flex-direction: column; justify-content: center; gap: 3px; }
 }

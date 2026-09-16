@@ -11,6 +11,7 @@ const exactPaths = new Set([
   "/account",
   "/account/favorites",
   "/account/follows",
+  "/account/follows/works",
   "/account/hidden",
   "/account/history",
   "/account/feedback",
