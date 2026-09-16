@@ -967,7 +967,7 @@ INSERT INTO platform.publications (
     entity_type, entity_id, site, current_revision_id, publication_status, canonical_slug, published_at,
     content_classification, seo_quality_status, seo_reviewed_at, seo_reviewed_by
 ) VALUES ($1, $2::uuid, 'main', $3::uuid, 'published', $4, $5, $6, $7,
-          CASE WHEN $6 = 'unknown' THEN NULL ELSE $5 END,
+          CASE WHEN $6 = 'unknown' THEN NULL ELSE $5::timestamptz END,
           CASE WHEN $6 = 'unknown' THEN NULL ELSE $8::uuid END)
 ON CONFLICT (entity_type, entity_id, site) DO UPDATE
 SET current_revision_id = EXCLUDED.current_revision_id,
