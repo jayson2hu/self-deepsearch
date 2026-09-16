@@ -138,6 +138,29 @@ export async function getPerformer(slug: string): Promise<
   }
 }
 
+export type RelatedWorksResult =
+  | { status: "ok"; data: ItemListResponse }
+  | { status: "not_found" }
+  | { status: "invalid_cursor" }
+  | { status: "degraded" };
+
+async function getRelatedWorks(entityType: "performers" | "studios", slug: string, cursor: string): Promise<RelatedWorksResult> {
+  try {
+    const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+    const response = await platformRequest(`/api/v1/${entityType}/${encodeURIComponent(slug)}/works${query}`, 300);
+    if (response.status === 404) return { status: "not_found" };
+    if (response.status === 400) return { status: "invalid_cursor" };
+    if (!response.ok) return { status: "degraded" };
+    return { status: "ok", data: mediaProjection((await response.json()) as ItemListResponse) };
+  } catch {
+    return { status: "degraded" };
+  }
+}
+
+export function getPerformerWorks(slug: string, cursor = "") {
+  return getRelatedWorks("performers", slug, cursor);
+}
+
 export async function getStudios(cursor = ""): Promise<{ data: StudioListResponse | null; degraded: boolean }> {
   try { return { data: await fetchPlatform<StudioListResponse>(`/api/v1/studios${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, 300), degraded: false }; }
   catch { return { data: null, degraded: true }; }
@@ -154,6 +177,10 @@ export async function getStudio(slug: string): Promise<
     if (!response.ok) return { status: "degraded" };
     return { status: "ok", data: mediaProjection((await response.json()) as StudioDetailResponse) };
   } catch { return { status: "degraded" }; }
+}
+
+export function getStudioWorks(slug: string, cursor = "") {
+  return getRelatedWorks("studios", slug, cursor);
 }
 
 async function fetchPlatform<T>(path: string, revalidate: number): Promise<T> {

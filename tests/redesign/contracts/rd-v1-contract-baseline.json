@@ -25,17 +25,16 @@
   "planned": {
     "implemented_new_paths": [
       "/api/v1/search/performers",
-      "/api/v1/search/studios"
+      "/api/v1/search/studios",
+      "/api/v1/performers/{slug}/works",
+      "/api/v1/studios/{slug}/works"
     ],
     "implemented_additive_fields": {
       "WorkDetailResponse": ["public_updated_at", "studio"],
       "PerformerDetailResponse": ["public_updated_at"],
       "StudioDetailResponse": ["public_updated_at"]
     },
-    "new_paths": [
-      "/api/v1/performers/{slug}/works",
-      "/api/v1/studios/{slug}/works"
-    ],
+    "new_paths": [],
     "compatibility": [
       "keep /api/v1/search/works",
       "keep studio_name while adding studio",

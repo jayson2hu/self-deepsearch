@@ -541,6 +541,12 @@ WHERE work.studio_id = $1::uuid ORDER BY work.release_date DESC NULLS LAST, work
 	return detail, nil
 }
 
+func (store *Store) StudioWorksBySlug(ctx context.Context, slug string, after *catalog.RelatedWorkCursor, limit int) ([]catalog.RelatedWorkResult, error) {
+	return store.relatedWorksBySlug(ctx, slug, after, limit,
+		`SELECT studio_id::text FROM platform.public_published_studios WHERE canonical_slug = $1`,
+		`work.studio_id = $1::uuid`)
+}
+
 func (store *Store) PerformerBySlug(ctx context.Context, slug string) (catalog.PerformerDetail, error) {
 	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
 	if err != nil {
@@ -587,6 +593,79 @@ WHERE performer.canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &deta
 		return catalog.PerformerDetail{}, fmt.Errorf("commit performer detail transaction: %w", err)
 	}
 	return detail, nil
+}
+
+func (store *Store) PerformerWorksBySlug(ctx context.Context, slug string, after *catalog.RelatedWorkCursor, limit int) ([]catalog.RelatedWorkResult, error) {
+	return store.relatedWorksBySlug(ctx, slug, after, limit,
+		`SELECT performer_id::text FROM platform.public_published_performers WHERE canonical_slug = $1`,
+		`EXISTS (SELECT 1 FROM platform.work_performers AS link WHERE link.work_id = work.work_id AND link.performer_id = $1::uuid)`)
+}
+
+func (store *Store) relatedWorksBySlug(ctx context.Context, slug string, after *catalog.RelatedWorkCursor, limit int, parentQuery, relationPredicate string) ([]catalog.RelatedWorkResult, error) {
+	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, fmt.Errorf("begin related works: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var parentID string
+	if err := tx.QueryRow(ctx, parentQuery, slug).Scan(&parentID); errors.Is(err, pgx.ErrNoRows) {
+		return nil, catalog.ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("query related works parent: %w", err)
+	}
+
+	hasAfter := after != nil
+	cursorNull, cursorDate, cursorPublished, cursorID := false, (*time.Time)(nil), time.Time{}, "00000000-0000-0000-0000-000000000000"
+	if after != nil {
+		cursorNull = after.ReleaseDate == nil
+		cursorDate, cursorPublished, cursorID = after.ReleaseDate, after.PublishedAt, after.ID
+	}
+	query := `SELECT ` + workSummaryColumns + `, work.published_at
+FROM platform.public_published_works AS work
+` + workSummaryJoins + `
+WHERE ` + relationPredicate + `
+  AND (
+    NOT $2::boolean
+    OR (work.release_date IS NULL AND NOT $3::boolean)
+    OR ((work.release_date IS NULL) = $3::boolean AND (
+      (NOT $3::boolean AND work.release_date < $4::date)
+      OR (($3::boolean OR work.release_date = $4::date) AND (
+        work.published_at < $5::timestamptz
+        OR (work.published_at = $5::timestamptz AND work.work_id > $6::uuid)
+      ))
+    ))
+  )
+ORDER BY work.release_date DESC NULLS LAST, work.published_at DESC, work.work_id ASC
+LIMIT $7`
+	rows, err := tx.Query(ctx, query, parentID, hasAfter, cursorNull, cursorDate, cursorPublished, cursorID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query related works: %w", err)
+	}
+	defer rows.Close()
+	items := make([]catalog.RelatedWorkResult, 0)
+	for rows.Next() {
+		var item catalog.RelatedWorkResult
+		var renditions []byte
+		if err := rows.Scan(&item.ID, &item.Code, &item.Title, &item.ReleaseDate, &item.StudioName, &item.Slug, &renditions, &item.Cursor.PublishedAt); err != nil {
+			return nil, fmt.Errorf("scan related work: %w", err)
+		}
+		image, err := imageFromJSON(renditions)
+		if err != nil {
+			return nil, fmt.Errorf("decode related work image: %w", err)
+		}
+		item.Image, item.ImageURL = image, imageURL(image)
+		item.Cursor.ReleaseDate, item.Cursor.ID = item.ReleaseDate, item.ID
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate related works: %w", err)
+	}
+	rows.Close()
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit related works: %w", err)
+	}
+	return items, nil
 }
 
 func queryPerformerAliases(ctx context.Context, tx pgx.Tx, performerID string) ([]string, error) {

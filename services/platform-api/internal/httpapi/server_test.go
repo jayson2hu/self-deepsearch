@@ -47,6 +47,10 @@ type fakeCatalog struct {
 	studioSearch      []catalog.StudioSearchResult
 	entitySearchQuery string
 	entitySearchAfter *catalog.SearchCursor
+	relatedWorks      []catalog.RelatedWorkResult
+	relatedSlug       string
+	relatedAfter      *catalog.RelatedWorkCursor
+	relatedType       string
 	performer         catalog.PerformerDetail
 	studio            catalog.StudioDetail
 	pageViews         int
@@ -115,11 +119,19 @@ func (repository *fakeCatalog) ListPerformers(context.Context, string, int) ([]c
 func (repository *fakeCatalog) PerformerBySlug(context.Context, string) (catalog.PerformerDetail, error) {
 	return repository.performer, repository.repositoryErr
 }
+func (repository *fakeCatalog) PerformerWorksBySlug(_ context.Context, slug string, after *catalog.RelatedWorkCursor, _ int) ([]catalog.RelatedWorkResult, error) {
+	repository.relatedSlug, repository.relatedAfter, repository.relatedType = slug, after, "performer"
+	return repository.relatedWorks, repository.repositoryErr
+}
 func (repository *fakeCatalog) ListStudios(context.Context, string, int) ([]catalog.StudioSummary, error) {
 	return []catalog.StudioSummary{}, repository.repositoryErr
 }
 func (repository *fakeCatalog) StudioBySlug(context.Context, string) (catalog.StudioDetail, error) {
 	return repository.studio, repository.repositoryErr
+}
+func (repository *fakeCatalog) StudioWorksBySlug(_ context.Context, slug string, after *catalog.RelatedWorkCursor, _ int) ([]catalog.RelatedWorkResult, error) {
+	repository.relatedSlug, repository.relatedAfter, repository.relatedType = slug, after, "studio"
+	return repository.relatedWorks, repository.repositoryErr
 }
 func (repository *fakeCatalog) WorkBySlug(context.Context, string) (catalog.WorkDetail, error) {
 	return repository.detail, repository.repositoryErr
@@ -140,6 +152,99 @@ func (repository *fakeCatalog) SitemapEntries(context.Context, string, int) ([]c
 }
 func (repository *fakeCatalog) RedirectTarget(context.Context, string) (catalog.RedirectTarget, error) {
 	return catalog.RedirectTarget{}, catalog.ErrNotFound
+}
+
+func TestRelatedWorksPaginationBindsFullTupleAndScope(t *testing.T) {
+	releaseDate := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	publishedAt := time.Date(2026, 9, 16, 8, 0, 0, 0, time.UTC)
+	items := make([]catalog.RelatedWorkResult, 0, publicPageSize+1)
+	for index := 1; index <= publicPageSize+1; index++ {
+		id := fmt.Sprintf("00000000-0000-4000-8000-%012d", index)
+		itemDate := &releaseDate
+		if index == publicPageSize {
+			itemDate = nil
+		}
+		items = append(items, catalog.RelatedWorkResult{
+			WorkSummary: catalog.WorkSummary{ID: id, Code: fmt.Sprintf("REL-%03d", index), Title: "关联作品", Slug: fmt.Sprintf("rel-%03d", index)},
+			Cursor:      catalog.RelatedWorkCursor{ReleaseDate: itemDate, PublishedAt: publishedAt.Add(-time.Duration(index) * time.Minute), ID: id},
+		})
+	}
+	repository := &fakeCatalog{relatedWorks: items}
+	handler := New(Options{Catalog: repository})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/performers/test-performer/works", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	page, ok := body["items"].([]any)
+	if !ok || len(page) != publicPageSize || body["total"] != nil {
+		t.Fatalf("unexpected related works page: %#v", body)
+	}
+	first := page[0].(map[string]any)
+	if first["href"] != "/works/rel-001" {
+		t.Fatalf("expected real work href, got %#v", first)
+	}
+	cursor, ok := body["next_cursor"].(string)
+	if !ok || cursor == "" {
+		t.Fatalf("expected next cursor: %#v", body)
+	}
+	if len(cursor) > 256 {
+		t.Fatalf("related works cursor exceeds OpenAPI limit: %d", len(cursor))
+	}
+
+	repository.relatedAfter = nil
+	repository.relatedWorks = nil
+	request = httptest.NewRequest(http.MethodGet, "/api/v1/performers/test-performer/works?cursor="+url.QueryEscape(cursor), nil)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || repository.relatedAfter == nil {
+		t.Fatalf("expected cursor to reach repository, status=%d after=%#v", response.Code, repository.relatedAfter)
+	}
+	if repository.relatedAfter.ReleaseDate != nil || !repository.relatedAfter.PublishedAt.Equal(items[publicPageSize-1].Cursor.PublishedAt) || repository.relatedAfter.ID != items[publicPageSize-1].ID {
+		t.Fatalf("cursor lost ordering tuple: %#v", repository.relatedAfter)
+	}
+	var tail itemListResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &tail); err != nil || len(tail.Items) != 0 || tail.NextCursor != nil {
+		t.Fatalf("empty tail should terminate without a total or next cursor: body=%s err=%v", response.Body.String(), err)
+	}
+
+	repository.relatedAfter = nil
+	request = httptest.NewRequest(http.MethodGet, "/api/v1/performers/other-performer/works?cursor="+url.QueryEscape(cursor), nil)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest || repository.relatedAfter != nil {
+		t.Fatalf("cross-parent cursor should be rejected before repository: %d %#v", response.Code, repository.relatedAfter)
+	}
+	request = httptest.NewRequest(http.MethodGet, "/api/v1/studios/test-performer/works?cursor="+url.QueryEscape(cursor), nil)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("cross-type cursor should be rejected, got %d", response.Code)
+	}
+}
+
+func TestRelatedWorksRejectsBadCursorAndHiddenParent(t *testing.T) {
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/studios/test-studio/works?cursor=not-a-cursor", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected invalid cursor 400, got %d", response.Code)
+	}
+
+	repository.repositoryErr = catalog.ErrNotFound
+	request = httptest.NewRequest(http.MethodGet, "/api/v1/studios/test-studio/works", nil)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("expected hidden parent 404, got %d", response.Code)
+	}
 }
 
 func TestHealth(t *testing.T) {

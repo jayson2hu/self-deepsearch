@@ -21,6 +21,19 @@ type WorkSummary struct {
 
 func (item WorkSummary) CursorID() string { return item.ID }
 
+type RelatedWorkCursor struct {
+	ReleaseDate *time.Time
+	PublishedAt time.Time
+	ID          string
+}
+
+type RelatedWorkResult struct {
+	WorkSummary
+	Cursor RelatedWorkCursor
+}
+
+func (item RelatedWorkResult) RelatedCursor() RelatedWorkCursor { return item.Cursor }
+
 type PerformerSummary struct {
 	ID       string
 	Name     string
@@ -140,8 +153,10 @@ type Repository interface {
 	WorkBySlug(context.Context, string) (WorkDetail, error)
 	ListPerformers(context.Context, string, int) ([]PerformerSummary, error)
 	PerformerBySlug(context.Context, string) (PerformerDetail, error)
+	PerformerWorksBySlug(context.Context, string, *RelatedWorkCursor, int) ([]RelatedWorkResult, error)
 	ListStudios(context.Context, string, int) ([]StudioSummary, error)
 	StudioBySlug(context.Context, string) (StudioDetail, error)
+	StudioWorksBySlug(context.Context, string, *RelatedWorkCursor, int) ([]RelatedWorkResult, error)
 	RecordPageView(context.Context, string, string) error
 	RecordSearchOutcome(context.Context, bool) error
 	SitemapEntries(context.Context, string, int) ([]SitemapEntry, error)

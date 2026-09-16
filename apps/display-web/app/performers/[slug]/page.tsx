@@ -9,7 +9,7 @@ import { PerformerActions } from "../../../components/performer-actions";
 import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkCard } from "../../../components/work-card";
 import { SafeImage } from "../../../components/safe-image";
-import { getPerformer } from "../../../lib/api";
+import { getPerformer, getPerformerWorks } from "../../../lib/api";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -25,11 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 	} : { title: "人物资料", robots: { index: false, follow: false } };
 }
 
-export default async function PerformerDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PerformerDetailPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ cursor?: string }> }) {
   const slug = (await params).slug;
-  const result = await getPerformer(slug);
+  const cursor = (await searchParams).cursor ?? "";
+  const [result, worksResult] = await Promise.all([getPerformer(slug), getPerformerWorks(slug, cursor)]);
   if (result.status === "not_found") notFound();
   if (result.status === "degraded") return <main className="shell service-state"><h1>资料暂时无法加载</h1><p>服务暂时不可用，请稍后重试。</p><Link className="button button--quiet" href="/performers">返回人物列表</Link></main>;
+  if (worksResult.status === "not_found") notFound();
   const performer = result.data;
   const primaryImage = performer.images[0];
   const primary = primaryImage?.url ?? performer.image_url;
@@ -58,7 +60,13 @@ export default async function PerformerDetailPage({ params }: { params: Promise<
         </dl>
         <div className="detail-actions"><PerformerActions performerID={performer.id} targetPath={`/performers/${slug}`} /></div>
       </div></div>
-      <section className="detail-section"><h2>关联作品</h2>{performer.works.length ? <div className="work-grid">{performer.works.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : <p>暂无已发布关联作品。</p>}</section>
+      <section className="detail-section"><div className="section-heading"><div><p className="eyebrow"><Link href="/performers">人物目录</Link> / {performer.name}</p><h2>关联作品</h2></div></div>
+        {worksResult.status === "invalid_cursor" ? <div className="empty-state"><strong>分页地址已失效</strong><p>请从关联作品第一页重新开始。</p><Link className="button button--quiet" href={`/performers/${slug}`}>返回第一页</Link></div> : null}
+        {worksResult.status === "degraded" ? <div className="empty-state"><strong>关联作品暂时无法加载</strong><p>人物资料仍可浏览，请稍后重试作品列表。</p><Link className="button button--quiet" href={`/performers/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}>重试</Link></div> : null}
+        {worksResult.status === "ok" && worksResult.data.items.length ? <div className="work-grid">{worksResult.data.items.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : null}
+        {worksResult.status === "ok" && !worksResult.data.items.length ? <p>{cursor ? "本页没有更多已发布关联作品。" : "暂无已发布关联作品。"}</p> : null}
+        {worksResult.status === "ok" && (cursor || worksResult.data.next_cursor) ? <nav className="pagination" aria-label="关联作品分页">{cursor ? <Link className="button button--quiet" href={`/performers/${slug}`}>第一页</Link> : null}{worksResult.data.next_cursor ? <Link className="button" href={`/performers/${slug}?cursor=${encodeURIComponent(worksResult.data.next_cursor)}`}>下一页</Link> : <span>已到最后一页</span>}</nav> : null}
+      </section>
       <AdSlot label="详情页信息流展示位" placement="infeed" />
     </article><div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div></div></main>;
 }

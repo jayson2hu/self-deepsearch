@@ -246,6 +246,24 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PerformerDetailResponse" }
         "404": { description: Performer not found or not published }
+  /api/v1/performers/{slug}/works:
+    get:
+      operationId: listPublishedPerformerWorks
+      description: Stable cursor pagination over all published works linked to a published performer. The response intentionally has no total count.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Published works ordered by release date descending with unknown dates last, then publication time descending and work ID ascending
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+        "400": { description: Invalid or cross-scope cursor }
+        "404": { description: Performer not found or not published }
   /api/v1/studios:
     get:
       operationId: listPublishedStudios
@@ -271,6 +289,24 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StudioDetailResponse" }
+        "404": { description: Studio not found or not published }
+  /api/v1/studios/{slug}/works:
+    get:
+      operationId: listPublishedStudioWorks
+      description: Stable cursor pagination over all published works whose published studio is the requested published studio. The response intentionally has no total count.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Published works ordered by release date descending with unknown dates last, then publication time descending and work ID ascending
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemListResponse" }
+        "400": { description: Invalid or cross-scope cursor }
         "404": { description: Studio not found or not published }
   /api/v1/auth/signup/code:
     post:

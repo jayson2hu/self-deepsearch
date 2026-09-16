@@ -124,6 +124,22 @@ test("三类详情展示真实公开更新时间并链接已发布厂牌", async
   await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
 });
 
+test("人物与厂牌关联作品使用可直达分页链接并准确恢复失效游标", async ({ page }) => {
+  await page.goto(`${displayURL}/performers/test-jsonld-00000001`);
+  await expect(page.getByRole("heading", { name: "关联作品" })).toBeVisible();
+  await expect(page.getByText("TEST-JSONLD", { exact: true })).toBeVisible();
+  const performerNext = page.getByRole("link", { name: "下一页" });
+  await expect(performerNext).toHaveAttribute("href", "/performers/test-jsonld-00000001?cursor=next-page");
+  await performerNext.click();
+  await expect(page).toHaveURL(`${displayURL}/performers/test-jsonld-00000001?cursor=next-page`);
+  await expect(page.getByText("本页没有更多已发布关联作品。", { exact: true })).toBeVisible();
+  await expect(page.getByText("已到最后一页", { exact: true })).toBeVisible();
+
+  await page.goto(`${displayURL}/studios/test-jsonld-00000001?cursor=broken`);
+  await expect(page.getByText("分页地址已失效", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "返回第一页" })).toHaveAttribute("href", "/studios/test-jsonld-00000001");
+});
+
 test("游客登录后返回原资料，确认前不写收藏关系", async ({ page }) => {
   await page.goto(`${displayURL}/works/test-jsonld-00000001`);
   await page.getByRole("link", { name: "登录后收藏作品" }).click();

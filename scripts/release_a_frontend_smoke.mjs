@@ -545,6 +545,12 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         works: [],
       });
     }
+    if (url.pathname === "/api/v1/performers/test-jsonld-00000001/works" || url.pathname === "/api/v1/studios/test-jsonld-00000001/works") {
+      const cursor = url.searchParams.get("cursor");
+      if (cursor === "broken") return writeMockError(response, "INVALID_CURSOR", "分页游标不符合要求", 400);
+      if (cursor === "next-page") return writeMockJSON(response, { items: [], next_cursor: null });
+      return writeMockJSON(response, { items: [MOCK_WORK_ITEM], next_cursor: "next-page" });
+    }
     if (operationsState.publishedSlug && url.pathname === `/api/v1/works/${operationsState.publishedSlug}`) {
       const work = operationsState.work;
       return writeMockJSON(response, {
@@ -1445,6 +1451,10 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       displayStylesheets.length > 0 ? request(display, displayStylesheets[0], timeoutMs) : null,
       opsStylesheets.length > 0 ? request(ops, opsStylesheets[0], timeoutMs) : null,
     ]);
+    const [performerWorksNext, studioWorksInvalid] = await Promise.all([
+      request(display, "/performers/test-jsonld-00000001?cursor=next-page", timeoutMs),
+      request(display, "/studios/test-jsonld-00000001?cursor=broken", timeoutMs),
+    ]);
 
     const failures = [
       ...pageFailures("公开首页", home, {
@@ -1471,6 +1481,9 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       ...jsonLDFailures("作品详情 JSON-LD", workDetail, "CreativeWork"),
       ...jsonLDFailures("人物详情 JSON-LD", performerDetail, "Person"),
       ...jsonLDFailures("厂牌详情 JSON-LD", studioDetail, "Organization"),
+      ...pageFailures("人物关联作品首屏", performerDetail, { includes: ["关联作品", "TEST-JSONLD", "cursor=next-page", "下一页"] }),
+      ...pageFailures("人物关联作品尾页", performerWorksNext, { includes: ["本页没有更多已发布关联作品", "已到最后一页", "/performers/test-jsonld-00000001"] }),
+      ...pageFailures("厂牌关联作品失效游标", studioWorksInvalid, { includes: ["分页地址已失效", "返回第一页", "/studios/test-jsonld-00000001"] }),
       ...pageFailures("作品搜索结果", searchResult, { includes: ["仅返回已发布作品资料", "人物名称、人物别名或厂牌名称会返回关联作品", "TEST-JSONLD"] }),
       ...pageFailures("作品搜索零结果", searchZero, { includes: ["没有找到相关已发布作品", "/latest", "/performers", "/studios"] }),
       ...pageFailures("作品搜索非法输入", searchInvalid, { includes: ["关键词不符合查询要求", "已保留你的原输入", "value=\"--\""] }),
@@ -1523,7 +1536,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       status: "passed",
       displayURL: `http://127.0.0.1:${displayPort}/`,
       opsURL: `http://127.0.0.1:${opsPort}/login`,
-      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "作品/人物/厂牌搜索类型与非法类型关闭", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
+      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "作品/人物/厂牌搜索类型与非法类型关闭", "人物/厂牌关联作品首屏、直达尾页与失效游标", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
     };
   } finally {
     process.off("SIGINT", handleInterrupt);
