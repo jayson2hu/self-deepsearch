@@ -261,7 +261,7 @@ test("每日图片检查区分未检查、异常、不可用与恢复", async ({
   }
 });
 
-test("匿名用户可以按番号搜索并安全查看作品详情", async ({ page }, testInfo) => {
+test("匿名用户可以按番号搜索并安全查看作品详情", async ({ page }) => {
   let dialogs = 0;
   page.on("dialog", async (dialog) => {
     dialogs += 1;
@@ -274,28 +274,13 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   await expect(page.getByRole("heading", { name: "最新发行" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "继续查找资料" })).toBeVisible();
   await expect(page.getByText("运营人工维护")).toHaveCount(0);
-  await expect(page.locator('[data-ad-state="placeholder"]')).toHaveCount(5);
+  await expect(page.locator(".ad-slot")).toHaveCount(0);
   await expect(page.getByText("18+ · 仅展示公开资料，不提供资源")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const rails = page.locator(".ad-rail");
-  if (testInfo.project.name === "mobile") {
-    await expect(rails.first()).toBeHidden();
-    await expect(rails.last()).toBeHidden();
-  } else {
-    await expect(rails.first()).toBeVisible();
-    await expect(rails.last()).toBeVisible();
-    const readableRailText = await rails.locator(".ad-slot").evaluateAll((slots) => slots.every((slot) => {
-      const boxes = Array.from(slot.children, (child) => ({
-        rect: child.getBoundingClientRect(),
-        fontSize: Number.parseFloat(getComputedStyle(child).fontSize),
-      }));
-      return boxes.every(({ rect, fontSize }) => rect.width > 0 && rect.height >= fontSize)
-        && boxes.every(({ rect }, index) => boxes.slice(index + 1).every(({ rect: other }) => (
-          rect.right <= other.left || other.right <= rect.left || rect.bottom <= other.top || other.bottom <= rect.top
-        )));
-    }));
-    expect(readableRailText).toBe(true);
-  }
+  await expect(rails.first()).toBeHidden();
+  await expect(rails.last()).toBeHidden();
+  await expect(page.locator(".footer-ad")).toBeHidden();
 
   await page.getByLabel("搜索番号、标题、人物或厂牌").fill("TEST-001");
   await page.getByRole("button", { name: "查询" }).click();

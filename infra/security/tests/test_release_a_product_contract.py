@@ -271,15 +271,15 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn('"127.0.0.1:8025:8025"', compose)
         self.assertNotIn('"0.0.0.0:1025:1025"', compose)
 
-    def test_home_renders_real_performer_and_trending_sections(self) -> None:
+    def test_home_uses_the_reviewed_query_first_information_architecture(self) -> None:
         page = (ROOT / "apps" / "display-web" / "app" / "page.tsx").read_text(encoding="utf-8")
-        self.assertIn('section.key === "performers"', page)
-        self.assertIn('section.key === "trending"', page)
-        self.assertIn('section.key === "most_viewed"', page)
-        self.assertIn('section.key === "editorial"', page)
-        self.assertIn('section.key === "discovery"', page)
-        self.assertIn("<PerformerCard", page)
+        self.assertIn('section.key === "latest"', page)
+        self.assertIn('action="/search"', page)
+        self.assertIn('href="/performers"', page)
+        self.assertIn('href="/studios"', page)
         self.assertIn("<PersonalizedWorkGrid", page)
+        self.assertNotIn('section.key === "trending"', page)
+        self.assertNotIn("<PerformerCard", page)
         self.assertNotIn("统计将在详情页请求上报接入后显示", page)
         self.assertNotIn("人物资料将在人工审核发布后显示", page)
 
@@ -414,7 +414,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("FROM platform.public_published_works AS work", store)
         self.assertIn("work.work_id <> source.work_id", store)
         self.assertIn("queryRelatedWorks(ctx, tx, detail.ID, 8)", store)
-        self.assertIn("RelatedWorks: workItems(detail.RelatedWorks)", handlers)
+        self.assertIn("RelatedWorks:", handlers)
+        self.assertIn("workItems(detail.RelatedWorks)", handlers)
         self.assertIn("work.related_works", page)
         related = spec["components"]["schemas"]["WorkDetailResponse"]["properties"]["related_works"]
         self.assertEqual(related["maxItems"], 8)
@@ -574,7 +575,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
             {
                 "APP_ENV", "CACHE_HMAC_SECRET", "NEXT_PUBLIC_SITE_URL", "PLATFORM_API_URL",
                 "RIGHTS_CONTACT_EMAIL", "SITE_URL", "TURNSTILE_BYPASS", "TURNSTILE_SITE_KEY", "MEDIA_DELIVERY_MODE",
-                "MEDIA_DELIVERY_DYNAMIC_MODE",
+                "MEDIA_DELIVERY_DYNAMIC_MODE", "DISPLAY_ADS_ENABLED", "DISPLAY_AD_SLOTS_JSON",
+                "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS",
             },
         )
         self.assertEqual(set(japan_services["ops-web"]["environment"]), {"APP_ENV", "PLATFORM_API_URL"})
@@ -697,7 +699,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
         home = (ROOT / "apps" / "display-web" / "app" / "page.tsx").read_text(encoding="utf-8")
         followed = (ROOT / "apps" / "display-web" / "components" / "followed-works-section.tsx").read_text(encoding="utf-8")
         store = (ROOT / "services" / "platform-api" / "internal" / "database" / "account_store.go").read_text(encoding="utf-8")
-        self.assertIn("<FollowedWorksSection />", home)
+        self.assertNotIn("<FollowedWorksSection />", home)
+        self.assertIn('href="/performers"', home)
         self.assertIn('fetch("/api/v1/me/followed-works"', followed)
         self.assertIn("platform.work_performers", store)
         self.assertIn("platform.hidden_preferences", store)

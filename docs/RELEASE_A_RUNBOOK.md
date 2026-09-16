@@ -699,7 +699,7 @@ BACKUP_FILE=/srv/backups/self-deepsearch/self-deepsearch-YYYYMMDDTHHMMSSZ.dump \
 
 - `COLLECTION_ENABLED=false`；
 - 不配置真实来源域名、解析规则或采集计划；
-- 不加载广告联盟脚本，页面广告位仅为布局占位；
+- `DISPLAY_ADS_ENABLED=false`，不加载广告联盟脚本，无素材时页面不输出广告占位；
 - 不启用头像/人脸识别；
 - 不提供任何资源链接、下载或转发能力。
 

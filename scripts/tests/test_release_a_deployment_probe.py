@@ -46,7 +46,7 @@ def valid_responses() -> dict[str, Any]:
         display: response(
             display,
             "资料和图片来自经审核的公开来源 本站不提供视频、音频、下载、磁力、网盘或资源跳转 "
-            '仅限 18 岁以上用户 data-ad-state="placeholder" 测试占位，不加载第三方脚本',
+            "仅限 18 岁以上用户",
             cache="public, s-maxage=300",
             html=True,
         ),

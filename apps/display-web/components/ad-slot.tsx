@@ -1,19 +1,28 @@
-type AdSlotProps = {
-  label: string;
-  placement: "banner" | "rail" | "infeed" | "footer";
-};
+/* Local or reviewed remote creative images intentionally use their declared ad dimensions. */
+/* eslint-disable @next/next/no-img-element */
 
-export function AdSlot({ label, placement }: AdSlotProps) {
+import { resolveAdSlot, type AdPlacement } from "../lib/ad-policy";
+
+type AdSlotProps = { label: string; placement: AdPlacement; preview?: boolean };
+
+export function AdSlot({ label, placement, preview = false }: AdSlotProps) {
+  const result = resolveAdSlot(placement, label, process.env, new Date(), preview);
+  if (!("creative" in result)) return null;
+  const { creative } = result;
+  const content = <>
+    <img alt={creative.imageAlt} height={creative.height} src={creative.imageUrl} width={creative.width} />
+    <span className="ad-slot__copy"><span className="ad-slot__mark">广告</span><strong>{creative.title}</strong><small>{result.state === "preview" ? "测试素材 · 生产环境禁用" : creative.sponsor}</small></span>
+  </>;
   return (
     <aside
       className={`ad-slot ad-slot--${placement}`}
-      aria-label={`广告占位：${label}`}
+      aria-label={`广告：${creative.title}，广告主 ${creative.sponsor}`}
       data-ad-placement={placement}
-      data-ad-state="placeholder"
+      data-ad-state={result.state}
     >
-      <span className="ad-slot__mark">广告</span>
-      <strong>{label}</strong>
-      <small>测试占位，不加载第三方脚本</small>
+      {creative.targetUrl
+        ? <a aria-label={`广告：${creative.title}，广告主 ${creative.sponsor}`} href={creative.targetUrl} rel="noopener noreferrer sponsored" target="_blank">{content}</a>
+        : <div>{content}</div>}
     </aside>
   );
 }

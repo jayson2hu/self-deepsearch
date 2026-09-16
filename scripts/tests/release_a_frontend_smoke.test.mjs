@@ -55,14 +55,14 @@ test("proxyFailures enforces 503, no-store, and API_UNAVAILABLE", () => {
   assert.equal(proxyFailures("proxy", response(502, "upstream", {})).length, 3);
 });
 
-test("signal helpers count repeated ad placeholders", () => {
-  const html = 'data-ad-state="placeholder" data-ad-state="placeholder"';
-  assert.deepEqual(missingSignals(html, ['data-ad-state="placeholder"']), []);
-  assert.equal(countOccurrences(html, 'data-ad-state="placeholder"'), 2);
+test("signal helpers count repeated markers", () => {
+  const html = "marker marker";
+  assert.deepEqual(missingSignals(html, ["marker"]), []);
+  assert.equal(countOccurrences(html, "marker"), 2);
 });
 
 test("Release A ad guard rejects network, active, floating, countdown, and popunder signals", () => {
-  const safe = '<aside data-ad-state="placeholder" data-ad-placement="rail">测试占位，不加载第三方脚本</aside>';
+  const safe = "<main>默认无广告素材，也不保留广告空壳</main>";
   assert.deepEqual(presentSignals(safe, RELEASE_A_FORBIDDEN_AD_SIGNALS), []);
 
   const unsafe = [

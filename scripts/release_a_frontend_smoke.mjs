@@ -204,6 +204,7 @@ export const RELEASE_A_FORBIDDEN_AD_SIGNALS = [
   "googleads.g.doubleclick.net",
   "adsbygoogle",
   "data-ad-state=\"active\"",
+  "data-ad-state=\"preview\"",
   "data-ad-behavior=\"floating\"",
   "data-ad-close-countdown",
   "popunder",
@@ -1427,11 +1428,8 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
     if (defaultImage.headers.get("content-type")?.toLowerCase().split(";", 1)[0] !== "image/svg+xml") {
       failures.push("默认作品图: expected image/svg+xml content type");
     }
-    if (countOccurrences(home.body, 'data-ad-state="placeholder"') < 1) {
-      failures.push("公开首页: missing ad placeholder signal");
-    }
-    if (countOccurrences(home.body, 'data-ad-placement="rail"') < 2) {
-      failures.push("公开首页: expected left and right rail ad placeholders");
+    if (home.body.includes('class="ad-slot') || home.body.includes("测试占位，不加载第三方脚本")) {
+      failures.push("公开首页: disabled ads must not render placeholder or ad shell");
     }
     const forbiddenAdSignals = presentSignals(home.body, RELEASE_A_FORBIDDEN_AD_SIGNALS);
     if (forbiddenAdSignals.length > 0) {
@@ -1466,7 +1464,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       status: "passed",
       displayURL: `http://127.0.0.1:${displayPort}/`,
       opsURL: `http://127.0.0.1:${opsPort}/login`,
-      checks: ["首页", "登录/注册入口", "页脚免责声明与 18+", "广告占位、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
+      checks: ["首页", "登录/注册入口", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
     };
   } finally {
     process.off("SIGINT", handleInterrupt);

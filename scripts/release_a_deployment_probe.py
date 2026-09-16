@@ -20,6 +20,7 @@ FORBIDDEN_AD_SIGNALS = (
     "googleads.g.doubleclick.net",
     "adsbygoogle",
     'data-ad-state="active"',
+    'data-ad-state="preview"',
     'data-ad-behavior="floating"',
     "data-ad-close-countdown",
     "popunder",
@@ -213,8 +214,6 @@ def run_probe(configuration: ProbeConfig, fetcher: Fetcher = fetch_url) -> list[
             "资料和图片来自经审核的公开来源",
             "本站不提供视频、音频、下载、磁力、网盘或资源跳转",
             "仅限 18 岁以上用户",
-            'data-ad-state="placeholder"',
-            "测试占位，不加载第三方脚本",
         ):
             if signal not in response.body:
                 failures.append(f"page is missing required signal: {signal}")
@@ -222,6 +221,8 @@ def run_probe(configuration: ProbeConfig, fetcher: Fetcher = fetch_url) -> list[
         for signal in FORBIDDEN_AD_SIGNALS:
             if signal in lowered:
                 failures.append(f"Release A contains forbidden ad signal: {signal}")
+        if 'class="ad-slot' in lowered or 'data-ad-state="placeholder"' in lowered:
+            failures.append("disabled ads must not render placeholder or ad shell")
         cache_control = response.headers.get("cache-control", "").lower()
         if "public" not in cache_control or "no-store" in cache_control:
             failures.append("public homepage must use a public cache policy")

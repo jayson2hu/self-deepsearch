@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="120" viewBox="0 0 960 120" role="img" aria-labelledby="title description">
+  <title id="title">广告设计预览素材</title>
+  <desc id="description">仅用于受控非生产环境检查广告布局。</desc>
+  <rect width="960" height="120" fill="#e7f3f1"/>
+  <path d="M0 0h180L60 120H0zM960 0v120H780L900 0z" fill="#c6e1dc"/>
+  <circle cx="240" cy="60" r="26" fill="#23796d"/>
+  <path d="M229 60l8 8 16-18" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="292" y="54" fill="#183d38" font-family="sans-serif" font-size="22" font-weight="700">广告布局测试素材</text>
+  <text x="292" y="82" fill="#4f6965" font-family="sans-serif" font-size="15">不代表真实广告、供应方或上线状态</text>
+</svg>

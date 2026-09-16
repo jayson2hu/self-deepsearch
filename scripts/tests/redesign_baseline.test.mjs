@@ -109,6 +109,10 @@ test("DEV-01 contract snapshot matches current OpenAPI and records planned addit
   assert.deepEqual(contract.planned.implemented_auth_continuation.intent_kinds, ["favorite", "follow"]);
   assert.equal(contract.planned.implemented_auth_continuation.intent_ttl_seconds, 900);
   assert.equal(contract.planned.implemented_auth_continuation.automatic_mutation_after_auth, false);
+  assert.deepEqual(contract.planned.implemented_ad_states.states, ["empty", "ready", "error", "preview"]);
+  assert.equal(contract.planned.implemented_ad_states.default_state, "empty");
+  assert.equal(contract.planned.implemented_ad_states.preview_allowed_in_production, false);
+  assert.equal(contract.planned.implemented_ad_states.visibility_depends_on_authentication, false);
 });
 
 test("AC-29 documentation keeps every DEV and AC identifier traceable", async () => {

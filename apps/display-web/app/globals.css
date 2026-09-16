@@ -69,19 +69,31 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .content-with-rails { position: relative; display: grid; grid-template-columns: 118px minmax(0, 1fr) 118px; gap: 22px; padding: 26px 0 64px; }
 .content-column { min-width: 0; }
 .ad-rail { min-width: 0; }
-.ad-slot { border: 1px dashed #b8bdc2; background: #e9ecee; color: var(--muted); }
+.ad-rail:empty, .footer-ad:not(:has(.ad-slot)) { display: none; }
+.content-with-rails:not(:has(> .ad-rail .ad-slot)) { grid-template-columns: minmax(0, 1fr); }
+.content-with-rails:not(:has(> .ad-rail .ad-slot)) > .content-column { grid-column: 1; }
+.content-with-rails:has(> .ad-rail--left .ad-slot):not(:has(> .ad-rail--right .ad-slot)) { grid-template-columns: 118px minmax(0, 1fr); }
+.content-with-rails:has(> .ad-rail--left .ad-slot):not(:has(> .ad-rail--right .ad-slot)) > .content-column { grid-column: 2; }
+.content-with-rails:has(> .ad-rail--right .ad-slot):not(:has(> .ad-rail--left .ad-slot)) { grid-template-columns: minmax(0, 1fr) 118px; }
+.content-with-rails:has(> .ad-rail--right .ad-slot):not(:has(> .ad-rail--left .ad-slot)) > .ad-rail--right { grid-column: 2; }
+.ad-slot { overflow: hidden; border: 1px solid #b8bdc2; background: #f4f7f7; color: var(--muted); }
+.ad-slot > a, .ad-slot > div { width: 100%; color: inherit; text-decoration: none; }
+.ad-slot img { display: block; max-width: 100%; object-fit: cover; background: #e7f3f1; }
+.ad-slot__copy { display: block; padding: 8px 10px; }
 .ad-slot strong, .ad-slot small { display: block; }
-.ad-slot strong { margin-top: 5px; color: var(--ink); font-size: 12px; }
-.ad-slot small { margin-top: 3px; font-size: 10px; }
+.ad-slot strong { margin-top: 3px; color: var(--ink); font-size: 12px; }
+.ad-slot small { margin-top: 2px; font-size: 10px; }
 .ad-slot__mark { display: inline-block; color: var(--yellow); font-size: 10px; font-weight: 900; }
-.ad-slot--rail { position: sticky; top: 92px; min-height: 430px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.ad-slot--rail { position: sticky; top: 92px; text-align: center; }
+.ad-slot--rail img { width: 100%; aspect-ratio: 160 / 600; }
 .ad-slot--rail strong, .ad-slot--rail small { margin: 0; }
-.ad-slot--banner, .ad-slot--infeed { min-height: 76px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.ad-slot--banner, .ad-slot--infeed { margin-bottom: 16px; }
+.ad-slot--banner > a, .ad-slot--banner > div, .ad-slot--infeed > a, .ad-slot--infeed > div, .ad-slot--footer > a, .ad-slot--footer > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.ad-slot--banner img, .ad-slot--infeed img, .ad-slot--footer img { width: 100%; max-height: 120px; }
 .ad-slot--banner strong, .ad-slot--infeed strong { margin: 0; }
-.ad-slot--banner small, .ad-slot--infeed small { margin: 0 0 0 auto; }
-.ad-slot--footer { min-height: 76px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; border-color: #555b61; background: #292d31; }
+.ad-slot--footer { border-color: #555b61; background: #292d31; }
 .ad-slot--footer strong { margin: 0; color: white; }
-.ad-slot--footer small { margin: 0 0 0 auto; color: #aeb5ba; }
+.ad-slot--footer small { color: #aeb5ba; }
 
 .section-block { padding: 34px 0 40px; }
 .section-heading { margin-bottom: 18px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; border-bottom: 2px solid var(--night); padding-bottom: 12px; }
@@ -278,9 +290,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .search-band h1 { font-size: 24px; }
   .primary-search { min-height: 52px; grid-template-columns: 42px minmax(0, 1fr) 68px; }
   .content-with-rails { padding-top: 14px; }
-  .ad-slot--banner, .ad-slot--infeed { min-height: 68px; padding: 10px 12px; }
+  .ad-slot--banner, .ad-slot--infeed { margin-bottom: 12px; }
   .ad-slot--banner small, .ad-slot--infeed small { display: none; }
-  .ad-slot--footer { min-height: 68px; padding: 10px 12px; }
   .ad-slot--footer small { display: none; }
   .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .discovery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

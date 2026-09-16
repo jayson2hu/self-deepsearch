@@ -110,6 +110,10 @@ empty/error 返回空，不留固定空白；ready 才输出明确广告标识�
 
 服务端能确定 ready 时预留确定尺寸；不能确定时不异步突插首屏广告挤动主操作。正文请求不依赖广告成功。默认无广告回退无需数据库迁移。
 
+实现配置采用 display-web 私有运行环境：`DISPLAY_ADS_ENABLED` 默认 false；`DISPLAY_AD_SLOTS_JSON` 最多 20 项并按 `placement:label` 唯一匹配；`DISPLAY_AD_ASSET_HOSTS` 与 `DISPLAY_AD_TARGET_HOSTS` 分别是远程图片和目的地 HTTPS hostname 白名单。单项只接受槽位/位置、标题、广告主、图片/alt、目的地、固定宽高及 RFC3339 起止时间；未知字段、重复槽位、过期、尺寸错误和不安全 URL 一律 error→空。仓库内素材限制 `/ads/` 路径。
+
+受控预览必须由组件夹具显式传入 preview，同时要求非 production 与 `DISPLAY_AD_PREVIEW_FIXTURE=enabled`；该变量不进入生产 Compose。生产页面没有公开查询参数或 Cookie 可以改变广告状态。统一回退只需关闭 `DISPLAY_ADS_ENABLED` 并替换前端进程，正文和账号任务继续可用。
+
 ## 8. 历史策略后续设计（DEV-12，阻塞）
 
 Q-01 定稿前只做说明，不改变默认记录或删除已有数据。后续拟增加 GET/PATCH `/api/v1/me/preferences`，字段至少有 history_sync_enabled、policy_version、updated_at；确定旧用户迁移和保留规则后才冻结 OpenAPI、错误码和迁移 SQL。

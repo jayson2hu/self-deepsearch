@@ -51,6 +51,12 @@
       "intent_ttl_seconds": 900,
       "automatic_mutation_after_auth": false,
       "unsafe_return_targets_fall_back_to": "/"
+    },
+    "implemented_ad_states": {
+      "states": ["empty", "ready", "error", "preview"],
+      "default_state": "empty",
+      "preview_allowed_in_production": false,
+      "visibility_depends_on_authentication": false
     }
   }
 }
