@@ -1,15 +1,15 @@
 # 重设计进度台账
 
-更新时间：2026-09-16（Asia/Shanghai）。这是 RD v1 改版的唯一任务状态源，不覆盖[原 Release A 进度与证据](../PROGRESS.md)。
+更新时间：2026-09-17（Asia/Shanghai）。这是 RD v1 改版的唯一任务状态源，不覆盖[原 Release A 进度与证据](../PROGRESS.md)。
 
 ## 1. 当前结论
 
 - 初次审核原文已归档；最新为 4 项初次采纳、3 项调整、2 项后续授权采用正式推荐。D-08/D-09 已通过 CHG-20260916-01 解除产品决策阻塞，详见[决策记录](./DECISIONS.md)。
 - 审核、决策、产品/技术设计、开发计划、基线、验收、DEV-12/14/15 门禁/交接与 15 个工作包证据均已归档；待产品负责人复核实现解释和放行范围。
-- 全仓 Markdown 检查为 110 个文件、710 个本地链接、0 缺失；审核→决策→设计→DEV→AC→证据的映射已在 DEV-15 收口。早期失败快照保留在历史日志。
-- 新版产品代码已实施 DEV-02～11 与 DEV-13/14，DEV-15 已冻结范围、构建指纹、配置/迁移/回退和验收结论；没有执行生产迁移、部署、真实广告启用、账号数据清理或搜索引擎提交。
+- 全仓 Markdown 检查为 112 个文件、722 个本地链接、0 缺失；审核→决策→设计→DEV→AC→证据的映射已在 DEV-15 和 2026-09-17 验收包收口。历史失败与补验过程均保留。
+- 新版产品代码已实施 DEV-02～11 与 DEV-13/14；后续修复后的代码 SHA `c60dc6f` 已完成可执行终检、真实 PostgreSQL/API/Mailpit、缓存合同、五镜像构建和本地运行态验收。没有执行生产迁移、正式部署、真实广告启用、账号数据清理或搜索引擎提交。
 - 开发工作包：1 / 15 已验收；13 项待验收、0 项未开始、1 项待决策。DEV-02～11、DEV-13～15 均缺各自真实浏览器、正式配置或完整发布链门禁，不计已验收。
-- 下一步不是继续扩张本轮代码：由产品负责人决策 Q-01，并按[DEV-15 交接](./DEV15_HANDOFF.md)完成真实 Chrome、目标环境、生产回填、正式域名/Search Console 与发布签字。
+- 下一步不是继续扩张本轮代码：按[验收终检](../evidence/redesign-2026-09-17-acceptance/README.md)补真实 Chrome、同栈 Worker 闭环、目标环境、生产回填、正式域名/Search Console 与发布签字；产品负责人另行决策 Q-01。
 
 ## 2. 状态规则
 
@@ -35,7 +35,7 @@
 | DEV-12 | 待决策 | 产品负责人 / 待确认 | Q-01：历史默认/期限/迁移/恢复未定；已提供签署模板，没有开发假开关或清理数据 | [决策门禁](./DEV12_DECISION_GATE.md)、[核对记录](../evidence/redesign-2026-09-16-dev-12/README.md) |
 | DEV-13 | 待验收 | Codex / 2026-09-16 | fail-closed 环境门禁、真实 HTTP、分页 canonical、50,001 sitemap 分片/50 MB 边界、公开过滤及面包屑结构化数据已实现；缺真实 Chrome、最终 HTTPS/边缘和 DEV-14 分类媒体合同 | [证据与剩余门禁](../evidence/redesign-2026-09-16-dev-13/README.md) |
 | DEV-14 | 待验收 | Codex / 2026-09-16 | Schema v22、实体资格/成人标记、媒体外部预览许可、运营审核与 fail-closed 输出已实现；缺生产回填、最终 HTTPS、真实 Chrome 与 Search Console 所有者提交 | [放行单](./DEV14_SEO_RELEASE_GATE.md)、[证据与剩余门禁](../evidence/redesign-2026-09-16-dev-14/README.md) |
-| DEV-15 | 待验收 | Codex / 2026-09-16 | 功能 SHA、本地制品指纹、自动检查、AC 收口、配置/迁移/回退与接手顺序已归档；缺真实 Chrome、当前 Go 缓存合同复跑、目标环境和负责人放行 | [交接](./DEV15_HANDOFF.md)、[证据与 AC 收口](../evidence/redesign-2026-09-16-dev-15/README.md) |
+| DEV-15 | 待验收 | Codex / 2026-09-17 | 当前 Go 缓存合同、真实 PG/API/Mailpit、五镜像与运行态已补验；缺真实 Chrome、同栈 Worker 闭环、目标环境和负责人放行 | [交接](./DEV15_HANDOFF.md)、[当前终检](../evidence/redesign-2026-09-17-acceptance/README.md) |
 
 ## 4. 决策阻塞与非阻塞事项
 
@@ -170,3 +170,9 @@ AC、执行环境、通过/失败/跳过、证据路径：
 执行：Codex；状态：未开始 → 进行中 → 待验收。冻结功能代码 `0bb78378ab766e589651f3b88f94ddf0a6ec6bd6`，归档 14 个前置 DEV 提交、本地 standalone/static/OpenAPI/迁移指纹、配置与迁移顺序、回退边界、AC 收口和接手指南。
 
 验证：Markdown 110 文件/710 链接零缺失；OpenAPI 生成、三端 TypeScript、两站 lint、14 个 RD Node 合同文件、8 个前端/交接 smoke、76 个发布工具预检、两站 production build 和 standalone HTTP smoke 通过；Playwright 发现 desktop/mobile 共 98 条。pytest 325 passed / 348 subtests passed 与 Go/PostgreSQL 证据来自相同功能冻结代码的 DEV-14 终检。本次缓存合同因服务器无 Go 可执行文件未进入断言，真实 Chrome、目标 HTTPS/边缘、生产回填、Search Console 和负责人放行未执行。详见[DEV-15 交接](./DEV15_HANDOFF.md)和[证据](../evidence/redesign-2026-09-16-dev-15/README.md)。
+
+### 2026-09-17｜可执行验收终检
+
+执行：Codex；代码冻结 SHA：`c60dc6f5e82c63e7f82ea01e9b8499b9535752b9`；状态：本地与隔离集成通过，生产发布阻塞。工作在干净 `git archive` 快照中执行，未纳入或覆盖用户已有采集演示修改。
+
+验证：Go 全包 test/vet、OpenAPI、三 workspace TypeScript、两站 ESLint、Ruff、MyPy 15 个源文件、pytest 317 passed/348 subtests、Node 预检 77/77、前端 smoke 44/44、两站 production build、standalone HTTP、PostgreSQL 16 / Schema v22 / 受限账号、API 数据库全包、核心 Go API+PG+Mailpit E2E、缓存 9/9、本地 HTTP P95、三组 Compose、Nginx 配置及五个发布镜像全部通过。五镜像具有固定 version/revision、非 root 用户和健康检查；同版 API+前台+专用 PG、后台、媒体运行态均 HTTP 200。Playwright 仅发现 98 条，真实 Chrome 下载和官方镜像拉取均因网络长期无进展中止；目标 HTTPS/边缘、S3/R2、Cloudflare、Turnstile、正式 SMTP、Search Console、生产回填和负责人签收未执行。逐 AC 结果、失败尝试与原始 JSON 见[验收终检](../evidence/redesign-2026-09-17-acceptance/README.md)。

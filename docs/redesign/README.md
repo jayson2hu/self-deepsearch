@@ -16,6 +16,8 @@
 | 6 | [验收计划与用例](./ACCEPTANCE_PLAN.md) | 开发前先读对应 AC 用例，完成后附测试证据 |
 | 7 | [进度台账](./PROGRESS.md) | 每次工作更新状态、提交、结果和剩余问题；唯一的新改版状态源 |
 | 8 | [DEV-15 集成验收与交接](./DEV15_HANDOFF.md) | 代码冻结、本地制品指纹、配置/迁移/回退、阻塞与接手顺序 |
+| 9 | [验收执行标准](./ACCEPTANCE_EXECUTION_STANDARD.md) | PASS/PARTIAL/BLOCKED 口径、六层门禁、命令、阈值与证据要求 |
+| 10 | [2026-09-17 可执行验收终检](../evidence/redesign-2026-09-17-acceptance/README.md) | 当前代码、五镜像、真实 PG/API/邮件、缓存与全部 AC 的实测结论 |
 
 ## 本版范围
 

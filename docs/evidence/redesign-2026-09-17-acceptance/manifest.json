@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "batch": "RD-ACCEPT-20260917-01",
+  "status": "local_and_isolated_acceptance_passed",
+  "production_release": "blocked",
+  "code_sha": "c60dc6f5e82c63e7f82ea01e9b8499b9535752b9",
+  "timezone": "Asia/Shanghai",
+  "evidence_date": "2026-09-17",
+  "clean_snapshot": true,
+  "gates": {
+    "openapi_types": "passed",
+    "typescript_workspaces": "passed_3",
+    "eslint_apps": "passed_2",
+    "go_test": "passed",
+    "go_vet": "passed",
+    "ruff": "passed",
+    "mypy": "passed_15_source_files",
+    "pytest": "passed_317_tests_348_subtests",
+    "node_preflight": "passed_77",
+    "frontend_smoke": "passed_44",
+    "production_dependency_audit": "passed_0_high_or_greater",
+    "display_build": "passed",
+    "ops_build": "passed",
+    "standalone_http_smoke": "passed",
+    "postgres_schema": "passed_v22",
+    "api_database_contract": "passed_9.245s",
+    "core_e2e": "passed",
+    "cache_contract": "passed_9_of_9",
+    "http_latency": "passed",
+    "compose_config": "passed",
+    "nginx_config": "passed",
+    "release_images": "passed_5_of_5",
+    "playwright_discovery": "passed_98_tests_2_files",
+    "playwright_execution": "blocked_browser_unavailable",
+    "target_environment": "blocked_not_provided",
+    "external_providers": "blocked_not_authorized"
+  },
+  "latency_ms": {
+    "public_home_api_p95": 33.27,
+    "public_home_api_threshold": 300,
+    "search_api_p95": 10.9,
+    "search_api_threshold": 500,
+    "boundary": "local_synthetic_no_external_network_postgresql_or_cdn_latency"
+  },
+  "images": [
+    {
+      "name": "platform-api",
+      "id": "sha256:b99f14e95ebd419aa2a7b76f43fe50f1e7bd573df0fcd2184d51f247804904f4",
+      "user": "nonroot:nonroot",
+      "runtime": "healthy_http_200"
+    },
+    {
+      "name": "platform-worker",
+      "id": "sha256:0a1a594fedc2e7f3376f2dc16a8a19ecf2218ad123e97a673ac84b7d0952d3d9",
+      "user": "nonroot:nonroot",
+      "runtime": "health_command_passed"
+    },
+    {
+      "name": "display-web",
+      "id": "sha256:f96271f0d657b21f40e91d87d81975a74916131967f5511b7b66c29b7472442b",
+      "user": "node",
+      "runtime": "healthy_http_200_with_same_revision_api_and_postgresql"
+    },
+    {
+      "name": "ops-web",
+      "id": "sha256:035c2f104e45c23c40a67ec9508d46c1b733b2700d883571390ca6c5c0755370",
+      "user": "node",
+      "runtime": "healthy_http_200"
+    },
+    {
+      "name": "media-python",
+      "id": "sha256:3926bd5ba33aa6a6bd226859ac5ce261d3856022a608f1aa7be7fb2de7049a79",
+      "user": "media",
+      "runtime": "healthy_http_200"
+    }
+  ],
+  "image_labels": {
+    "version": "acceptance-c60dc6f",
+    "revision": "c60dc6f5e82c63e7f82ea01e9b8499b9535752b9"
+  },
+  "blocked": [
+    "chrome_or_chromium_unavailable_and_downloads_stalled",
+    "final_https_edge_and_target_hosts_not_provided",
+    "s3_r2_cloudflare_turnstile_formal_smtp_search_console_not_authorized",
+    "q01_history_policy_not_approved",
+    "q05_real_advertising_and_formal_contact_not_confirmed",
+    "real_user_web_vitals_data_unavailable"
+  ],
+  "raw_evidence": {
+    "cache_contract": "cache-contract.json",
+    "core_e2e": "core-e2e.json",
+    "http_latency": "http-latency.json"
+  },
+  "cleanup": {
+    "temporary_postgresql_container": "removed",
+    "temporary_mailpit_container": "removed",
+    "temporary_runtime_containers_and_networks": "removed",
+    "acceptance_images": "retained_for_followup",
+    "unrelated_user_containers": "untouched"
+  }
+}
