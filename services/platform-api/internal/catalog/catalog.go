@@ -41,31 +41,35 @@ func (item StudioSummary) CursorID() string { return item.ID }
 
 type StudioDetail struct {
 	StudioSummary
-	Works []WorkSummary
+	PublicUpdatedAt *time.Time
+	Works           []WorkSummary
 }
 
 type PerformerDetail struct {
 	PerformerSummary
-	NameOriginal   *string
-	RomanizedName  *string
-	Aliases        []string
-	ActivityStatus string
-	Agency         *string
-	BirthYear      *int
-	HeightCM       *int
-	Measurements   *string
-	DebutYear      *int
-	Works          []WorkSummary
-	Images         []Image
+	PublicUpdatedAt *time.Time
+	NameOriginal    *string
+	RomanizedName   *string
+	Aliases         []string
+	ActivityStatus  string
+	Agency          *string
+	BirthYear       *int
+	HeightCM        *int
+	Measurements    *string
+	DebutYear       *int
+	Works           []WorkSummary
+	Images          []Image
 }
 
 type WorkDetail struct {
 	WorkSummary
-	TitleOriginal *string
-	Summary       *string
-	Performers    []PerformerSummary
-	Images        []Image
-	RelatedWorks  []WorkSummary
+	PublicUpdatedAt *time.Time
+	Studio          *StudioSummary
+	TitleOriginal   *string
+	Summary         *string
+	Performers      []PerformerSummary
+	Images          []Image
+	RelatedWorks    []WorkSummary
 }
 
 type Image struct {

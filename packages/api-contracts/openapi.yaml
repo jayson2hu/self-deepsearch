@@ -1838,6 +1838,15 @@ components:
           format: date
         studio_name:
           type: string
+        studio:
+          oneOf:
+            - $ref: "#/components/schemas/StudioSummary"
+            - type: "null"
+          description: Public studio link when the related studio is itself published; studio_name remains for compatibility.
+        public_updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: Most recent formal publication time of the currently public text profile; not the release date or verification time.
         summary:
           type: [string, "null"]
         performers:
@@ -1874,6 +1883,10 @@ components:
         measurements: { type: [string, "null"] }
         debut_year: { type: [integer, "null"] }
         image_url: { type: [string, "null"] }
+        public_updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: Most recent formal publication time of the currently public text profile.
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
         images: { type: array, items: { $ref: "#/components/schemas/WorkImage" } }
     StudioSummary:
@@ -1895,6 +1908,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
+        public_updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: Most recent formal publication time of the currently public text profile.
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
     MessageResponse:
       type: object

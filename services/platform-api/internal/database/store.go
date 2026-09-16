@@ -402,7 +402,7 @@ func (store *Store) StudioBySlug(ctx context.Context, slug string) (catalog.Stud
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var detail catalog.StudioDetail
-	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug); errors.Is(err, pgx.ErrNoRows) {
+	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug, published_at FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &detail.PublicUpdatedAt); errors.Is(err, pgx.ErrNoRows) {
 		return catalog.StudioDetail{}, catalog.ErrNotFound
 	} else if err != nil {
 		return catalog.StudioDetail{}, fmt.Errorf("query studio detail: %w", err)
@@ -430,12 +430,14 @@ func (store *Store) PerformerBySlug(ctx context.Context, slug string) (catalog.P
 	err = tx.QueryRow(ctx, `SELECT `+performerSummaryColumns+`,
        performer.name_original, performer.romanized_name,
        performer.activity_status, performer.agency, performer.birth_year,
-       performer.height_cm, performer.measurements, performer.debut_year
+       performer.height_cm, performer.measurements, performer.debut_year,
+       performer.published_at
 FROM platform.public_published_performers performer
 `+performerSummaryJoins+`
 WHERE performer.canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &primaryRenditions,
 		&detail.NameOriginal, &detail.RomanizedName, &detail.ActivityStatus, &detail.Agency,
-		&detail.BirthYear, &detail.HeightCM, &detail.Measurements, &detail.DebutYear)
+		&detail.BirthYear, &detail.HeightCM, &detail.Measurements, &detail.DebutYear,
+		&detail.PublicUpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.PerformerDetail{}, catalog.ErrNotFound
 	}
@@ -497,22 +499,28 @@ func (store *Store) WorkBySlug(ctx context.Context, slug string) (catalog.WorkDe
 
 	var detail catalog.WorkDetail
 	var primaryRenditions []byte
+	var studioID, studioName, studioSlug *string
 	err = tx.QueryRow(ctx, `
 SELECT work.work_id::text, work.canonical_code, work.title, work.release_date,
        coalesce(studio.name, ''), work.canonical_slug, media.renditions,
-       work.title_original, work.summary
+       work.title_original, work.summary, work.published_at,
+       studio.studio_id::text, studio.name, studio.canonical_slug
 FROM platform.public_published_works AS work
 `+workSummaryJoins+`
 WHERE work.canonical_slug = $1`, slug).Scan(
 		&detail.ID, &detail.Code, &detail.Title, &detail.ReleaseDate,
 		&detail.StudioName, &detail.Slug, &primaryRenditions,
-		&detail.TitleOriginal, &detail.Summary,
+		&detail.TitleOriginal, &detail.Summary, &detail.PublicUpdatedAt,
+		&studioID, &studioName, &studioSlug,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.WorkDetail{}, catalog.ErrNotFound
 	}
 	if err != nil {
 		return catalog.WorkDetail{}, fmt.Errorf("query work detail: %w", err)
+	}
+	if studioID != nil && studioName != nil && studioSlug != nil {
+		detail.Studio = &catalog.StudioSummary{ID: *studioID, Name: *studioName, Slug: *studioSlug}
 	}
 	detail.Image, err = imageFromJSON(primaryRenditions)
 	if err != nil {

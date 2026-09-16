@@ -103,7 +103,8 @@ test("DEV-01 contract snapshot matches current OpenAPI and records planned addit
   for (const path of contract.current.paths) assert.ok(openapi.includes(`  ${path}:`), `missing current path ${path}`);
   for (const schema of Object.keys(contract.current.detail_schemas)) assert.ok(openapi.includes(`    ${schema}:`), `missing schema ${schema}`);
   for (const path of contract.planned.new_paths) assert.ok(!openapi.includes(`  ${path}:`), `planned path already exists without baseline update: ${path}`);
-  assert.ok(!openapi.includes("public_updated_at:"), "baseline expects public_updated_at to remain planned until DEV-03");
+  assert.ok(openapi.includes("public_updated_at:"), "DEV-03 must expose public_updated_at in the contract");
+  assert.ok(openapi.includes("studio:"), "DEV-03 must expose the linked studio object");
   assert.ok(contract.planned.compatibility.includes("keep /api/v1/search/works"));
 });
 

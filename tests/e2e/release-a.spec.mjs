@@ -109,6 +109,19 @@ test("每次进入详情页各上报一次，快速返回不会被时间窗口�
   expect(reports[2]).toEqual(reports[0]);
 });
 
+test("三类详情展示真实公开更新时间并链接已发布厂牌", async ({ page }) => {
+  await page.goto(`${displayURL}/works/test-jsonld-00000001`);
+  await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "测试厂牌", exact: true })).toHaveAttribute("href", "/studios/test-jsonld-00000001");
+
+  await page.goto(`${displayURL}/performers/test-jsonld-00000001`);
+  await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
+
+  await page.goto(`${displayURL}/studios/test-jsonld-00000001`);
+  await expect(page.getByRole("heading", { name: "测试厂牌" })).toBeVisible();
+  await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
+});
+
 test("公开账号页面使用独立 CSP nonce，同时保留目录 ISR 策略", async ({ page }) => {
   const policyErrors = [];
   page.on("console", (message) => {

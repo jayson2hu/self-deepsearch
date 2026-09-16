@@ -18,12 +18,12 @@
       "search_entity_types": ["work"],
       "performer_embedded_works_max": 100,
       "studio_embedded_works_max": 200,
-      "schema_has_public_updated_at": false,
-      "work_schema_has_studio_object": false
+      "schema_has_public_updated_at": true,
+      "work_schema_has_studio_object": true
     }
   },
   "planned": {
-    "additive_fields": {
+    "implemented_additive_fields": {
       "WorkDetailResponse": ["public_updated_at", "studio"],
       "PerformerDetailResponse": ["public_updated_at"],
       "StudioDetailResponse": ["public_updated_at"]

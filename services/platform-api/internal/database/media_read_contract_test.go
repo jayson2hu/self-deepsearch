@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"self-deepsearch/services/platform-api/internal/catalog"
 	"self-deepsearch/services/platform-api/internal/operations"
@@ -123,6 +124,14 @@ func assertMediaReadSurfaces(t *testing.T, harness *invitationContractHarness, i
 		if err != nil || detail.ID != input.EntityID {
 			t.Fatalf("work detail disappeared: %+v %v", detail, err)
 		}
+		if detail.PublicUpdatedAt == nil {
+			t.Fatal("work detail lost its formal publication time")
+		}
+		if detail.StudioName != "" {
+			if detail.Studio == nil || detail.Studio.ID == "" || detail.Studio.Slug == "" || detail.StudioName != detail.Studio.Name {
+				t.Fatalf("work detail lost its published studio link: %+v", detail.Studio)
+			}
+		}
 		assertMediaReadURL(t, "work detail", detail.ImageURL, input, preferred, visible)
 		detailImage, detailImages = detail.Image, detail.Images
 	} else {
@@ -135,6 +144,9 @@ func assertMediaReadSurfaces(t *testing.T, harness *invitationContractHarness, i
 		detail, err := harness.store.PerformerBySlug(harness.ctx, slug)
 		if err != nil || detail.ID != input.EntityID {
 			t.Fatalf("performer detail disappeared: %+v %v", detail, err)
+		}
+		if detail.PublicUpdatedAt == nil {
+			t.Fatal("performer detail lost its formal publication time")
 		}
 		assertMediaReadURL(t, "performer summary/detail", detail.ImageURL, input, preferred, visible)
 		detailImage, detailImages = detail.Image, detail.Images
@@ -157,6 +169,79 @@ func assertMediaReadSurfaces(t *testing.T, harness *invitationContractHarness, i
 	}
 	if state.Primary != nil && state.Primary.AssetID != input.AssetID {
 		t.Fatal("admin returned a different primary asset")
+	}
+}
+
+func TestPublicDetailPublicationTimeAndStudioPostgres(t *testing.T) {
+	harness := newInvitationContractHarness(t)
+	var workSlug string
+	if err := harness.store.pool.QueryRow(harness.ctx, `
+SELECT work.canonical_slug
+FROM platform.public_published_works AS work
+JOIN platform.public_published_studios AS studio ON studio.studio_id = work.studio_id
+ORDER BY work.work_id
+LIMIT 1`).Scan(&workSlug); err != nil {
+		t.Fatalf("select published work with studio: %v", err)
+	}
+	work, err := harness.store.WorkBySlug(harness.ctx, workSlug)
+	if err != nil || work.PublicUpdatedAt == nil || work.Studio == nil || work.StudioName != work.Studio.Name {
+		t.Fatalf("work publication time/studio contract failed: %+v %v", work, err)
+	}
+	studio, err := harness.store.StudioBySlug(harness.ctx, work.Studio.Slug)
+	if err != nil || studio.PublicUpdatedAt == nil || studio.ID != work.Studio.ID {
+		t.Fatalf("studio publication time contract failed: %+v %v", studio, err)
+	}
+	var performerSlug string
+	if err := harness.store.pool.QueryRow(harness.ctx, `SELECT canonical_slug FROM platform.public_published_performers ORDER BY performer_id LIMIT 1`).Scan(&performerSlug); err != nil {
+		t.Fatalf("select published performer: %v", err)
+	}
+	performer, err := harness.store.PerformerBySlug(harness.ctx, performerSlug)
+	if err != nil || performer.PublicUpdatedAt == nil {
+		t.Fatalf("performer publication time contract failed: %+v %v", performer, err)
+	}
+}
+
+func TestDraftAndRepublishPublicUpdatedAtPostgres(t *testing.T) {
+	harness := newInvitationContractHarness(t)
+	var workID, slug, revisionID string
+	if err := harness.store.pool.QueryRow(harness.ctx, `
+SELECT work.work_id::text, work.canonical_slug, work.current_revision_id::text
+FROM platform.public_published_works AS work
+ORDER BY work.work_id
+LIMIT 1`).Scan(&workID, &slug, &revisionID); err != nil {
+		t.Fatalf("select publication fixture: %v", err)
+	}
+	before, err := harness.store.WorkBySlug(harness.ctx, slug)
+	if err != nil || before.PublicUpdatedAt == nil {
+		t.Fatalf("read original public detail: %+v %v", before, err)
+	}
+	draftAt := before.PublicUpdatedAt.Add(time.Hour)
+	if _, err := harness.store.pool.Exec(harness.ctx, `
+INSERT INTO platform.content_revisions (
+  entity_type, entity_id, version, payload, revision_status, author_id, reason, submitted_at
+)
+SELECT 'work', $1::uuid, max(version) + 1,
+       (SELECT payload FROM platform.content_revisions WHERE revision_id = $2::uuid),
+       'reviewing', $3::uuid, 'DEV-03 draft timestamp contract', $4
+FROM platform.content_revisions
+WHERE entity_type = 'work' AND entity_id = $1::uuid`, workID, revisionID, harness.actorID, draftAt); err != nil {
+		t.Fatalf("insert non-public draft revision: %v", err)
+	}
+	afterDraft, err := harness.store.WorkBySlug(harness.ctx, slug)
+	if err != nil || afterDraft.PublicUpdatedAt == nil || !afterDraft.PublicUpdatedAt.Equal(*before.PublicUpdatedAt) || afterDraft.Title != before.Title {
+		t.Fatalf("draft changed public snapshot: before=%+v after=%+v err=%v", before, afterDraft, err)
+	}
+	republishAt := draftAt.Add(time.Hour)
+	command, err := harness.store.pool.Exec(harness.ctx, `
+UPDATE platform.publications
+SET published_at = $3, updated_at = $3
+WHERE entity_type = 'work' AND entity_id = $1::uuid AND current_revision_id = $2::uuid AND site = 'main'`, workID, revisionID, republishAt)
+	if err != nil || command.RowsAffected() != 1 {
+		t.Fatalf("apply publication timestamp transition: %v", err)
+	}
+	afterRepublish, err := harness.store.WorkBySlug(harness.ctx, slug)
+	if err != nil || afterRepublish.PublicUpdatedAt == nil || !afterRepublish.PublicUpdatedAt.Equal(republishAt) || afterRepublish.Title != before.Title {
+		t.Fatalf("republish did not atomically refresh public time/content: %+v %v", afterRepublish, err)
 	}
 }
 

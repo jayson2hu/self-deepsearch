@@ -43,6 +43,7 @@ type fakeCatalog struct {
 	searchRaw         string
 	searchCode        string
 	performer         catalog.PerformerDetail
+	studio            catalog.StudioDetail
 	pageViews         int
 	pageViewTypes     []string
 	searchMetricCalls int
@@ -104,7 +105,7 @@ func (repository *fakeCatalog) ListStudios(context.Context, string, int) ([]cata
 	return []catalog.StudioSummary{}, repository.repositoryErr
 }
 func (repository *fakeCatalog) StudioBySlug(context.Context, string) (catalog.StudioDetail, error) {
-	return catalog.StudioDetail{}, repository.repositoryErr
+	return repository.studio, repository.repositoryErr
 }
 func (repository *fakeCatalog) WorkBySlug(context.Context, string) (catalog.WorkDetail, error) {
 	return repository.detail, repository.repositoryErr
@@ -438,6 +439,40 @@ func TestPerformerDetailIncludesPublishedAliases(t *testing.T) {
 	New(Options{Catalog: repository}).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/performers/test-person", nil))
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"aliases":["Alias One","Alias Two"]`) {
 		t.Fatalf("expected aliases in performer detail, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestPublicDetailsExposePublicationTimeAndLinkedStudio(t *testing.T) {
+	publishedAt := time.Date(2026, 9, 16, 7, 0, 0, 0, time.UTC)
+	studio := catalog.StudioSummary{ID: "30000000-0000-4000-8000-000000000001", Name: "测试厂牌", Slug: "test-studio"}
+	repository := &fakeCatalog{
+		detail: catalog.WorkDetail{
+			WorkSummary:     catalog.WorkSummary{ID: "10000000-0000-4000-8000-000000000001", Code: "TEST-001", Title: "测试作品", Slug: "test-work", StudioName: studio.Name},
+			PublicUpdatedAt: &publishedAt, Studio: &studio,
+		},
+		performer: catalog.PerformerDetail{
+			PerformerSummary: catalog.PerformerSummary{ID: "20000000-0000-4000-8000-000000000001", Name: "测试人物", Slug: "test-person"},
+			PublicUpdatedAt:  &publishedAt, ActivityStatus: "unknown",
+		},
+		studio: catalog.StudioDetail{StudioSummary: studio, PublicUpdatedAt: &publishedAt},
+	}
+	handler := New(Options{Catalog: repository})
+	for _, testCase := range []struct {
+		path       string
+		wantStudio bool
+	}{
+		{path: "/api/v1/works/test-work", wantStudio: true},
+		{path: "/api/v1/performers/test-person"},
+		{path: "/api/v1/studios/test-studio"},
+	} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, testCase.path, nil))
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"public_updated_at":"2026-09-16T07:00:00Z"`) {
+			t.Fatalf("%s did not expose publication time: %d %s", testCase.path, response.Code, response.Body.String())
+		}
+		if testCase.wantStudio && (!strings.Contains(response.Body.String(), `"studio_name":"测试厂牌"`) || !strings.Contains(response.Body.String(), `"href":"/studios/test-studio"`)) {
+			t.Fatalf("work detail lost compatible studio fields: %s", response.Body.String())
+		}
 	}
 }
 

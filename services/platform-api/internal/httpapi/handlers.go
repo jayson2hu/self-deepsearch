@@ -96,16 +96,18 @@ type imageResponse struct {
 }
 
 type workDetailResponse struct {
-	ID            string              `json:"id"`
-	Code          string              `json:"code"`
-	Title         string              `json:"title"`
-	TitleOriginal *string             `json:"title_original"`
-	ReleaseDate   *string             `json:"release_date"`
-	StudioName    string              `json:"studio_name"`
-	Summary       *string             `json:"summary"`
-	Performers    []performerResponse `json:"performers"`
-	Images        []imageResponse     `json:"images"`
-	RelatedWorks  []homeItem          `json:"related_works"`
+	ID              string                 `json:"id"`
+	Code            string                 `json:"code"`
+	Title           string                 `json:"title"`
+	TitleOriginal   *string                `json:"title_original"`
+	ReleaseDate     *string                `json:"release_date"`
+	StudioName      string                 `json:"studio_name"`
+	Studio          *studioSummaryResponse `json:"studio"`
+	PublicUpdatedAt *string                `json:"public_updated_at"`
+	Summary         *string                `json:"summary"`
+	Performers      []performerResponse    `json:"performers"`
+	Images          []imageResponse        `json:"images"`
+	RelatedWorks    []homeItem             `json:"related_works"`
 }
 
 type sitemapEntryResponse struct {
@@ -491,9 +493,13 @@ func (s *Server) workDetail(w http.ResponseWriter, r *http.Request) {
 	response := workDetailResponse{
 		ID: detail.ID, Code: detail.Code, Title: detail.Title, TitleOriginal: detail.TitleOriginal,
 		ReleaseDate: formatDate(detail.ReleaseDate), StudioName: detail.StudioName, Summary: detail.Summary,
-		Performers:   make([]performerResponse, 0, len(detail.Performers)),
-		Images:       make([]imageResponse, 0, len(detail.Images)),
-		RelatedWorks: workItems(detail.RelatedWorks),
+		PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt),
+		Performers:      make([]performerResponse, 0, len(detail.Performers)),
+		Images:          make([]imageResponse, 0, len(detail.Images)),
+		RelatedWorks:    workItems(detail.RelatedWorks),
+	}
+	if detail.Studio != nil {
+		response.Studio = &studioSummaryResponse{ID: detail.Studio.ID, Name: detail.Studio.Name, Href: "/studios/" + detail.Studio.Slug}
 	}
 	for _, performer := range detail.Performers {
 		response.Performers = append(response.Performers, performerResponse{

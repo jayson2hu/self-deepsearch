@@ -222,6 +222,8 @@ export type WorkDetailResponse = {
   title_original: string | null;
   release_date: string | null;
   studio_name: string;
+  studio?: StudioSummary | null;
+  public_updated_at?: string | null;
   summary: string | null;
   performers: Array<PerformerSummary>;
   images: Array<WorkImage>;
@@ -241,6 +243,7 @@ export type PerformerDetailResponse = {
   measurements: string | null;
   debut_year: number | null;
   image_url: string | null;
+  public_updated_at?: string | null;
   works: Array<HomeItem>;
   images: Array<WorkImage>;
 };
@@ -259,6 +262,7 @@ export type StudioListResponse = {
 export type StudioDetailResponse = {
   id: string;
   name: string;
+  public_updated_at?: string | null;
   works: Array<HomeItem>;
 };
 

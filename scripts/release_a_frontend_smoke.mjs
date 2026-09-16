@@ -462,6 +462,8 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         title_original: null,
         release_date: "2026-09-10",
         studio_name: "示例厂牌",
+        studio: { id: "30000000-0000-4000-8000-000000000001", name: "示例厂牌", href: "/studios/test-jsonld-00000001" },
+        public_updated_at: "2026-09-16T07:00:00Z",
         summary: "用于本地测试站预览的正常合成作品资料，不对应任何真实作品。",
         performers: [{ id: MOCK_PERFORMER_ITEM.id, name: MOCK_PERFORMER_ITEM.title, href: MOCK_PERFORMER_ITEM.href, image_url: null, image: null }],
         images: [],
@@ -477,6 +479,8 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         title_original: null,
         release_date: "2026-09-08",
         studio_name: "测试厂牌",
+        studio: { id: "30000000-0000-4000-8000-000000000001", name: "测试厂牌", href: "/studios/test-jsonld-00000001" },
+        public_updated_at: "2026-09-16T07:00:00Z",
         summary: "仅用于本地 HTTP 冒烟的合成资料。",
         performers: [{ id: "20000000-0000-4000-8000-000000000001", name: "测试人物", href: "/performers/test-jsonld-00000001", image_url: null, image: null }],
         images: [],
@@ -498,6 +502,7 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         measurements: null,
         debut_year: 2026,
         image_url: null,
+        public_updated_at: "2026-09-16T07:00:00Z",
         images: [],
         works: [],
       });
@@ -511,6 +516,8 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         title_original: null,
         release_date: work?.release_date ?? "2026-09-09",
         studio_name: null,
+        studio: null,
+        public_updated_at: "2026-09-16T07:00:00Z",
         summary: work?.summary ?? "浏览器运营闭环合成资料。",
         performers: [],
         images: [],
@@ -521,6 +528,7 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
       return writeMockJSON(response, {
         id: "30000000-0000-4000-8000-000000000001",
         name: "测试厂牌",
+        public_updated_at: "2026-09-16T07:00:00Z",
         works: [],
       });
     }

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AdSlot } from "../../../components/ad-slot";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
+import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkCard } from "../../../components/work-card";
 import { getStudio } from "../../../lib/api";
 import { siteURL } from "../../../lib/site";
@@ -24,7 +25,7 @@ export default async function StudioPage({ params }: { params: Promise<{ slug: s
   return <main><JsonLD data={{
     "@context": "https://schema.org", "@type": "Organization", "@id": canonicalURL,
     url: canonicalURL, name: result.data.name, mainEntityOfPage: canonicalURL,
-  }} /><PageViewReporter contentType="studio" contentID={result.data.id} /><section className="page-band"><div className="shell page-band__inner"><div><p className="eyebrow"><Building2 size={16} />厂牌公开资料</p><h1>{result.data.name}</h1></div><p className="page-band__copy">共 {result.data.works.length} 部已发布作品</p></div></section>
+  }} /><PageViewReporter contentType="studio" contentID={result.data.id} /><section className="page-band"><div className="shell page-band__inner"><div><p className="eyebrow"><Building2 size={16} />厂牌公开资料</p><h1>{result.data.name}</h1><PublicUpdatedAt value={result.data.public_updated_at} /></div><p className="page-band__copy">共 {result.data.works.length} 部已发布作品</p></div></section>
     <div className="shell content-with-rails"><div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div><div className="content-column"><AdSlot label="顶部横幅" placement="banner" /><section className="section-block"><div className="section-heading"><div><h2>关联作品</h2></div></div>
       {result.data.works.length ? <div className="work-grid">{result.data.works.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : <div className="empty-state"><strong>暂无已发布作品</strong></div>}
     </section></div><div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div></div>

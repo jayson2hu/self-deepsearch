@@ -6,6 +6,7 @@ import { AdSlot } from "../../../components/ad-slot";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PersonalizedWorkGrid } from "../../../components/personalized-work-grid";
+import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkActions } from "../../../components/work-actions";
 import { SafeImage } from "../../../components/safe-image";
 import { getWork } from "../../../lib/api";
@@ -55,7 +56,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 		description: work.summary ?? `${work.code} 的公开发行与人物资料。`,
 		datePublished: work.release_date ?? undefined,
 		image: images.map((image) => image.url),
-		publisher: work.studio_name ? { "@type": "Organization", name: work.studio_name } : undefined,
+		publisher: (work.studio?.name ?? work.studio_name) ? { "@type": "Organization", name: work.studio?.name ?? work.studio_name } : undefined,
 		contributor: work.performers.map((performer) => ({ "@type": "Person", name: performer.name })),
 		isFamilyFriendly: false,
 		audience: { "@type": "PeopleAudience", suggestedMinAge: 18 },
@@ -84,9 +85,10 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
               <p className="work-card__code">{work.code}</p>
               <h1>{work.title}</h1>
               {work.title_original && <p className="original-title">{work.title_original}</p>}
+              <PublicUpdatedAt value={work.public_updated_at} />
               <dl className="fact-list">
                 <div><dt><CalendarDays size={16} />发行日期</dt><dd>{work.release_date ?? "待补充"}</dd></div>
-                <div><dt>厂牌 / 制作方</dt><dd>{work.studio_name || "待补充"}</dd></div>
+                <div><dt>厂牌 / 制作方</dt><dd>{work.studio ? <Link href={work.studio.href}>{work.studio.name}</Link> : work.studio_name || "待补充"}</dd></div>
                 <div><dt><UserRound size={16} />人物</dt><dd>{work.performers.length ? work.performers.map((person) => <Link key={person.id} href={person.href}>{person.name}</Link>) : "待补充"}</dd></div>
               </dl>
 			  <div className="detail-actions"><WorkActions workID={work.id} /></div>

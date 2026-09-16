@@ -21,9 +21,10 @@ type studioListResponse struct {
 }
 
 type studioDetailResponse struct {
-	ID    string     `json:"id"`
-	Name  string     `json:"name"`
-	Works []homeItem `json:"works"`
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	PublicUpdatedAt *string    `json:"public_updated_at"`
+	Works           []homeItem `json:"works"`
 }
 
 func (s *Server) studioList(w http.ResponseWriter, r *http.Request) {
@@ -67,5 +68,7 @@ func (s *Server) studioDetail(w http.ResponseWriter, r *http.Request) {
 		s.writeCatalogError(w, r, "query_studio_detail", err)
 		return
 	}
-	s.writeMediaJSON(w, r, http.StatusOK, studioDetailResponse{ID: detail.ID, Name: detail.Name, Works: workItems(detail.Works)})
+	s.writeMediaJSON(w, r, http.StatusOK, studioDetailResponse{
+		ID: detail.ID, Name: detail.Name, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt), Works: workItems(detail.Works),
+	})
 }
