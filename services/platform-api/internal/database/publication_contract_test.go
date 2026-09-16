@@ -60,4 +60,42 @@ FROM platform.publications WHERE entity_type = 'work' AND entity_id = $1::uuid`,
 	if classification != "unknown" || quality != "unknown" || reviewedAt != nil || reviewedBy != nil {
 		t.Fatalf("unknown SEO policy did not fail closed: classification=%q quality=%q reviewed_at=%v reviewed_by=%v", classification, quality, reviewedAt, reviewedBy)
 	}
+
+	seoRevision, err := h.store.CreateRevision(h.ctx, entity.ID, operations.RevisionInput{
+		EntityType: "work",
+		Payload: map[string]any{
+			"content_classification": "non_explicit",
+			"seo_quality_status":     "eligible",
+		},
+		Sources: []operations.SourceEvidenceInput{{SourceType: "other", SourceTitle: &sourceTitle, CheckedAt: now}},
+		Reason:  "Review synthetic publication SEO policy",
+	}, h.actorID, "publish-seo-revision-"+h.newHash()[:24], now)
+	if err != nil {
+		t.Fatalf("create SEO policy revision: %v", err)
+	}
+	if err := h.store.pool.QueryRow(h.ctx, `
+SELECT review_task_id::text FROM collector.review_tasks
+WHERE entity_type = 'work' AND entity_id = $1::uuid AND status = 'pending'`, entity.ID).Scan(&taskID); err != nil {
+		t.Fatalf("find SEO review task: %v", err)
+	}
+	if _, err := h.store.ClaimReviewTask(h.ctx, taskID, reviewerID, "publish-seo-claim-"+h.newHash()[:24], now); err != nil {
+		t.Fatalf("claim SEO review: %v", err)
+	}
+	if _, err := h.store.DecideReviewTask(h.ctx, taskID, reviewerID, true, "Approve synthetic SEO policy", "publish-seo-approve-"+h.newHash()[:24], now); err != nil {
+		t.Fatalf("approve SEO review: %v", err)
+	}
+	if _, err := h.store.PublishEntity(h.ctx, entity.ID, operations.PublishInput{
+		EntityType: "work", RevisionID: seoRevision.RevisionID, CanonicalSlug: slug, Reason: "Publish reviewed synthetic SEO policy",
+	}, reviewerID, "publish-seo-final-"+h.newHash()[:24], now); err != nil {
+		t.Fatalf("republish reviewed SEO policy: %v", err)
+	}
+	if err := h.store.pool.QueryRow(h.ctx, `
+SELECT content_classification, seo_quality_status, seo_reviewed_at::text, seo_reviewed_by::text
+FROM platform.publications WHERE entity_type = 'work' AND entity_id = $1::uuid`, entity.ID).
+		Scan(&classification, &quality, &reviewedAt, &reviewedBy); err != nil {
+		t.Fatalf("read reviewed publication SEO state: %v", err)
+	}
+	if classification != "non_explicit" || quality != "eligible" || reviewedAt == nil || reviewedBy == nil || *reviewedBy != reviewerID {
+		t.Fatalf("reviewed SEO policy did not persist: classification=%q quality=%q reviewed_at=%v reviewed_by=%v", classification, quality, reviewedAt, reviewedBy)
+	}
 }

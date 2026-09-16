@@ -1747,38 +1747,15 @@ func entityTable(entityType string) (string, string, error) {
 }
 
 func snapshotRevisionPayload(ctx context.Context, tx pgx.Tx, entityType, entityID string, patch []byte) ([]byte, error) {
-	var query string
-	switch entityType {
-	case "work":
-		query = `SELECT jsonb_build_object(
-  'canonical_code', canonical_code, 'compact_code', compact_code, 'title', title,
-  'title_original', title_original, 'release_date', release_date,
-  'studio_id', studio_id, 'summary', summary,
-  'performer_ids', coalesce((SELECT jsonb_agg(link.performer_id ORDER BY link.position, link.performer_id)
-    FROM platform.work_performers link WHERE link.work_id = works.work_id), '[]'::jsonb),
-  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'work' AND entity_id = works.work_id AND site = 'main'), 'unknown'),
-  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'work' AND entity_id = works.work_id AND site = 'main'), 'unknown')
-) || $2::jsonb FROM platform.works WHERE work_id = $1::uuid`
-	case "performer":
-		query = `SELECT jsonb_build_object(
-  'display_name', display_name, 'name_original', name_original, 'romanized_name', romanized_name,
-  'adult_status', adult_status, 'activity_status', activity_status, 'agency', agency,
-  'birth_year', birth_year, 'height_cm', height_cm, 'measurements', measurements, 'debut_year', debut_year,
-  'aliases', coalesce((SELECT jsonb_agg(alias.raw_value ORDER BY alias.raw_value)
-    FROM platform.performer_aliases alias WHERE alias.performer_id = performers.performer_id), '[]'::jsonb),
-  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'performer' AND entity_id = performers.performer_id AND site = 'main'), 'unknown'),
-  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'performer' AND entity_id = performers.performer_id AND site = 'main'), 'unknown')
-) || $2::jsonb FROM platform.performers WHERE performer_id = $1::uuid`
-	case "studio":
-		query = `SELECT jsonb_build_object('name', name, 'normalized_name', normalized_name,
-  'content_classification', coalesce((SELECT content_classification FROM platform.publications WHERE entity_type = 'studio' AND entity_id = studios.studio_id AND site = 'main'), 'unknown'),
-  'seo_quality_status', coalesce((SELECT seo_quality_status FROM platform.publications WHERE entity_type = 'studio' AND entity_id = studios.studio_id AND site = 'main'), 'unknown')) || $2::jsonb
-FROM platform.studios WHERE studio_id = $1::uuid`
-	default:
+	if _, _, err := entityTable(entityType); err != nil {
 		return nil, operations.ErrInvalidInput
 	}
 	var snapshot []byte
-	if err := tx.QueryRow(ctx, query, entityID, patch).Scan(&snapshot); errors.Is(err, pgx.ErrNoRows) {
+	if err := tx.QueryRow(ctx, `
+SELECT payload || $3::jsonb
+FROM platform.content_revisions
+WHERE entity_type = $1 AND entity_id = $2::uuid
+ORDER BY version DESC LIMIT 1`, entityType, entityID, patch).Scan(&snapshot); errors.Is(err, pgx.ErrNoRows) {
 		return nil, operations.ErrNotFound
 	} else if err != nil {
 		return nil, fmt.Errorf("snapshot %s revision: %w", entityType, err)
