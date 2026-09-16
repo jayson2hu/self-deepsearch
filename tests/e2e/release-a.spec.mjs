@@ -641,6 +641,23 @@ test("说明页匿名可读并从注册和页脚可达", async ({ page }) => {
   await expect(page.getByText("rights@example.test")).toBeVisible();
 });
 
+test("三类详情的可见面包屑与 BreadcrumbList 一致", async ({ page }) => {
+  const cases = [
+    { path: "/works/test-jsonld-00000001", labels: ["首页", "最新发行", "TEST-JSONLD 安全结构化数据 </script><script>alert(1)</script>"] },
+    { path: "/performers/test-jsonld-00000001", labels: ["首页", "人物资料", "测试人物"] },
+    { path: "/studios/test-jsonld-00000001", labels: ["首页", "厂牌资料", "测试厂牌"] },
+  ];
+  for (const scenario of cases) {
+    await page.goto(`${displayURL}${scenario.path}`);
+    const breadcrumb = page.getByRole("navigation", { name: "面包屑" });
+    await expect(breadcrumb).toBeVisible();
+    for (const label of scenario.labels) await expect(breadcrumb.getByText(label, { exact: true })).toBeVisible();
+    const structured = await page.locator('script[type="application/ld+json"]').allTextContents();
+    const list = structured.map((value) => JSON.parse(value)).find((value) => value["@type"] === "BreadcrumbList");
+    expect(list.itemListElement.map((item) => item.name)).toEqual(scenario.labels);
+  }
+});
+
 async function openMediaForm(page, { primary = true, mode = "success", shared = false, editor = false } = {}) {
   Object.assign(mediaControl, { mode, shared, lastBody: null, primary: primary ? { asset_id: "22000000-0000-4000-8000-000000000002", entity_media_id: "33000000-0000-4000-8000-000000000002", purpose: "cover" } : null });
   await page.request.post(`${apiURL}/__test/reset-operations`);

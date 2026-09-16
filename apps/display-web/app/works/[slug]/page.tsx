@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdSlot } from "../../../components/ad-slot";
+import { Breadcrumbs } from "../../../components/breadcrumbs";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PersonalizedWorkGrid } from "../../../components/personalized-work-grid";
@@ -10,6 +11,7 @@ import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkActions } from "../../../components/work-actions";
 import { SafeImage } from "../../../components/safe-image";
 import { getWork } from "../../../lib/api";
+import { pageRobots } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -18,10 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (result.status !== "ok") return { title: "作品资料", robots: { index: false, follow: false } };
   const primaryImage = result.data.images[0];
   const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
-  return {
+	return {
 		title: `${result.data.code} ${result.data.title}`,
 		description: `${result.data.code} 的公开发行与人物资料。`,
 		alternates: { canonical: `/works/${slug}` },
+		robots: pageRobots(true),
 		openGraph: {
 			type: "article", url: `/works/${slug}`, title: `${result.data.code} ${result.data.title}`,
 			description: `${result.data.code} 的公开发行与人物资料。`,
@@ -67,6 +70,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         <div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
         <article className="content-column work-detail">
           <AdSlot label="顶部横幅" placement="banner" />
+          <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "最新发行", href: "/latest" }, { label: `${work.code} ${work.title}` }]} />
           <div className="work-detail__header">
             <div className="work-detail__visual">
               <SafeImage

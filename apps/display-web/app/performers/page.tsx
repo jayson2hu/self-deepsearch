@@ -3,8 +3,14 @@ import type { Metadata } from "next";
 import { AdSlot } from "../../components/ad-slot";
 import { PerformerCard } from "../../components/performer-card";
 import { getPerformers } from "../../lib/api";
+import { canonicalWithCursor, pageRobots } from "../../lib/seo-policy";
 
-export const metadata: Metadata = { title: "人物资料", description: "浏览已发布的人物公开资料与关联作品。" };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
+  const cursor = (await searchParams).cursor?.trim() ?? "";
+  const result = await getPerformers(cursor);
+  const pageIndexable = !result.degraded && Boolean(result.data?.items.length);
+  return { title: "人物资料", description: "浏览已发布的人物公开资料与关联作品。", alternates: { canonical: canonicalWithCursor("/performers", pageIndexable ? cursor : "") }, robots: pageRobots(pageIndexable) };
+}
 
 export default async function PerformersPage({ searchParams }: { searchParams: Promise<{ cursor?: string }> }) {
   const cursor = (await searchParams).cursor?.trim() ?? "";

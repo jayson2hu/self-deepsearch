@@ -176,7 +176,7 @@ LIMIT $1`
 	return store.queryWorkSummaries(ctx, query, limit)
 }
 
-func (store *Store) SitemapEntries(ctx context.Context, entityType string, limit int) ([]catalog.SitemapEntry, error) {
+func (store *Store) SitemapEntries(ctx context.Context, entityType string, offset, limit int) ([]catalog.SitemapEntry, error) {
 	rows, err := store.pool.Query(ctx, `
 SELECT entity_type, canonical_slug, updated_at FROM (
   SELECT 'work'::text AS entity_type, canonical_slug, updated_at FROM platform.public_published_works
@@ -186,8 +186,8 @@ SELECT entity_type, canonical_slug, updated_at FROM (
   SELECT 'studio'::text, canonical_slug, updated_at FROM platform.public_published_studios
 ) entries
 WHERE $1 = 'all' OR entity_type = $1
-ORDER BY updated_at DESC, entity_type, canonical_slug
-LIMIT $2`, entityType, limit)
+ORDER BY entity_type, canonical_slug
+OFFSET $2 LIMIT $3`, entityType, offset, limit)
 	if err != nil {
 		return nil, fmt.Errorf("query sitemap entries: %w", err)
 	}
@@ -201,6 +201,20 @@ LIMIT $2`, entityType, limit)
 		items = append(items, item)
 	}
 	return items, rows.Err()
+}
+
+func (store *Store) SitemapCount(ctx context.Context, entityType string) (int, error) {
+	var count int
+	err := store.pool.QueryRow(ctx, `
+SELECT count(*) FROM (
+  SELECT 'work'::text AS entity_type FROM platform.public_published_works
+  UNION ALL SELECT 'performer'::text FROM platform.public_published_performers
+  UNION ALL SELECT 'studio'::text FROM platform.public_published_studios
+) entries WHERE $1 = 'all' OR entity_type = $1`, entityType).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count sitemap entries: %w", err)
+	}
+	return count, nil
 }
 
 func (store *Store) RedirectTarget(ctx context.Context, sourcePath string) (catalog.RedirectTarget, error) {

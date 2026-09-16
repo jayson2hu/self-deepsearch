@@ -22,9 +22,9 @@ export async function getHome(): Promise<{ data: HomeResponse; degraded: boolean
   }
 }
 
-export async function getSitemapEntries(entityType: "work" | "performer" | "studio"): Promise<SitemapResponse | null> {
+export async function getSitemapEntries(entityType: "work" | "performer" | "studio", page = 1, pageSize = 50000): Promise<SitemapResponse | null> {
   try {
-    return await fetchPlatform<SitemapResponse>(`/api/v1/site/sitemap?entity_type=${entityType}`, 300);
+    return await fetchPlatform<SitemapResponse>(`/api/v1/site/sitemap?entity_type=${entityType}&page=${page}&page_size=${pageSize}`, 300);
   } catch {
     return null;
   }

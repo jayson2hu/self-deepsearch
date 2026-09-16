@@ -168,6 +168,10 @@ export type SitemapEntry = {
 
 export type SitemapResponse = {
   items: Array<SitemapEntry>;
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
 };
 
 export type RedirectTargetResponse = {

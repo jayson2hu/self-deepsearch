@@ -3,8 +3,14 @@ import type { Metadata } from "next";
 import { AdSlot } from "../../components/ad-slot";
 import { PersonalizedWorkGrid } from "../../components/personalized-work-grid";
 import { getRecentlyAddedWorks } from "../../lib/api";
+import { canonicalWithCursor, pageRobots } from "../../lib/seo-policy";
 
-export const metadata: Metadata = { title: "最近收录", description: "按本站首次公开发布时间浏览最近收录的作品资料。" };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
+  const cursor = (await searchParams).cursor?.trim() ?? "";
+  const result = await getRecentlyAddedWorks(cursor);
+  const pageIndexable = !result.degraded && Boolean(result.data?.items.length);
+  return { title: "最近收录", description: "按本站首次公开发布时间浏览最近收录的作品资料。", alternates: { canonical: canonicalWithCursor("/recent", pageIndexable ? cursor : "") }, robots: pageRobots(pageIndexable) };
+}
 
 export default async function RecentPage({ searchParams }: { searchParams: Promise<{ cursor?: string }> }) {
   const cursor = (await searchParams).cursor?.trim() ?? "";

@@ -73,6 +73,12 @@ paths:
         - in: query
           name: entity_type
           schema: { enum: [all, work, performer, studio], default: all }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, maximum: 100000, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 50000, default: 50000 }
       responses:
         "200":
           description: Published sitemap entries
@@ -1828,9 +1834,13 @@ components:
         updated_at: { type: string, format: date-time }
     SitemapResponse:
       type: object
-      required: [items]
+      required: [items, page, page_size, total_items, total_pages]
       properties:
         items: { type: array, maxItems: 50000, items: { $ref: "#/components/schemas/SitemapEntry" } }
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, minimum: 1, maximum: 50000 }
+        total_items: { type: integer, minimum: 0 }
+        total_pages: { type: integer, minimum: 0 }
     RedirectTargetResponse:
       type: object
       required: [target_path, status_code]

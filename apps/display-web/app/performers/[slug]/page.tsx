@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdSlot } from "../../../components/ad-slot";
+import { Breadcrumbs } from "../../../components/breadcrumbs";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PerformerActions } from "../../../components/performer-actions";
@@ -10,18 +11,23 @@ import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkCard } from "../../../components/work-card";
 import { SafeImage } from "../../../components/safe-image";
 import { getPerformer, getPerformerWorks } from "../../../lib/api";
+import { canonicalWithCursor, pageRobots } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
 	const slug = (await params).slug;
+	const cursor = (await searchParams).cursor?.trim() ?? "";
 	const result = await getPerformer(slug);
+	const works = cursor && result.status === "ok" ? await getPerformerWorks(slug, cursor) : null;
+	const pageIndexable = !cursor || works?.status === "ok" && works.data.items.length > 0;
+	const canonical = canonicalWithCursor(`/performers/${slug}`, pageIndexable ? cursor : "");
 	const primaryImage = result.status === "ok" ? result.data.images[0] : undefined;
 	const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
 	const image = result.status === "ok" ? socialImage?.url ?? result.data.image_url : null;
 	return result.status === "ok" ? {
 		title: result.data.name, description: `${result.data.name} 的公开资料与作品列表。`,
-		alternates: { canonical: `/performers/${slug}` },
-		openGraph: { type: "profile", url: `/performers/${slug}`, title: result.data.name, description: `${result.data.name} 的公开资料与作品列表。`, images: image ? [{ url: image }] : undefined },
+		alternates: { canonical }, robots: pageRobots(pageIndexable),
+		openGraph: { type: "profile", url: canonical, title: result.data.name, description: `${result.data.name} 的公开资料与作品列表。`, images: image ? [{ url: image }] : undefined },
 	} : { title: "人物资料", robots: { index: false, follow: false } };
 }
 
@@ -45,6 +51,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
     mainEntityOfPage: canonicalURL,
   }} /><PageViewReporter contentType="performer" contentID={performer.id} /><div className="shell content-with-rails detail-layout"><div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
     <article className="content-column work-detail"><AdSlot label="顶部横幅" placement="banner" />
+      <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "人物资料", href: "/performers" }, { label: performer.name }]} />
       <div className="work-detail__header performer-detail__header"><div className="work-detail__visual performer-detail__visual">
         <SafeImage src={primary || "/default-performer.svg"} renditions={primaryImage?.renditions} fallbackSrc="/default-performer.svg" sizes="(max-width: 760px) calc(100vw - 24px), 420px" alt={`${performer.name} 人物图`} loading="eager" fetchPriority="high" width={640} height={800} />
       </div><div className="work-detail__identity"><p className="work-card__code">人物公开资料</p><h1>{performer.name}</h1>
@@ -60,7 +67,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
         </dl>
         <div className="detail-actions"><PerformerActions performerID={performer.id} targetPath={`/performers/${slug}`} /></div>
       </div></div>
-      <section className="detail-section"><div className="section-heading"><div><p className="eyebrow"><Link href="/performers">人物目录</Link> / {performer.name}</p><h2>关联作品</h2></div></div>
+      <section className="detail-section"><div className="section-heading"><div><h2>关联作品</h2></div></div>
         {worksResult.status === "invalid_cursor" ? <div className="empty-state"><strong>分页地址已失效</strong><p>请从关联作品第一页重新开始。</p><Link className="button button--quiet" href={`/performers/${slug}`}>返回第一页</Link></div> : null}
         {worksResult.status === "degraded" ? <div className="empty-state"><strong>关联作品暂时无法加载</strong><p>人物资料仍可浏览，请稍后重试作品列表。</p><Link className="button button--quiet" href={`/performers/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}>重试</Link></div> : null}
         {worksResult.status === "ok" && worksResult.data.items.length ? <div className="work-grid">{worksResult.data.items.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : null}

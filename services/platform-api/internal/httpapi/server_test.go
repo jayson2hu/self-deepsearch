@@ -57,6 +57,10 @@ type fakeCatalog struct {
 	pageViewTypes     []string
 	searchMetricCalls int
 	searchMetricZero  bool
+	sitemapEntries    []catalog.SitemapEntry
+	sitemapCount      int
+	sitemapOffset     int
+	sitemapLimit      int
 	repositoryErr     error
 }
 
@@ -147,8 +151,18 @@ func (repository *fakeCatalog) RecordSearchOutcome(_ context.Context, zeroResult
 	repository.searchMetricZero = zeroResult
 	return nil
 }
-func (repository *fakeCatalog) SitemapEntries(context.Context, string, int) ([]catalog.SitemapEntry, error) {
+func (repository *fakeCatalog) SitemapEntries(_ context.Context, _ string, offset, limit int) ([]catalog.SitemapEntry, error) {
+	repository.sitemapOffset, repository.sitemapLimit = offset, limit
+	if repository.sitemapEntries != nil {
+		return repository.sitemapEntries, repository.repositoryErr
+	}
 	return []catalog.SitemapEntry{{EntityType: "work", Slug: "test-001", UpdatedAt: time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)}}, repository.repositoryErr
+}
+func (repository *fakeCatalog) SitemapCount(context.Context, string) (int, error) {
+	if repository.sitemapCount != 0 || repository.sitemapEntries != nil {
+		return repository.sitemapCount, repository.repositoryErr
+	}
+	return 1, repository.repositoryErr
 }
 func (repository *fakeCatalog) RedirectTarget(context.Context, string) (catalog.RedirectTarget, error) {
 	return catalog.RedirectTarget{}, catalog.ErrNotFound
@@ -722,6 +736,50 @@ func TestSitemapUsesPublishedRepository(t *testing.T) {
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/site/sitemap", nil))
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"slug":"test-001"`) {
 		t.Fatalf("expected published sitemap entry, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestSitemapPaginationReportsCompletenessAndStableOffsets(t *testing.T) {
+	repository := &fakeCatalog{
+		sitemapCount:   50001,
+		sitemapEntries: []catalog.SitemapEntry{{EntityType: "work", Slug: "test-50001", UpdatedAt: time.Date(2026, 9, 16, 0, 0, 0, 0, time.UTC)}},
+	}
+	response := httptest.NewRecorder()
+	New(Options{Catalog: repository}).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/site/sitemap?entity_type=work&page=2&page_size=50000", nil))
+	if response.Code != http.StatusOK || repository.sitemapOffset != 50000 || repository.sitemapLimit != 50000 {
+		t.Fatalf("unexpected sitemap page query: status=%d offset=%d limit=%d body=%s", response.Code, repository.sitemapOffset, repository.sitemapLimit, response.Body.String())
+	}
+	var body sitemapResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode sitemap response: %v", err)
+	}
+	if body.Page != 2 || body.PageSize != 50000 || body.TotalItems != 50001 || body.TotalPages != 2 || len(body.Items) != 1 {
+		t.Fatalf("unexpected sitemap completeness metadata: %+v", body)
+	}
+}
+
+func TestSitemapRejectsInvalidAndMissingPages(t *testing.T) {
+	tests := []struct {
+		name   string
+		path   string
+		count  int
+		status int
+		code   string
+	}{
+		{name: "invalid zero", path: "/api/v1/site/sitemap?page=0", count: 1, status: http.StatusBadRequest, code: "INVALID_SITEMAP_PAGE"},
+		{name: "invalid size", path: "/api/v1/site/sitemap?page_size=50001", count: 1, status: http.StatusBadRequest, code: "INVALID_SITEMAP_PAGE"},
+		{name: "past final page", path: "/api/v1/site/sitemap?page=3&page_size=1", count: 2, status: http.StatusNotFound, code: "SITEMAP_PAGE_NOT_FOUND"},
+		{name: "empty second page", path: "/api/v1/site/sitemap?page=2", count: 0, status: http.StatusNotFound, code: "SITEMAP_PAGE_NOT_FOUND"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repository := &fakeCatalog{sitemapCount: test.count, sitemapEntries: []catalog.SitemapEntry{}}
+			response := httptest.NewRecorder()
+			New(Options{Catalog: repository}).ServeHTTP(response, httptest.NewRequest(http.MethodGet, test.path, nil))
+			if response.Code != test.status || !strings.Contains(response.Body.String(), `"code":"`+test.code+`"`) {
+				t.Fatalf("unexpected sitemap error: status=%d body=%s", response.Code, response.Body.String())
+			}
+		})
 	}
 }
 

@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { configuredRightsEmail } from "../../lib/public-contact";
+import { pageRobots } from "../../lib/seo-policy";
 
-export const metadata: Metadata = {
-  title: "关于幕鉴",
-  description: "了解幕鉴公开资料索引的内容边界、使用方式、纠错和权利联系渠道。",
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: "关于幕鉴",
+    description: "了解幕鉴公开资料索引的内容边界、使用方式、纠错和权利联系渠道。",
+    alternates: { canonical: "/about" },
+    robots: pageRobots(true),
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default function AboutPage() {

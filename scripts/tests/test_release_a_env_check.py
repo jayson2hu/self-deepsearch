@@ -55,6 +55,8 @@ def valid_japan() -> dict[str, str]:
         "ALLOWED_ORIGINS": "https://display.test.example,https://ops.test.example",
         "SITE_URL": "https://display.test.example",
         "NEXT_PUBLIC_SITE_URL": "https://display.test.example",
+        "SEO_INDEXING_ENABLED": "false",
+        "SEO_CONTENT_POLICY_READY": "false",
         "RIGHTS_CONTACT_EMAIL": "rights@test.example",
         "S3_PUBLIC_BASE_URL": "https://media.test.example",
         "AUTH_HMAC_SECRET": secret("h"),
@@ -123,6 +125,27 @@ def write_env(path: Path, values: dict[str, str]) -> None:
 
 
 class ReleaseAEnvCheckTests(unittest.TestCase):
+    def test_seo_indexing_is_explicit_and_requires_content_policy_readiness(self) -> None:
+        for key, value in (("SEO_INDEXING_ENABLED", ""), ("SEO_INDEXING_ENABLED", "yes"),
+                           ("SEO_CONTENT_POLICY_READY", ""), ("SEO_CONTENT_POLICY_READY", "yes")):
+            with self.subTest(key=key, value=value):
+                env = valid_japan()
+                env[key] = value
+                report = MODULE.Report()
+                MODULE.validate_japan(env, report, mode="full", check_files=False)
+                self.assertTrue(any(key in error for error in report.errors), report.errors)
+
+        env = valid_japan()
+        env["SEO_INDEXING_ENABLED"] = "true"
+        report = MODULE.Report()
+        MODULE.validate_japan(env, report, mode="full", check_files=False)
+        self.assertTrue(any("requires SEO_CONTENT_POLICY_READY=true" in error for error in report.errors), report.errors)
+
+        env["SEO_CONTENT_POLICY_READY"] = "true"
+        report = MODULE.Report()
+        MODULE.validate_japan(env, report, mode="full", check_files=False)
+        self.assertFalse(report.errors, report.errors)
+
     def test_upload_admission_requires_paired_enforcement_private_origin_and_independent_secret(self) -> None:
         japan = valid_japan()
         japan.update(MEDIA_UPLOAD_QUEUE_MODE="dispatch", MEDIA_UPLOAD_CONTROL_URL="http://192.0.2.2:8090",
@@ -478,6 +501,11 @@ receivers:
                     # The edge gateway is an optional Release A deployment
                     # stage; enforce-mode validation above requires a real,
                     # independent token.
+                    continue
+                if scope == "japan" and values.get("DISPLAY_ADS_ENABLED", "false") == "false" and key in {
+                    "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS",
+                }:
+                    # Host allowlists are intentionally empty while all ad slots are disabled.
                     continue
                 if scope == "japan" and values.get("MEDIA_USAGE_MONITOR_MODE") == "off" and key in {
                     "MEDIA_USAGE_PERIOD_START", "MEDIA_USAGE_PERIOD_END", "R2_ANALYTICS_ACCOUNT_ID", "R2_ANALYTICS_API_TOKEN",

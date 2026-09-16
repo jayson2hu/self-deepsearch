@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ipaddress
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -83,6 +84,14 @@ def require_real(report: Report, env: dict[str, str], scope: str, keys: tuple[st
 def require_value(report: Report, env: dict[str, str], scope: str, key: str, expected: str) -> None:
     if env.get(key, "").strip().lower() != expected.lower():
         report.error(scope, key, f"must be {expected}")
+
+
+def boolean_value(report: Report, env: dict[str, str], scope: str, key: str) -> bool | None:
+    value = env.get(key, "").strip().lower()
+    if value not in {"true", "false"}:
+        report.error(scope, key, "must be true or false")
+        return None
+    return value == "true"
 
 
 def parse_url(
@@ -328,6 +337,8 @@ def validate_japan(env: dict[str, str], report: Report, *, mode: str, check_file
         "ALLOWED_ORIGINS",
         "SITE_URL",
         "NEXT_PUBLIC_SITE_URL",
+        "SEO_INDEXING_ENABLED",
+        "SEO_CONTENT_POLICY_READY",
         "RIGHTS_CONTACT_EMAIL",
         "S3_PUBLIC_BASE_URL",
         "AUTH_HMAC_SECRET",
@@ -350,6 +361,24 @@ def validate_japan(env: dict[str, str], report: Report, *, mode: str, check_file
     require_value(report, env, scope, "TURNSTILE_BYPASS", "false")
     require_value(report, env, scope, "MEDIA_INSPECT_ENABLED", "true")
     validate_usage_monitor(env, report)
+
+    seo_indexing_enabled = boolean_value(report, env, scope, "SEO_INDEXING_ENABLED")
+    seo_content_policy_ready = boolean_value(report, env, scope, "SEO_CONTENT_POLICY_READY")
+    if seo_indexing_enabled and not seo_content_policy_ready:
+        report.error(scope, "SEO_INDEXING_ENABLED", "requires SEO_CONTENT_POLICY_READY=true")
+
+    display_ads_enabled = boolean_value(report, {"DISPLAY_ADS_ENABLED": env.get("DISPLAY_ADS_ENABLED", "false")}, scope, "DISPLAY_ADS_ENABLED")
+    if display_ads_enabled:
+        require_real(report, env, scope, ("DISPLAY_AD_SLOTS_JSON", "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS"))
+        try:
+            slots = json.loads(env.get("DISPLAY_AD_SLOTS_JSON", ""))
+            if not isinstance(slots, list) or not slots:
+                raise ValueError
+        except (json.JSONDecodeError, ValueError):
+            report.error(scope, "DISPLAY_AD_SLOTS_JSON", "must be a non-empty JSON array while ads are enabled")
+        for key in ("DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS"):
+            for index, hostname in enumerate(env.get(key, "").split(","), start=1):
+                validate_plain_hostname(report, {f"host_{index}": hostname.strip()}, scope, f"{key}[{index}]")
 
     fixture_flag = env.get("ALLOW_SYNTHETIC_FIXTURES", "false").strip().lower()
     if fixture_flag not in {"true", "false"}:
@@ -390,6 +419,8 @@ def validate_japan(env: dict[str, str], report: Report, *, mode: str, check_file
         report.error(scope, "TURNSTILE_EXPECTED_HOSTNAME,SITE_URL", "hosts must match")
     if site and site.scheme != "https" and site.hostname not in {"127.0.0.1", "localhost"}:
         report.error(scope, "SITE_URL", "must use HTTPS outside localhost")
+    if seo_indexing_enabled and site and site.scheme != "https":
+        report.error(scope, "SEO_INDEXING_ENABLED,SITE_URL", "requires a HTTPS SITE_URL")
     if revalidate and revalidate.path != "/api/internal/revalidate":
         report.error(scope, "DISPLAY_REVALIDATE_URL", "must use /api/internal/revalidate")
     if media_delete and media_delete.path != "/v1/delete":

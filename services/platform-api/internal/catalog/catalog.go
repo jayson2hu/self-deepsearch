@@ -159,6 +159,7 @@ type Repository interface {
 	StudioWorksBySlug(context.Context, string, *RelatedWorkCursor, int) ([]RelatedWorkResult, error)
 	RecordPageView(context.Context, string, string) error
 	RecordSearchOutcome(context.Context, bool) error
-	SitemapEntries(context.Context, string, int) ([]SitemapEntry, error)
+	SitemapEntries(context.Context, string, int, int) ([]SitemapEntry, error)
+	SitemapCount(context.Context, string) (int, error)
 	RedirectTarget(context.Context, string) (RedirectTarget, error)
 }

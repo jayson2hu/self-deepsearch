@@ -1,13 +1,21 @@
 import { ArrowRight, Building2, CalendarDays, History, Search, UsersRound } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../components/ad-slot";
 import { PersonalizedWorkGrid } from "../components/personalized-work-grid";
 import { getHome } from "../lib/api";
+import { pageRobots } from "../lib/seo-policy";
 
 // Public configuration and catalog data are runtime-owned. Keeping the home
 // route dynamic prevents build-time loopback URLs or synthetic data from being
 // baked into the deployable image; the API fetch and edge still cache for 5m.
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { data, degraded } = await getHome();
+  const hasPrimaryContent = Boolean(data.sections.find((section) => section.key === "latest")?.items.length);
+  return { alternates: { canonical: "/" }, robots: pageRobots(!degraded && hasPrimaryContent) };
+}
 
 export default async function HomePage() {
   const { data, degraded } = await getHome();

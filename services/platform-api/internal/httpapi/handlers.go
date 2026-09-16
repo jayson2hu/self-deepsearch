@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -129,7 +130,11 @@ type sitemapEntryResponse struct {
 }
 
 type sitemapResponse struct {
-	Items []sitemapEntryResponse `json:"items"`
+	Items      []sitemapEntryResponse `json:"items"`
+	Page       int                    `json:"page"`
+	PageSize   int                    `json:"page_size"`
+	TotalItems int                    `json:"total_items"`
+	TotalPages int                    `json:"total_pages"`
 }
 
 type redirectTargetResponse struct {
@@ -503,18 +508,53 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusBadRequest, "INVALID_ENTITY_TYPE", "sitemap 实体类型不符合要求")
 		return
 	}
-	entries, err := s.catalog.SitemapEntries(ctx, entityType, 50000)
+	page, err := positiveQueryInteger(r, "page", 1, 100000)
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "INVALID_SITEMAP_PAGE", "sitemap 页码不符合要求")
+		return
+	}
+	pageSize, err := positiveQueryInteger(r, "page_size", 50000, 50000)
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "INVALID_SITEMAP_PAGE", "sitemap 分片大小不符合要求")
+		return
+	}
+	total, err := s.catalog.SitemapCount(ctx, entityType)
+	if err != nil {
+		s.writeCatalogError(w, r, "count_sitemap_entries", err)
+		return
+	}
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + pageSize - 1) / pageSize
+	}
+	if (totalPages == 0 && page > 1) || (totalPages > 0 && page > totalPages) {
+		writeError(w, r, http.StatusNotFound, "SITEMAP_PAGE_NOT_FOUND", "未找到该 sitemap 分片")
+		return
+	}
+	entries, err := s.catalog.SitemapEntries(ctx, entityType, (page-1)*pageSize, pageSize)
 	if err != nil {
 		s.writeCatalogError(w, r, "query_sitemap", err)
 		return
 	}
-	response := sitemapResponse{Items: make([]sitemapEntryResponse, 0, len(entries))}
+	response := sitemapResponse{Items: make([]sitemapEntryResponse, 0, len(entries)), Page: page, PageSize: pageSize, TotalItems: total, TotalPages: totalPages}
 	for _, entry := range entries {
 		response.Items = append(response.Items, sitemapEntryResponse{
 			EntityType: entry.EntityType, Slug: entry.Slug, UpdatedAt: entry.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
 	s.writeMediaJSON(w, r, http.StatusOK, response)
+}
+
+func positiveQueryInteger(r *http.Request, name string, fallback, maximum int) (int, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(name))
+	if raw == "" {
+		return fallback, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 || value > maximum {
+		return 0, errors.New("invalid positive integer")
+	}
+	return value, nil
 }
 
 func (s *Server) publicRedirect(w http.ResponseWriter, r *http.Request) {

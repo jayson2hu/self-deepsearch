@@ -451,6 +451,41 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         ],
       });
     }
+    if (url.pathname === "/api/v1/site/sitemap") {
+      const entityType = url.searchParams.get("entity_type") ?? "all";
+      const page = Number(url.searchParams.get("page") ?? "1");
+      const pageSize = Number(url.searchParams.get("page_size") ?? "50000");
+      const entry = entityType === "performer"
+        ? { entity_type: "performer", slug: "test-jsonld-00000001", updated_at: "2026-09-16T08:00:00Z" }
+        : entityType === "studio"
+          ? { entity_type: "studio", slug: "test-jsonld-00000001", updated_at: "2026-09-16T08:00:00Z" }
+          : { entity_type: "work", slug: "test-jsonld-00000001", updated_at: "2026-09-16T08:00:00Z" };
+      return writeMockJSON(response, { items: page === 1 ? [entry] : [], page, page_size: pageSize, total_items: 1, total_pages: 1 });
+    }
+    if (url.pathname === "/api/v1/site/redirect") {
+      if (url.searchParams.get("path") === "/works/legacy-test-work") {
+        return writeMockJSON(response, { target_path: "/works/test-jsonld-00000001", status_code: 301 });
+      }
+      return writeMockError(response, "NOT_FOUND", "旧地址不存在", 404);
+    }
+    if (url.pathname === "/api/v1/works/latest") {
+      const cursor = url.searchParams.get("cursor") ?? "";
+      if (cursor === "unavailable") return writeMockError(response, "DEPENDENCY_UNAVAILABLE", "资料服务暂时不可用", 503);
+      if (cursor === "broken") return writeMockError(response, "INVALID_CURSOR", "分页游标不符合要求", 400);
+      return writeMockJSON(response, { items: [MOCK_WORK_ITEM], next_cursor: null });
+    }
+    if (url.pathname === "/api/v1/works/recent") {
+      return writeMockJSON(response, { items: [MOCK_WORK_ITEM], next_cursor: null });
+    }
+    if (url.pathname === "/api/v1/performers") {
+      return writeMockJSON(response, { items: [MOCK_PERFORMER_ITEM], next_cursor: null });
+    }
+    if (url.pathname === "/api/v1/studios") {
+      return writeMockJSON(response, { items: [MOCK_STUDIO_ITEM], next_cursor: null });
+    }
+    if (url.pathname === "/api/v1/works/unavailable-test-work") {
+      return writeMockError(response, "DEPENDENCY_UNAVAILABLE", "资料服务暂时不可用", 503);
+    }
     if (url.pathname === "/api/v1/search/works") {
       const query = url.searchParams.get("q") ?? "";
       const normalizedQuery = query.replace(/[\s_-]+/g, "").toLowerCase();
@@ -1374,6 +1409,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
   const stagedAssets = [];
   let upstream;
   let display;
+  let indexedDisplay;
   let misconfiguredDisplay;
   let ops;
   let cleaned = false;
@@ -1381,7 +1417,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
     if (cleaned) return;
     cleaned = true;
     if (upstream) await new Promise((resolve) => upstream.close(() => resolve()));
-    await Promise.all([display, misconfiguredDisplay, ops].filter(Boolean).map((entry) => stopChild(entry)));
+    await Promise.all([display, indexedDisplay, misconfiguredDisplay, ops].filter(Boolean).map((entry) => stopChild(entry)));
     await Promise.all(stagedAssets.map((target) => fs.rm(target, { recursive: true, force: true })));
   };
   const handleSignal = (exitCode) => {
@@ -1464,9 +1500,9 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       ...pageFailures("公开注册入口", register, { includes: ["注册账号", "邮箱验证", "/privacy"] }),
       ...pageFailures("关于说明", about, { includes: ["关于幕鉴", "rights@example.test", "/privacy"] }),
       ...pageFailures("数据与隐私说明", privacy, { includes: ["数据与隐私说明", "不会物理删除底层记录", "关闭账号不等于全量物理删除", "noindex"] }),
-      ...pageFailures("robots", robots, { includes: [`${displayOrigin}/sitemap.xml`] }),
-      ...pageFailures("sitemap index", sitemap, { includes: [`${displayOrigin}/sitemaps/pages`] }),
-      ...pageFailures("固定页面 sitemap", pagesSitemap, { includes: [`${displayOrigin}/about`] }),
+      ...pageFailures("受保护环境 robots", robots, { includes: ["Disallow: /"] }),
+      ...pageFailures("受保护环境 sitemap index", sitemap, { status: 404, includes: ["Not found"] }),
+      ...pageFailures("受保护环境固定页面 sitemap", pagesSitemap, { status: 404, includes: ["Not found"] }),
       ...pageFailures("运营后台登录页", opsLogin, { includes: ["后台登录", "运营后台"] }),
       ...securityHeaderFailures("公开首页", home, { allowTurnstile: true }),
       ...securityHeaderFailures("公开登录入口", login, { allowTurnstile: true, requireScriptNonce: true }),
@@ -1483,7 +1519,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       ...jsonLDFailures("厂牌详情 JSON-LD", studioDetail, "Organization"),
       ...pageFailures("人物关联作品首屏", performerDetail, { includes: ["关联作品", "TEST-JSONLD", "cursor=next-page", "下一页"] }),
       ...pageFailures("人物关联作品尾页", performerWorksNext, { includes: ["本页没有更多已发布关联作品", "已到最后一页", "/performers/test-jsonld-00000001"] }),
-      ...pageFailures("厂牌关联作品失效游标", studioWorksInvalid, { includes: ["分页地址已失效", "返回第一页", "/studios/test-jsonld-00000001"] }),
+      ...pageFailures("厂牌关联作品失效游标", studioWorksInvalid, { status: 400, includes: ["分页参数无效", "请返回目录首页重新浏览"] }),
       ...pageFailures("作品搜索结果", searchResult, { includes: ["仅返回已发布作品资料", "人物名称、人物别名或厂牌名称会返回关联作品", "TEST-JSONLD"] }),
       ...pageFailures("作品搜索零结果", searchZero, { includes: ["没有找到相关已发布作品", "/latest", "/performers", "/studios"] }),
       ...pageFailures("作品搜索非法输入", searchInvalid, { includes: ["关键词不符合查询要求", "已保留你的原输入", "value=\"--\""] }),
@@ -1513,6 +1549,65 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
     }
     throwFailures(failures);
 
+    const [missingDetail, unavailableDetail, legacyDetail, invalidListing, unavailableListing] = await Promise.all([
+      request(display, "/works/missing-test-work", timeoutMs),
+      request(display, "/works/unavailable-test-work", timeoutMs),
+      request(display, "/works/legacy-test-work", timeoutMs),
+      request(display, "/latest?cursor=broken", timeoutMs),
+      request(display, "/latest?cursor=unavailable", timeoutMs),
+    ]);
+    throwFailures([
+      ...pageFailures("不存在详情", missingDetail, { status: 404 }),
+      ...pageFailures("详情依赖故障", unavailableDetail, { status: 503, includes: ["资料暂时无法加载"] }),
+      ...pageFailures("旧详情地址", legacyDetail, { status: 301 }),
+      ...pageFailures("非法列表分页", invalidListing, { status: 400, includes: ["分页参数无效"] }),
+      ...pageFailures("列表依赖故障", unavailableListing, { status: 503, includes: ["资料暂时无法加载"] }),
+    ]);
+
+    const indexedPort = await findFreePort({ avoid: ports });
+    ports.add(indexedPort);
+    indexedDisplay = startChild({
+      name: "display-web-index-enabled",
+      server: paths.display.server,
+      port: indexedPort,
+      apiURL,
+      repositoryRoot,
+      extraEnv: {
+        APP_ENV: "production",
+        SITE_URL: "https://display.test.example",
+        NEXT_PUBLIC_SITE_URL: "https://display.test.example",
+        SEO_INDEXING_ENABLED: "true",
+        SEO_CONTENT_POLICY_READY: "true",
+        RIGHTS_CONTACT_EMAIL: "rights@example.test",
+      },
+    });
+    await waitForHTTP(indexedDisplay, "/robots.txt", timeoutMs);
+    const [indexedHome, indexedLatestPage, indexedSearch, indexedRobots, indexedSitemap, indexedPages, indexedWorks, legacyWorks] = await Promise.all([
+      request(indexedDisplay, "/", timeoutMs),
+      request(indexedDisplay, "/latest?cursor=next-page", timeoutMs),
+      request(indexedDisplay, "/search?q=TEST-JSONLD", timeoutMs),
+      request(indexedDisplay, "/robots.txt", timeoutMs),
+      request(indexedDisplay, "/sitemap.xml", timeoutMs),
+      request(indexedDisplay, "/sitemaps/pages", timeoutMs),
+      request(indexedDisplay, "/sitemaps/works/1", timeoutMs),
+      request(indexedDisplay, "/sitemaps/works", timeoutMs),
+    ]);
+    throwFailures([
+      ...pageFailures("正式放行首页 canonical", indexedHome, { includes: ["https://display.test.example"] }),
+      ...pageFailures("正式放行合法分页 canonical", indexedLatestPage, { includes: ["https://display.test.example/latest?cursor=next-page"] }),
+      ...pageFailures("正式放行 robots", indexedRobots, { includes: ["https://display.test.example/sitemap.xml"] }),
+      ...pageFailures("正式放行 sitemap index", indexedSitemap, { includes: ["https://display.test.example/sitemaps/pages", "https://display.test.example/sitemaps/works/1"] }),
+      ...pageFailures("正式放行固定页面 sitemap", indexedPages, { includes: ["https://display.test.example/about"] }),
+      ...pageFailures("正式放行作品 sitemap", indexedWorks, { includes: ["https://display.test.example/works/test-jsonld-00000001", "2026-09-16T08:00:00Z"] }),
+      ...pageFailures("旧 sitemap 分片地址", legacyWorks, { status: 301 }),
+    ]);
+    if (!home.headers.get("x-robots-tag")?.includes("noindex")) {
+      throw new SmokeFailure("受保护环境首页缺少 fail-closed X-Robots-Tag");
+    }
+    if (!indexedSearch.headers.get("x-robots-tag")?.includes("noindex")) {
+      throw new SmokeFailure("正式放行搜索页缺少 X-Robots-Tag noindex");
+    }
+
     const misconfiguredPort = await findFreePort({ avoid: ports });
     misconfiguredDisplay = startChild({
       name: "display-web-missing-site-url",
@@ -1524,8 +1619,8 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
     });
     const misconfiguredRobots = await waitForHTTP(misconfiguredDisplay, "/robots.txt", timeoutMs);
     const configurationFailures = [];
-    if (misconfiguredRobots.status !== 500) {
-      configurationFailures.push(`robots misconfiguration: expected HTTP 500, got ${misconfiguredRobots.status}`);
+    if (misconfiguredRobots.status !== 200 || !misconfiguredRobots.body.includes("Disallow: /")) {
+      configurationFailures.push(`robots misconfiguration: expected fail-closed HTTP 200 robots, got ${misconfiguredRobots.status}`);
     }
     if (misconfiguredRobots.body.includes("127.0.0.1:3000") || misconfiguredRobots.body.includes("build-time.invalid")) {
       configurationFailures.push("robots misconfiguration: response exposed a fallback or build-time site origin");
@@ -1536,7 +1631,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       status: "passed",
       displayURL: `http://127.0.0.1:${displayPort}/`,
       opsURL: `http://127.0.0.1:${opsPort}/login`,
-      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "作品/人物/厂牌搜索类型与非法类型关闭", "人物/厂牌关联作品首屏、直达尾页与失效游标", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
+      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "作品/人物/厂牌搜索类型与非法类型关闭", "人物/厂牌关联作品首屏、直达尾页与失效游标", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情与面包屑 JSON-LD", "受保护环境 fail-closed 与正式放行 robots/sitemap", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
     };
   } finally {
     process.off("SIGINT", handleInterrupt);

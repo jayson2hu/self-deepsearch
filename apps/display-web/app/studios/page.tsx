@@ -3,8 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../../components/ad-slot";
 import { getStudios } from "../../lib/api";
+import { canonicalWithCursor, pageRobots } from "../../lib/seo-policy";
 
-export const metadata: Metadata = { title: "厂牌资料", description: "浏览已发布厂牌及其关联作品。", alternates: { canonical: "/studios" } };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
+  const cursor = (await searchParams).cursor?.trim() ?? "";
+  const result = await getStudios(cursor);
+  const pageIndexable = !result.degraded && Boolean(result.data?.items.length);
+  return { title: "厂牌资料", description: "浏览已发布厂牌及其关联作品。", alternates: { canonical: canonicalWithCursor("/studios", pageIndexable ? cursor : "") }, robots: pageRobots(pageIndexable) };
+}
 
 export default async function StudiosPage({ searchParams }: { searchParams: Promise<{ cursor?: string }> }) {
   const cursor = (await searchParams).cursor?.trim() ?? "";

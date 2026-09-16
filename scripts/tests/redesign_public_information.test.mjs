@@ -42,7 +42,7 @@ test("public contact fails visibly when a real address is not configured", async
 });
 
 test("about is discoverable but privacy is excluded from acquisition sitemap", async () => {
-  const sitemap = await read("apps/display-web/app/sitemaps/[entity]/route.ts");
+  const sitemap = await read("apps/display-web/lib/sitemap-response.ts");
   assert.match(sitemap, /"\/about"/);
   assert.doesNotMatch(sitemap, /"\/privacy"/);
 });
