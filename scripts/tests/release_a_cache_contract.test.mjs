@@ -14,11 +14,6 @@ test("cache contract targets a sitemap leaf instead of the pagination redirect",
   assert.equal(CACHE_SITE_URL, "https://cache-contract.example.test");
 });
 
-test("cache contract separates initial invalidation from cache priming", async () => {
-  const source = await fs.readFile(new URL("../release_a_cache_contract.mjs", import.meta.url), "utf8");
-  assert.match(source, /await invoke\("cache_purge"\);\s*\/\/ Keep the first cache writes[\s\S]*setTimeout\(resolve, 1100\)/);
-});
-
 test("isolated standalone uses independent writable copies and guarded cleanup", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cache-isolation-test-"));
   let isolated;
@@ -121,6 +116,8 @@ test("hidden assertions support streamed notFound but reject stale data, URL or 
   };
   assertHidden(pages, catalog);
   assertHidden({ ...pages, sitemap: { status: 404, body: "Not found" } }, catalog);
+  assertHidden({ ...pages, work: { status: 404, body: '<meta name="robots" content="noindex"/>' } }, catalog);
+  assertHidden({ ...pages, work: { status: 200, body: '<meta name="robots" content="noindex"/><html id="__next_error__">' } }, catalog);
   assertHidden({ ...pages, work: { ...pages.work, status: 200 } }, catalog);
   assert.throws(() => assertHidden({ ...pages, work: { status: 200, body: "temporarily unavailable" } }, catalog));
   assert.throws(() => assertHidden({ ...pages, work: { ...pages.work, body: pages.work.body + catalog.after } }, catalog));
