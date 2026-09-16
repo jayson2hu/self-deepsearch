@@ -70,6 +70,18 @@ type workSearchResponse struct {
 	NextCursor *string    `json:"next_cursor"`
 }
 
+type performerSearchResponse struct {
+	Query      string              `json:"query"`
+	Items      []performerResponse `json:"items"`
+	NextCursor *string             `json:"next_cursor"`
+}
+
+type studioSearchResponse struct {
+	Query      string                  `json:"query"`
+	Items      []studioSummaryResponse `json:"items"`
+	NextCursor *string                 `json:"next_cursor"`
+}
+
 type performerResponse struct {
 	ID       string         `json:"id"`
 	Name     string         `json:"name"`
@@ -402,6 +414,69 @@ func (s *Server) searchWorks(w http.ResponseWriter, r *http.Request) {
 	s.writeMediaJSON(w, r, http.StatusOK, workSearchResponse{Query: rawQuery, Items: workItems(page), NextCursor: nextCursor})
 }
 
+func (s *Server) searchPerformers(w http.ResponseWriter, r *http.Request) {
+	if s.catalog == nil {
+		writeError(w, r, http.StatusServiceUnavailable, "DEPENDENCY_UNAVAILABLE", "资料服务暂时不可用")
+		return
+	}
+	rawQuery := normalizeSearchQuery(r.URL.Query().Get("q"))
+	if !validEntitySearchQuery(rawQuery) {
+		writeError(w, r, http.StatusBadRequest, "INVALID_QUERY", "请输入 2 至 100 个字符的人物名称或别名")
+		return
+	}
+	scope := entitySearchCursorScope("performers", rawQuery)
+	after, ok := readRankedSearchCursor(w, r, scope)
+	if !ok {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	items, err := s.catalog.SearchPerformers(ctx, rawQuery, after, publicPageSize+1)
+	if err != nil {
+		s.writeCatalogError(w, r, "search_performers", err)
+		return
+	}
+	page, nextCursor := pageRankedSearchValues(items, scope)
+	response := performerSearchResponse{Query: rawQuery, Items: make([]performerResponse, 0, len(page)), NextCursor: nextCursor}
+	for _, item := range page {
+		response.Items = append(response.Items, performerResponse{
+			ID: item.ID, Name: item.Name, Href: "/performers/" + item.Slug,
+			ImageURL: item.ImageURL, Image: imageResponseFromCatalog(item.Image),
+		})
+	}
+	s.writeMediaJSON(w, r, http.StatusOK, response)
+}
+
+func (s *Server) searchStudios(w http.ResponseWriter, r *http.Request) {
+	if s.catalog == nil {
+		writeError(w, r, http.StatusServiceUnavailable, "DEPENDENCY_UNAVAILABLE", "资料服务暂时不可用")
+		return
+	}
+	rawQuery := normalizeSearchQuery(r.URL.Query().Get("q"))
+	if !validEntitySearchQuery(rawQuery) {
+		writeError(w, r, http.StatusBadRequest, "INVALID_QUERY", "请输入 2 至 100 个字符的厂牌名称")
+		return
+	}
+	scope := entitySearchCursorScope("studios", rawQuery)
+	after, ok := readRankedSearchCursor(w, r, scope)
+	if !ok {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	items, err := s.catalog.SearchStudios(ctx, rawQuery, after, publicPageSize+1)
+	if err != nil {
+		s.writeCatalogError(w, r, "search_studios", err)
+		return
+	}
+	page, nextCursor := pageRankedSearchValues(items, scope)
+	response := studioSearchResponse{Query: rawQuery, Items: make([]studioSummaryResponse, 0, len(page)), NextCursor: nextCursor}
+	for _, item := range page {
+		response.Items = append(response.Items, studioSummaryResponse{ID: item.ID, Name: item.Name, Href: "/studios/" + item.Slug})
+	}
+	s.writeMediaJSON(w, r, http.StatusOK, response)
+}
+
 func (s *Server) recordSearchOutcome(r *http.Request, zeroResult bool) {
 	if s.catalog == nil {
 		return
@@ -583,6 +658,19 @@ func compactCode(value string) string {
 		}
 	}
 	return result.String()
+}
+
+func validEntitySearchQuery(value string) bool {
+	if len([]rune(value)) < 2 || len([]rune(value)) > 100 {
+		return false
+	}
+	searchable := 0
+	for _, character := range value {
+		if unicode.IsLetter(character) || unicode.IsDigit(character) {
+			searchable++
+		}
+	}
+	return searchable >= 2
 }
 
 func normalizeSearchQuery(value string) string {

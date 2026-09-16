@@ -69,11 +69,13 @@ func TestMediaDeliveryModeCoversCatalogAndAccountHTTPWithoutMutatingRepository(t
 	work := catalog.WorkSummary{ID: "10000000-0000-4000-8000-000000000001", Slug: "test-001", Code: "TEST-001", Title: "text retained", ImageURL: &url, Image: image}
 	performer := catalog.PerformerSummary{ID: "20000000-0000-4000-8000-000000000001", Slug: "test-person", Name: "text retained", ImageURL: &url, Image: image}
 	repo := deliveryCatalog{&fakeCatalog{latest: []catalog.WorkSummary{work},
-		detail:    catalog.WorkDetail{WorkSummary: work, Performers: []catalog.PerformerSummary{performer}, Images: []catalog.Image{*image}, RelatedWorks: []catalog.WorkSummary{work}},
-		performer: catalog.PerformerDetail{PerformerSummary: performer, Works: []catalog.WorkSummary{work}, Images: []catalog.Image{*image}},
+		detail:          catalog.WorkDetail{WorkSummary: work, Performers: []catalog.PerformerSummary{performer}, Images: []catalog.Image{*image}, RelatedWorks: []catalog.WorkSummary{work}},
+		performer:       catalog.PerformerDetail{PerformerSummary: performer, Works: []catalog.WorkSummary{work}, Images: []catalog.Image{*image}},
+		performerSearch: []catalog.PerformerSearchResult{{PerformerSummary: performer, Cursor: catalog.SearchCursor{Rank: 0, Name: "text retained", ID: performer.ID}}},
+		studioSearch:    []catalog.StudioSearchResult{{StudioSummary: catalog.StudioSummary{ID: "30000000-0000-4000-8000-000000000001", Name: "text retained", Slug: "test-studio"}, Cursor: catalog.SearchCursor{Rank: 0, Name: "text retained", ID: "30000000-0000-4000-8000-000000000001"}}},
 	}}
 	accounts := deliveryAccount{work: work, performer: performer, history: account.HistoryItem{ID: work.ID, ContentType: "work", Title: "text retained", ImageURL: &url, ViewedAt: time.Date(2026, 9, 11, 1, 2, 3, 0, time.UTC)}}
-	paths := []string{"/api/v1/site/home", "/api/v1/site/editorial", "/api/v1/works/latest", "/api/v1/works/recent", "/api/v1/works/popular", "/api/v1/search/works?q=TEST", "/api/v1/works/test-001", "/api/v1/performers", "/api/v1/performers/test-person", "/api/v1/studios/test-studio", "/api/v1/me/favorites", "/api/v1/me/follows", "/api/v1/me/followed-works", "/api/v1/me/hidden-works", "/api/v1/me/history"}
+	paths := []string{"/api/v1/site/home", "/api/v1/site/editorial", "/api/v1/works/latest", "/api/v1/works/recent", "/api/v1/works/popular", "/api/v1/search/works?q=TEST", "/api/v1/search/performers?q=text", "/api/v1/works/test-001", "/api/v1/performers", "/api/v1/performers/test-person", "/api/v1/studios/test-studio", "/api/v1/me/favorites", "/api/v1/me/follows", "/api/v1/me/followed-works", "/api/v1/me/hidden-works", "/api/v1/me/history"}
 	for _, mode := range []string{"normal", "default_only", "invalid", "normal"} {
 		handler := New(Options{Catalog: repo, Account: accounts, MediaDeliveryMode: mode, Identity: &fakeIdentityService{user: identity.User{ID: "user", Role: "user"}}})
 		for _, path := range paths {
@@ -104,6 +106,7 @@ func TestMediaProjectionCopiesResponseAndKeepsNonMediaFields(t *testing.T) {
 	item := homeItem{Title: "text", ImageURL: &url, Image: &imageResponse{URL: url}}
 	values := []any{
 		homeResponse{Sections: []homeSection{{Items: []homeItem{item}}}}, itemListResponse{Items: []homeItem{item}}, workSearchResponse{Items: []homeItem{item}},
+		performerSearchResponse{Items: []performerResponse{{Name: "text", ImageURL: &url, Image: &imageResponse{URL: url}}}},
 		workDetailResponse{Images: []imageResponse{{URL: url}}, RelatedWorks: []homeItem{item}, Performers: []performerResponse{{ImageURL: &url}}},
 		performerDetailResponse{ImageURL: &url, Images: []imageResponse{{URL: url}}, Works: []homeItem{item}}, studioDetailResponse{Works: []homeItem{item}},
 		historyResponse{Items: []historyItemResponse{{Item: item, ViewedAt: "2026-09-11T01:02:03Z"}}},

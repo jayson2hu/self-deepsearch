@@ -1,4 +1,4 @@
-import type { FeedbackListResponse, HistoryResponse, HomeResponse, ItemListResponse, PerformerDetailResponse, SessionResponse, SitemapResponse, StudioDetailResponse, StudioListResponse, UserSummary, WorkDetailResponse, WorkSearchResponse } from "@self-deepsearch/api-contracts";
+import type { FeedbackListResponse, HistoryResponse, HomeResponse, ItemListResponse, PerformerDetailResponse, PerformerSearchResponse, SessionResponse, SitemapResponse, StudioDetailResponse, StudioListResponse, StudioSearchResponse, UserSummary, WorkDetailResponse, WorkSearchResponse } from "@self-deepsearch/api-contracts";
 import { cookies } from "next/headers";
 import { mediaProjection } from "./media-policy";
 
@@ -30,18 +30,36 @@ export async function getSitemapEntries(entityType: "work" | "performer" | "stud
   }
 }
 
-export type WorkSearchResult =
-  | { status: "ok"; data: WorkSearchResponse }
-  | { status: "invalid_query"; data: null }
-  | { status: "invalid_cursor"; data: null }
-  | { status: "unavailable"; data: null };
+export type SearchEntityType = "work" | "performer" | "studio";
+
+export type SearchResult<T, K extends SearchEntityType> =
+  | { status: "ok"; type: K; data: T }
+  | { status: "invalid_query"; type: K; data: null }
+  | { status: "invalid_cursor"; type: K; data: null }
+  | { status: "unavailable"; type: K; data: null };
+
+export type WorkSearchResult = SearchResult<WorkSearchResponse, "work">;
+export type PerformerSearchResult = SearchResult<PerformerSearchResponse, "performer">;
+export type StudioSearchResult = SearchResult<StudioSearchResponse, "studio">;
 
 export async function searchWorks(query: string, cursor = ""): Promise<WorkSearchResult> {
+  return searchCatalog<WorkSearchResponse, "work">("work", "/api/v1/search/works", query, cursor);
+}
+
+export async function searchPerformers(query: string, cursor = ""): Promise<PerformerSearchResult> {
+  return searchCatalog<PerformerSearchResponse, "performer">("performer", "/api/v1/search/performers", query, cursor);
+}
+
+export async function searchStudios(query: string, cursor = ""): Promise<StudioSearchResult> {
+  return searchCatalog<StudioSearchResponse, "studio">("studio", "/api/v1/search/studios", query, cursor);
+}
+
+async function searchCatalog<T, K extends SearchEntityType>(type: K, endpoint: string, query: string, cursor: string): Promise<SearchResult<T, K>> {
   try {
-    const path = `/api/v1/search/works?q=${encodeURIComponent(query)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    const path = `${endpoint}?q=${encodeURIComponent(query)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     const response = await platformNoStoreRequest(path);
     if (response.ok) {
-      return { status: "ok", data: mediaProjection((await response.json()) as WorkSearchResponse) };
+      return { status: "ok", type, data: mediaProjection((await response.json()) as T) };
     }
     if (response.status === 400) {
       const code = await response.json().then((body: unknown) => {
@@ -49,12 +67,12 @@ export async function searchWorks(query: string, cursor = ""): Promise<WorkSearc
         const error = body.error;
         return error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "";
       }).catch(() => "");
-      if (code === "INVALID_QUERY") return { status: "invalid_query", data: null };
-      if (code === "INVALID_CURSOR") return { status: "invalid_cursor", data: null };
+      if (code === "INVALID_QUERY") return { status: "invalid_query", type, data: null };
+      if (code === "INVALID_CURSOR") return { status: "invalid_cursor", type, data: null };
     }
-    return { status: "unavailable", data: null };
+    return { status: "unavailable", type, data: null };
   } catch {
-    return { status: "unavailable", data: null };
+    return { status: "unavailable", type, data: null };
   }
 }
 

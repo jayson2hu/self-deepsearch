@@ -361,6 +361,128 @@ LIMIT $4`
 	return store.queryWorkSummaries(ctx, query, queryText, compactCode, afterID, limit)
 }
 
+func (store *Store) SearchPerformers(ctx context.Context, queryText string, after *catalog.SearchCursor, limit int) ([]catalog.PerformerSearchResult, error) {
+	hasAfter, rank, name, id := searchCursorArgs(after)
+	rows, err := store.pool.Query(ctx, `WITH ranked AS (
+SELECT performer.*,
+    CASE
+      WHEN lower(performer.display_name) = lower($1) THEN 0
+      WHEN lower(coalesce(performer.name_original, '')) = lower($1)
+        OR lower(coalesce(performer.romanized_name, '')) = lower($1)
+        OR EXISTS (
+          SELECT 1 FROM platform.performer_aliases alias
+          WHERE alias.performer_id = performer.performer_id
+            AND lower(alias.raw_value) = lower($1)
+        ) THEN 1
+      WHEN left(lower(performer.display_name), length(lower($1))) = lower($1)
+        OR left(lower(coalesce(performer.name_original, '')), length(lower($1))) = lower($1)
+        OR left(lower(coalesce(performer.romanized_name, '')), length(lower($1))) = lower($1)
+        OR EXISTS (
+          SELECT 1 FROM platform.performer_aliases alias
+          WHERE alias.performer_id = performer.performer_id
+            AND left(lower(alias.raw_value), length(lower($1))) = lower($1)
+        ) THEN 2
+      ELSE 3
+    END AS search_rank,
+    lower(performer.display_name) COLLATE "C" AS search_name
+FROM platform.public_published_performers AS performer
+JOIN platform.public_search_documents AS document
+  ON document.entity_type = 'performer' AND document.entity_id = performer.performer_id
+WHERE lower(performer.display_name) = lower($1)
+   OR lower(coalesce(performer.name_original, '')) = lower($1)
+   OR lower(coalesce(performer.romanized_name, '')) = lower($1)
+   OR EXISTS (
+      SELECT 1 FROM platform.performer_aliases alias
+      WHERE alias.performer_id = performer.performer_id
+        AND (lower(alias.raw_value) = lower($1)
+          OR left(lower(alias.raw_value), length(lower($1))) = lower($1))
+   )
+   OR document.search_vector @@ plainto_tsquery('simple'::regconfig, $1)
+   OR position(lower($1) in lower(document.search_text)) > 0
+   OR similarity(document.search_text, $1) >= 0.30
+)
+SELECT `+performerSummaryColumns+`, performer.search_rank, performer.search_name
+FROM ranked performer
+`+performerSummaryJoins+`
+WHERE NOT $2::boolean OR (performer.search_rank, performer.search_name, performer.performer_id) >
+  ($3::integer, $4::text COLLATE "C", $5::uuid)
+ORDER BY performer.search_rank, performer.search_name, performer.performer_id
+LIMIT $6`, queryText, hasAfter, rank, name, id, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search performers: %w", err)
+	}
+	defer rows.Close()
+	items := make([]catalog.PerformerSearchResult, 0)
+	for rows.Next() {
+		var item catalog.PerformerSearchResult
+		var renditions []byte
+		if err := rows.Scan(&item.ID, &item.Name, &item.Slug, &renditions, &item.Cursor.Rank, &item.Cursor.Name); err != nil {
+			return nil, fmt.Errorf("scan performer search result: %w", err)
+		}
+		image, err := imageFromJSON(renditions)
+		if err != nil {
+			return nil, fmt.Errorf("decode performer search image: %w", err)
+		}
+		item.Image = image
+		item.ImageURL = imageURLForRendition(image, "w320")
+		item.Cursor.ID = item.ID
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (store *Store) SearchStudios(ctx context.Context, queryText string, after *catalog.SearchCursor, limit int) ([]catalog.StudioSearchResult, error) {
+	hasAfter, rank, name, id := searchCursorArgs(after)
+	rows, err := store.pool.Query(ctx, `WITH ranked AS (
+SELECT studio.*,
+    CASE
+      WHEN lower(studio.name) = lower($1) OR lower(studio.normalized_name) = lower($1) THEN 0
+      WHEN left(lower(studio.name), length(lower($1))) = lower($1)
+        OR left(lower(studio.normalized_name), length(lower($1))) = lower($1) THEN 1
+      ELSE 2
+    END AS search_rank,
+    lower(studio.normalized_name) COLLATE "C" AS search_name
+FROM platform.public_published_studios AS studio
+JOIN platform.public_search_documents AS document
+  ON document.entity_type = 'studio' AND document.entity_id = studio.studio_id
+WHERE lower(studio.name) = lower($1)
+   OR lower(studio.normalized_name) = lower($1)
+   OR left(lower(studio.name), length(lower($1))) = lower($1)
+   OR left(lower(studio.normalized_name), length(lower($1))) = lower($1)
+   OR document.search_vector @@ plainto_tsquery('simple'::regconfig, $1)
+   OR position(lower($1) in lower(document.search_text)) > 0
+   OR similarity(document.search_text, $1) >= 0.30
+)
+SELECT studio.studio_id::text, studio.name, studio.canonical_slug,
+       studio.search_rank, studio.search_name
+FROM ranked studio
+WHERE NOT $2::boolean OR (studio.search_rank, studio.search_name, studio.studio_id) >
+  ($3::integer, $4::text COLLATE "C", $5::uuid)
+ORDER BY studio.search_rank, studio.search_name, studio.studio_id
+LIMIT $6`, queryText, hasAfter, rank, name, id, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search studios: %w", err)
+	}
+	defer rows.Close()
+	items := make([]catalog.StudioSearchResult, 0)
+	for rows.Next() {
+		var item catalog.StudioSearchResult
+		if err := rows.Scan(&item.ID, &item.Name, &item.Slug, &item.Cursor.Rank, &item.Cursor.Name); err != nil {
+			return nil, fmt.Errorf("scan studio search result: %w", err)
+		}
+		item.Cursor.ID = item.ID
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func searchCursorArgs(after *catalog.SearchCursor) (bool, int, string, string) {
+	if after == nil {
+		return false, 0, "", "00000000-0000-0000-0000-000000000000"
+	}
+	return true, after.Rank, after.Name, after.ID
+}
+
 func (store *Store) ListPerformers(ctx context.Context, afterID string, limit int) ([]catalog.PerformerSummary, error) {
 	return store.queryPerformerSummaries(ctx, `SELECT `+performerSummaryColumns+`
 FROM platform.public_published_performers performer

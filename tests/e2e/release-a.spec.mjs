@@ -335,6 +335,26 @@ test("作品搜索区分非法输入、零结果、失效分页和服务故障",
   }
 });
 
+test("搜索类型切换返回真实人物和厂牌实体并拒绝未知类型", async ({ page }) => {
+  await page.goto(`${displayURL}/search?q=%E6%B5%8B%E8%AF%95%E5%88%AB%E5%90%8D&type=performer`);
+  const typeNavigation = page.getByRole("navigation", { name: "搜索类型" });
+  await expect(typeNavigation.getByRole("link", { name: "人物" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("只返回人物资料", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看 测试人物 的人物资料" })).toBeVisible();
+  await page.getByRole("link", { name: "查看 测试人物 的人物资料" }).click();
+  await expect(page).toHaveURL(`${displayURL}/performers/test-jsonld-00000001`);
+
+  await page.goto(`${displayURL}/search?q=%E6%B5%8B%E8%AF%95%E5%8E%82%E7%89%8C&type=studio`);
+  await expect(typeNavigation.getByRole("link", { name: "厂牌" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("同名厂牌保持为不同资料", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: /测试厂牌/ })).toHaveAttribute("href", "/studios/test-jsonld-00000001");
+
+  await page.goto(`${displayURL}/search?q=TEST-JSONLD&type=unknown`);
+  await expect(page.getByText("搜索类型不符合要求")).toBeVisible();
+  await expect(page.getByText("没有向未知搜索端点发送请求", { exact: false })).toBeVisible();
+  await expect(typeNavigation.getByRole("link", { name: "作品" })).not.toHaveAttribute("aria-current", "page");
+});
+
 test("注册验证码流程建立会话，并可退出登录", async ({ page }) => {
   await registerBrowserUser(page);
   await page.getByText("我的账号").click();

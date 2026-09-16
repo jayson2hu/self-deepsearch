@@ -39,6 +39,26 @@ type StudioSummary struct {
 
 func (item StudioSummary) CursorID() string { return item.ID }
 
+type SearchCursor struct {
+	Rank int
+	Name string
+	ID   string
+}
+
+type PerformerSearchResult struct {
+	PerformerSummary
+	Cursor SearchCursor
+}
+
+func (item PerformerSearchResult) RankedCursor() SearchCursor { return item.Cursor }
+
+type StudioSearchResult struct {
+	StudioSummary
+	Cursor SearchCursor
+}
+
+func (item StudioSearchResult) RankedCursor() SearchCursor { return item.Cursor }
+
 type StudioDetail struct {
 	StudioSummary
 	PublicUpdatedAt *time.Time
@@ -115,6 +135,8 @@ type Repository interface {
 	TrendingWorks(context.Context, time.Duration, string, int) ([]WorkSummary, error)
 	MostViewedWorks(context.Context, *time.Duration, string, int) ([]WorkSummary, error)
 	SearchWorks(context.Context, string, string, string, int) ([]WorkSummary, error)
+	SearchPerformers(context.Context, string, *SearchCursor, int) ([]PerformerSearchResult, error)
+	SearchStudios(context.Context, string, *SearchCursor, int) ([]StudioSearchResult, error)
 	WorkBySlug(context.Context, string) (WorkDetail, error)
 	ListPerformers(context.Context, string, int) ([]PerformerSummary, error)
 	PerformerBySlug(context.Context, string) (PerformerDetail, error)

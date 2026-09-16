@@ -141,7 +141,7 @@ func (s *Server) writeMediaDeliveryPolicy(w http.ResponseWriter, r *http.Request
 
 func hasDeliveryImages(value any) bool {
 	switch value.(type) {
-	case homeResponse, itemListResponse, workSearchResponse, workDetailResponse,
+	case homeResponse, itemListResponse, workSearchResponse, performerSearchResponse, workDetailResponse,
 		performerDetailResponse, studioDetailResponse, historyResponse:
 		return true
 	default:
@@ -162,6 +162,12 @@ func withoutDeliveryImages(value any) any {
 		return response
 	case workSearchResponse:
 		response.Items = withoutItemImages(response.Items)
+		return response
+	case performerSearchResponse:
+		response.Items = slices.Clone(response.Items)
+		for index := range response.Items {
+			response.Items[index].ImageURL, response.Items[index].Image = nil, nil
+		}
 		return response
 	case workDetailResponse:
 		response.Images = []imageResponse{}

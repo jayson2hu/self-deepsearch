@@ -225,6 +225,8 @@ func (s *Server) routes() http.Handler {
 	router.Get("/api/v1/site/sitemap", s.sitemap)
 	router.Get("/api/v1/site/redirect", s.publicRedirect)
 	router.Get("/api/v1/search/works", s.searchWorks)
+	router.Get("/api/v1/search/performers", s.searchPerformers)
+	router.Get("/api/v1/search/studios", s.searchStudios)
 	router.Get("/api/v1/works/popular", s.popularWorks)
 	router.Get("/api/v1/works/latest", s.latestWorks)
 	router.Get("/api/v1/works/recent", s.recentlyAddedWorks)

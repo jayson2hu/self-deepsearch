@@ -35,12 +35,12 @@ test("display search distinguishes query, cursor, empty result, and dependency s
   for (const status of ["ok", "invalid_query", "invalid_cursor", "unavailable"]) {
     assert.match(api, new RegExp(`status: "${status}"`));
   }
-  assert.match(page, /当前阶段仅返回已发布作品/);
-  assert.match(page, /人物名称、人物别名或厂牌名称会返回关联作品，不会在本页冒充人物或厂牌结果/);
-  assert.match(page, /没有找到相关已发布作品/);
-  assert.match(page, /这不是“没有结果”；可按原查询条件重试/);
-  assert.match(page, /searchHref\(query, cursor\)/);
-  assert.match(page, /searchHref\(query\)\}>返回第一页/);
+  assert.match(page, /type: "work", label: "作品"/);
+  assert.match(page, /人物名称、人物别名或厂牌名称会返回关联作品/);
+  assert.match(page, /const emptyResultLabel = `没有找到相关已发布\$\{typeLabel\}资料`/);
+  assert.match(page, /这不是“没有结果”；可按原查询条件和类型重试/);
+  assert.match(page, /searchHref\(query, cursor, activeType\)/);
+  assert.match(page, /searchHref\(query, "", activeType\)\}>返回第一页/);
   assert.match(page, /method="get"/);
   assert.doesNotMatch(page, /name="cursor"/);
   assert.match(loading, /正在查询作品资料/);

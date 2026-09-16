@@ -118,6 +118,48 @@ paths:
                 $ref: "#/components/schemas/WorkSearchResponse"
         "400":
           description: Invalid query or query-bound cursor
+  /api/v1/search/performers:
+    get:
+      operationId: searchPerformers
+      description: Searches published performer profiles by canonical name, original or romanized name, and aliases. Results are stably ordered by match class, normalized display name, and UUID.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+        - in: query
+          name: cursor
+          schema: { type: string, maxLength: 1024 }
+          description: Versioned ranked cursor bound to this entity type and normalized query.
+      responses:
+        "200":
+          description: Published performer profiles matching the query
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PerformerSearchResponse" }
+        "400": { description: Invalid query or query-bound cursor }
+        "503": { description: Search dependency unavailable }
+  /api/v1/search/studios:
+    get:
+      operationId: searchStudios
+      description: Searches published studio profiles by canonical or normalized name. Results are stably ordered by match class, normalized name, and UUID.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+        - in: query
+          name: cursor
+          schema: { type: string, maxLength: 1024 }
+          description: Versioned ranked cursor bound to this entity type and normalized query.
+      responses:
+        "200":
+          description: Published studio profiles matching the query
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioSearchResponse" }
+        "400": { description: Invalid query or query-bound cursor }
+        "503": { description: Search dependency unavailable }
   /api/v1/works/popular:
     get:
       operationId: listPopularWorks
@@ -1770,6 +1812,24 @@ components:
           items:
             $ref: "#/components/schemas/HomeItem"
         next_cursor: { type: [string, "null"], maxLength: 256 }
+    PerformerSearchResponse:
+      type: object
+      required: [query, items, next_cursor]
+      properties:
+        query: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/PerformerSummary" }
+        next_cursor: { type: [string, "null"], maxLength: 1024 }
+    StudioSearchResponse:
+      type: object
+      required: [query, items, next_cursor]
+      properties:
+        query: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/StudioSummary" }
+        next_cursor: { type: [string, "null"], maxLength: 1024 }
     PerformerSummary:
       type: object
       required: [id, name, href, image_url, image]

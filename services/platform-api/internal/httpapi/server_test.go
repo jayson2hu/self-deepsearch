@@ -43,6 +43,10 @@ type fakeCatalog struct {
 	searchRaw         string
 	searchCode        string
 	searchCalls       int
+	performerSearch   []catalog.PerformerSearchResult
+	studioSearch      []catalog.StudioSearchResult
+	entitySearchQuery string
+	entitySearchAfter *catalog.SearchCursor
 	performer         catalog.PerformerDetail
 	studio            catalog.StudioDetail
 	pageViews         int
@@ -96,6 +100,14 @@ func (repository *fakeCatalog) SearchWorks(_ context.Context, raw, compact, _ st
 	repository.searchCalls++
 	repository.searchRaw, repository.searchCode = raw, compact
 	return repository.latest, repository.repositoryErr
+}
+func (repository *fakeCatalog) SearchPerformers(_ context.Context, query string, after *catalog.SearchCursor, _ int) ([]catalog.PerformerSearchResult, error) {
+	repository.entitySearchQuery, repository.entitySearchAfter = query, after
+	return repository.performerSearch, repository.repositoryErr
+}
+func (repository *fakeCatalog) SearchStudios(_ context.Context, query string, after *catalog.SearchCursor, _ int) ([]catalog.StudioSearchResult, error) {
+	repository.entitySearchQuery, repository.entitySearchAfter = query, after
+	return repository.studioSearch, repository.repositoryErr
 }
 func (repository *fakeCatalog) ListPerformers(context.Context, string, int) ([]catalog.PerformerSummary, error) {
 	return []catalog.PerformerSummary{}, repository.repositoryErr
@@ -468,6 +480,134 @@ func TestSearchCursorIsBoundToNormalizedQuery(t *testing.T) {
 	}
 	if repository.searchCalls != 0 || repository.searchMetricCalls != 0 {
 		t.Fatalf("invalid cursor reached search or metrics: calls=%d metrics=%d", repository.searchCalls, repository.searchMetricCalls)
+	}
+}
+
+func TestEntitySearchReturnsAccurateTypesAndNormalizesQuery(t *testing.T) {
+	performerID := "20000000-0000-4000-8000-000000000001"
+	studioID := "30000000-0000-4000-8000-000000000001"
+	repository := &fakeCatalog{
+		performerSearch: []catalog.PerformerSearchResult{{
+			PerformerSummary: catalog.PerformerSummary{ID: performerID, Name: "春野澪", Slug: "haruno-mio"},
+			Cursor:           catalog.SearchCursor{Rank: 0, Name: "春野澪", ID: performerID},
+		}},
+		studioSearch: []catalog.StudioSearchResult{{
+			StudioSummary: catalog.StudioSummary{ID: studioID, Name: "青空制作", Slug: "blue-sky"},
+			Cursor:        catalog.SearchCursor{Rank: 0, Name: "青空制作", ID: studioID},
+		}},
+	}
+	handler := New(Options{Catalog: repository})
+
+	performer := httptest.NewRecorder()
+	handler.ServeHTTP(performer, httptest.NewRequest(http.MethodGet, "/api/v1/search/performers?q=%E3%80%80%E6%98%A5%E9%87%8E%E6%BE%AA%E3%80%80", nil))
+	if performer.Code != http.StatusOK || !strings.Contains(performer.Body.String(), `"name":"春野澪"`) || !strings.Contains(performer.Body.String(), `"href":"/performers/haruno-mio"`) {
+		t.Fatalf("unexpected performer search response %d: %s", performer.Code, performer.Body.String())
+	}
+	if repository.entitySearchQuery != "春野澪" || repository.searchMetricCalls != 0 {
+		t.Fatalf("performer search normalization/metrics mismatch: query=%q metrics=%d", repository.entitySearchQuery, repository.searchMetricCalls)
+	}
+
+	studio := httptest.NewRecorder()
+	handler.ServeHTTP(studio, httptest.NewRequest(http.MethodGet, "/api/v1/search/studios?q=%E9%9D%92%E7%A9%BA%E5%88%B6%E4%BD%9C", nil))
+	if studio.Code != http.StatusOK || !strings.Contains(studio.Body.String(), `"name":"青空制作"`) || !strings.Contains(studio.Body.String(), `"href":"/studios/blue-sky"`) {
+		t.Fatalf("unexpected studio search response %d: %s", studio.Code, studio.Body.String())
+	}
+	if repository.searchMetricCalls != 0 {
+		t.Fatal("new entity searches must not mix into work zero-result metrics")
+	}
+}
+
+func TestEntitySearchRejectsInvalidNameWithoutRepositoryCall(t *testing.T) {
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
+	for _, target := range []string{"/api/v1/search/performers?q=%E6%98%A5", "/api/v1/search/studios?q=--"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, target, nil))
+		if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"INVALID_QUERY"`) {
+			t.Fatalf("expected invalid entity query for %s, got %d: %s", target, response.Code, response.Body.String())
+		}
+	}
+	if repository.entitySearchQuery != "" || repository.searchMetricCalls != 0 {
+		t.Fatalf("invalid entity query reached repository or metrics: query=%q metrics=%d", repository.entitySearchQuery, repository.searchMetricCalls)
+	}
+}
+
+func TestEntitySearchCursorSurvivesWithoutAnchorLookupAndRejectsCrossScope(t *testing.T) {
+	values := make([]catalog.PerformerSearchResult, publicPageSize+1)
+	for index := range values {
+		id := fmt.Sprintf("20000000-0000-4000-8000-%012d", index+1)
+		values[index] = catalog.PerformerSearchResult{
+			PerformerSummary: catalog.PerformerSummary{ID: id, Name: fmt.Sprintf("人物 %02d", index+1)},
+			Cursor:           catalog.SearchCursor{Rank: 2, Name: fmt.Sprintf("人物 %02d", index+1), ID: id},
+		}
+	}
+	_, cursor := pageRankedSearchValues(values, entitySearchCursorScope("performers", "人物"))
+	if cursor == nil {
+		t.Fatal("expected ranked search cursor")
+	}
+
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
+	valid := httptest.NewRecorder()
+	handler.ServeHTTP(valid, httptest.NewRequest(http.MethodGet, "/api/v1/search/performers?q=%E4%BA%BA%E7%89%A9&cursor="+url.QueryEscape(*cursor), nil))
+	if valid.Code != http.StatusOK || repository.entitySearchAfter == nil || repository.entitySearchAfter.ID != values[publicPageSize-1].ID {
+		t.Fatalf("ranked cursor did not carry the deleted-anchor-independent tuple: status=%d after=%+v", valid.Code, repository.entitySearchAfter)
+	}
+
+	for _, target := range []string{
+		"/api/v1/search/performers?q=%E5%88%AB%E4%BA%BA&cursor=" + url.QueryEscape(*cursor),
+		"/api/v1/search/studios?q=%E4%BA%BA%E7%89%A9&cursor=" + url.QueryEscape(*cursor),
+		"/api/v1/search/performers?q=%E4%BA%BA%E7%89%A9&cursor=not-a-cursor",
+	} {
+		repository.entitySearchQuery, repository.entitySearchAfter = "", nil
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, target, nil))
+		if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"INVALID_CURSOR"`) || repository.entitySearchQuery != "" {
+			t.Fatalf("cross-scope cursor was not rejected before repository call: %s => %d %s", target, response.Code, response.Body.String())
+		}
+	}
+}
+
+func TestEntitySearchPaginationReturnsStableCursorAndTerminates(t *testing.T) {
+	values := make([]catalog.PerformerSearchResult, publicPageSize+1)
+	for index := range values {
+		id := fmt.Sprintf("20000000-0000-4000-8000-%012d", index+1)
+		values[index] = catalog.PerformerSearchResult{
+			PerformerSummary: catalog.PerformerSummary{ID: id, Name: fmt.Sprintf("分页人物 %02d", index+1), Slug: fmt.Sprintf("page-person-%02d", index+1)},
+			Cursor:           catalog.SearchCursor{Rank: 2, Name: fmt.Sprintf("分页人物 %02d", index+1), ID: id},
+		}
+	}
+	repository := &fakeCatalog{performerSearch: values}
+	handler := New(Options{Catalog: repository})
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/api/v1/search/performers?q=%E5%88%86%E9%A1%B5", nil))
+	var firstBody performerSearchResponse
+	if err := json.Unmarshal(first.Body.Bytes(), &firstBody); err != nil {
+		t.Fatalf("decode first entity search page: %v", err)
+	}
+	if first.Code != http.StatusOK || len(firstBody.Items) != publicPageSize || firstBody.NextCursor == nil {
+		t.Fatalf("unexpected first entity search page: status=%d items=%d cursor=%v", first.Code, len(firstBody.Items), firstBody.NextCursor)
+	}
+
+	repository.performerSearch = []catalog.PerformerSearchResult{}
+	tail := httptest.NewRecorder()
+	handler.ServeHTTP(tail, httptest.NewRequest(http.MethodGet, "/api/v1/search/performers?q=%E5%88%86%E9%A1%B5&cursor="+url.QueryEscape(*firstBody.NextCursor), nil))
+	var tailBody performerSearchResponse
+	if err := json.Unmarshal(tail.Body.Bytes(), &tailBody); err != nil {
+		t.Fatalf("decode terminal entity search page: %v", err)
+	}
+	if tail.Code != http.StatusOK || len(tailBody.Items) != 0 || tailBody.NextCursor != nil || repository.entitySearchAfter == nil {
+		t.Fatalf("unexpected terminal entity search page: status=%d items=%d cursor=%v after=%+v", tail.Code, len(tailBody.Items), tailBody.NextCursor, repository.entitySearchAfter)
+	}
+}
+
+func TestEntitySearchFailureDoesNotRecordWorkSearchMetric(t *testing.T) {
+	repository := &fakeCatalog{repositoryErr: errors.New("synthetic entity search failure")}
+	handler := New(Options{Catalog: repository})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/search/performers?q=%E6%98%A5%E9%87%8E", nil))
+	if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), `"code":"DEPENDENCY_UNAVAILABLE"`) || repository.searchMetricCalls != 0 {
+		t.Fatalf("entity search failure contract mismatch: %d metrics=%d body=%s", response.Code, repository.searchMetricCalls, response.Body.String())
 	}
 }
 

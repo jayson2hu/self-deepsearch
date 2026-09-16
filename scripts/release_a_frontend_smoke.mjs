@@ -340,6 +340,12 @@ const MOCK_PERFORMER_ITEM = {
   image: null,
 };
 
+const MOCK_STUDIO_ITEM = {
+  id: "30000000-0000-4000-8000-000000000001",
+  name: "测试厂牌",
+  href: "/studios/test-jsonld-00000001",
+};
+
 const MOCK_USER = { id: "40000000-0000-4000-8000-000000000001", email: "browser-user@example.test", role: "user" };
 const MOCK_OPERATOR = { id: "40000000-0000-4000-8000-000000000002", email: "operator@example.test", role: "admin" };
 const MOCK_REVIEWER = { id: "40000000-0000-4000-8000-000000000003", email: "reviewer@example.test", role: "admin" };
@@ -463,6 +469,27 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
       const publishedItem = mockPublishedWorkItem(operationsState);
       const publishedMatches = publishedItem && normalizedQuery === "ops100";
       const items = previewMatches ? [MOCK_PREVIEW_WORK_ITEM] : matches ? [MOCK_WORK_ITEM] : publishedMatches ? [publishedItem] : [];
+      return writeMockJSON(response, { query, items, next_cursor: null });
+    }
+    if (url.pathname === "/api/v1/search/performers" || url.pathname === "/api/v1/search/studios") {
+      const query = (url.searchParams.get("q") ?? "").trim();
+      const compactQuery = query.replace(/[^\p{L}\p{N}]/gu, "");
+      if (searchControl.mode === "unavailable") {
+        return writeMockError(response, "DEPENDENCY_UNAVAILABLE", "资料服务暂时不可用", 503);
+      }
+      if (Array.from(query).length < 2 || Array.from(query).length > 100 || Array.from(compactQuery).length < 2) {
+        return writeMockError(response, "INVALID_QUERY", "查询词不符合要求", 400);
+      }
+      if (url.searchParams.has("cursor")) {
+        return writeMockError(response, "INVALID_CURSOR", "分页游标不符合要求", 400);
+      }
+      const normalizedQuery = query.replace(/\s+/g, " ").toLowerCase();
+      const items = url.pathname.endsWith("/performers")
+        ? ["测试人物", "测试别名", "test person"].includes(normalizedQuery) ? [{
+            id: MOCK_PERFORMER_ITEM.id, name: MOCK_PERFORMER_ITEM.title, href: MOCK_PERFORMER_ITEM.href,
+            image_url: MOCK_PERFORMER_ITEM.image_url, image: MOCK_PERFORMER_ITEM.image,
+          }] : []
+        : normalizedQuery === "测试厂牌" ? [MOCK_STUDIO_ITEM] : [];
       return writeMockJSON(response, { query, items, next_cursor: null });
     }
     if (url.pathname === "/api/v1/works/test-001-00000002") {
@@ -1385,7 +1412,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       waitForHTTP(display, "/", timeoutMs),
       waitForHTTP(ops, "/login", timeoutMs),
     ]);
-    const [login, loginRepeat, register, about, privacy, robots, sitemap, pagesSitemap, defaultImage, displayProxy, opsProxy, opsAdminProxy, workDetail, performerDetail, studioDetail, opsLoginRepeat, searchResult, searchZero, searchInvalid, searchCursor, searchUnavailable] = await Promise.all([
+    const [login, loginRepeat, register, about, privacy, robots, sitemap, pagesSitemap, defaultImage, displayProxy, opsProxy, opsAdminProxy, workDetail, performerDetail, studioDetail, opsLoginRepeat, searchResult, searchZero, searchInvalid, searchCursor, searchUnavailable, performerSearch, studioSearch, invalidSearchType] = await Promise.all([
       request(display, "/login", timeoutMs),
       request(display, "/login", timeoutMs),
       request(display, "/register", timeoutMs),
@@ -1407,6 +1434,9 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       request(display, "/search?q=--", timeoutMs),
       request(display, "/search?q=TEST-JSONLD&cursor=broken", timeoutMs),
       request(display, "/search?q=TEST-UNAVAILABLE&cursor=retry-token", timeoutMs),
+      request(display, "/search?q=%E6%B5%8B%E8%AF%95%E5%88%AB%E5%90%8D&type=performer", timeoutMs),
+      request(display, "/search?q=%E6%B5%8B%E8%AF%95%E5%8E%82%E7%89%8C&type=studio", timeoutMs),
+      request(display, "/search?q=TEST-JSONLD&type=unknown", timeoutMs),
     ]);
 
     const displayStylesheets = stylesheetPaths(home.body);
@@ -1441,11 +1471,14 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       ...jsonLDFailures("作品详情 JSON-LD", workDetail, "CreativeWork"),
       ...jsonLDFailures("人物详情 JSON-LD", performerDetail, "Person"),
       ...jsonLDFailures("厂牌详情 JSON-LD", studioDetail, "Organization"),
-      ...pageFailures("作品搜索结果", searchResult, { includes: ["当前阶段仅返回已发布作品", "人物名称、人物别名或厂牌名称会返回关联作品", "TEST-JSONLD"] }),
+      ...pageFailures("作品搜索结果", searchResult, { includes: ["仅返回已发布作品资料", "人物名称、人物别名或厂牌名称会返回关联作品", "TEST-JSONLD"] }),
       ...pageFailures("作品搜索零结果", searchZero, { includes: ["没有找到相关已发布作品", "/latest", "/performers", "/studios"] }),
       ...pageFailures("作品搜索非法输入", searchInvalid, { includes: ["关键词不符合查询要求", "已保留你的原输入", "value=\"--\""] }),
       ...pageFailures("作品搜索失效游标", searchCursor, { includes: ["分页条件已失效", "/search?q=TEST-JSONLD", "返回第一页"] }),
       ...pageFailures("作品搜索服务故障", searchUnavailable, { includes: ["查询服务暂时不可用", "这不是“没有结果”", "cursor=retry-token", "重试查询"] }),
+      ...pageFailures("人物搜索", performerSearch, { includes: ["仅返回已发布人物资料", "测试人物", "/performers/test-jsonld-00000001", "type=performer"] }),
+      ...pageFailures("厂牌搜索", studioSearch, { includes: ["仅返回已发布厂牌资料", "测试厂牌", "/studios/test-jsonld-00000001", "type=studio"] }),
+      ...pageFailures("非法搜索类型", invalidSearchType, { includes: ["搜索类型不符合要求", "没有向未知搜索端点发送请求", "返回作品搜索"] }),
     ];
     if (!displayStylesheet) failures.push("公开站: missing stylesheet link");
     else failures.push(...stylesheetFailures("公开站 CSS", displayStylesheet));
@@ -1490,7 +1523,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       status: "passed",
       displayURL: `http://127.0.0.1:${displayPort}/`,
       opsURL: `http://127.0.0.1:${opsPort}/login`,
-      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
+      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "作品搜索范围、零结果、非法输入、游标与故障恢复", "作品/人物/厂牌搜索类型与非法类型关闭", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
     };
   } finally {
     process.off("SIGINT", handleInterrupt);

@@ -6,7 +6,7 @@ export default function SearchLoading() {
       <section className="page-band">
         <div className="shell page-band__inner">
           <p className="eyebrow">作品资料查询</p>
-          <h1>作品搜索</h1>
+          <h1>资料搜索</h1>
         </div>
       </section>
       <div className="shell">

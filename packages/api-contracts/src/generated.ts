@@ -181,6 +181,18 @@ export type WorkSearchResponse = {
   next_cursor: string | null;
 };
 
+export type PerformerSearchResponse = {
+  query: string;
+  items: Array<PerformerSummary>;
+  next_cursor: string | null;
+};
+
+export type StudioSearchResponse = {
+  query: string;
+  items: Array<StudioSummary>;
+  next_cursor: string | null;
+};
+
 export type PerformerSummary = {
   id: string;
   name: string;
