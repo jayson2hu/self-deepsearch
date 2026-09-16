@@ -14,6 +14,11 @@ test("cache contract targets a sitemap leaf instead of the pagination redirect",
   assert.equal(CACHE_SITE_URL, "https://cache-contract.example.test");
 });
 
+test("cache contract separates initial invalidation from cache priming", async () => {
+  const source = await fs.readFile(new URL("../release_a_cache_contract.mjs", import.meta.url), "utf8");
+  assert.match(source, /await invoke\("cache_purge"\);\s*\/\/ Keep the first cache writes[\s\S]*setTimeout\(resolve, 1100\)/);
+});
+
 test("isolated standalone uses independent writable copies and guarded cleanup", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cache-isolation-test-"));
   let isolated;

@@ -278,6 +278,10 @@ export async function runCacheContract(options, repositoryRoot = REPOSITORY_ROOT
     // Invalidate prebuilt fallback home HTML; unique slug avoids earlier detail data.
     await check("prime-real-next-cache", async () => {
       await invoke("cache_purge");
+      // Keep the first cache writes strictly newer than the invalidation marker.
+      // A warm Go build can otherwise complete within the cache timestamp
+      // granularity and make the next request look stale again.
+      await new Promise((resolve) => setTimeout(resolve, 1100));
       assertVisible(await pages(), catalog, catalog.before, catalog.state.updatedAt);
     });
     const baselineTime = performance.now();
