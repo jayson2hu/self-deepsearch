@@ -27,6 +27,7 @@ const stagedAssets = [];
 const logoutControl = { mode: "success", attempts: 0, redirects: 0 };
 const mediaControl = { mode: "success", primary: null, shared: false, lastBody: null };
 const inspectionControl = { mode: "healthy" };
+const searchControl = { mode: "healthy" };
 const usageControl = { mode: "healthy", state: null, reviews: [], requests: [] };
 const uploadControl = { mode: "healthy", state: null, commands: [], requests: [] };
 
@@ -47,7 +48,7 @@ test.beforeAll(async () => {
   const apiPort = await findFreePort({ avoid: ports });
 
   process.env.SITE_URL = `http://127.0.0.1:${displayPort}`;
-  upstream = await startMockUpstream(apiPort, { accountMode: "stateful", logoutControl, mediaControl, inspectionControl, usageControl, uploadControl });
+  upstream = await startMockUpstream(apiPort, { accountMode: "stateful", logoutControl, mediaControl, inspectionControl, searchControl, usageControl, uploadControl });
   apiURL = `http://127.0.0.1:${apiPort}`;
   display = startChild({ name: "display-web-e2e", server: displayRuntime.server, port: displayPort, apiURL, repositoryRoot: REPOSITORY_ROOT });
   ops = startChild({ name: "ops-web-e2e", server: paths.ops.server, port: opsPort, apiURL, repositoryRoot: REPOSITORY_ROOT });
@@ -306,6 +307,32 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   await expect(page.locator('script:not([type="application/ld+json"])').filter({ hasText: /^alert\(1\)$/ })).toHaveCount(0);
   await expect.poll(() => dialogs).toBe(0);
   await expect(page.locator('img[alt="TEST-JSONLD 作品图"]')).toHaveJSProperty("complete", true);
+});
+
+test("作品搜索区分非法输入、零结果、失效分页和服务故障", async ({ page }) => {
+  await page.goto(`${displayURL}/search?q=--`);
+  await expect(page.getByRole("heading", { name: "“--” 的结果" })).toBeVisible();
+  await expect(page.getByText("关键词不符合查询要求")).toBeVisible();
+  await expect(page.getByLabel("输入作品番号、标题、人物或厂牌")).toHaveValue("--");
+  await expect(page.getByText("没有找到相关已发布作品")).toHaveCount(0);
+
+  await page.goto(`${displayURL}/search?q=missing`);
+  await expect(page.getByText("没有找到相关已发布作品")).toBeVisible();
+  await expect(page.getByRole("link", { name: "人物目录" })).toHaveAttribute("href", "/performers");
+
+  await page.goto(`${displayURL}/search?q=TEST-JSONLD&cursor=broken`);
+  await expect(page.getByText("分页条件已失效")).toBeVisible();
+  await expect(page.getByRole("link", { name: "返回第一页" })).toHaveAttribute("href", "/search?q=TEST-JSONLD");
+
+  try {
+    searchControl.mode = "unavailable";
+    await page.goto(`${displayURL}/search?q=%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D&cursor=retry-token`);
+    await expect(page.getByText("查询服务暂时不可用")).toBeVisible();
+    await expect(page.getByText("这不是“没有结果”", { exact: false })).toBeVisible();
+    await expect(page.getByRole("link", { name: "重试查询" })).toHaveAttribute("href", "/search?q=%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D&cursor=retry-token");
+  } finally {
+    searchControl.mode = "healthy";
+  }
 });
 
 test("注册验证码流程建立会话，并可退出登录", async ({ page }) => {
@@ -1050,7 +1077,7 @@ test("权利下架限制 editor 操作并从公开搜索撤下作品", async ({ 
 
   await page.goto(`${displayURL}/search?q=TEST-JSONLD`);
   await expect(page.getByRole("heading", { name: "“TEST-JSONLD” 的结果" })).toBeVisible();
-  await expect(page.getByText("没有找到已发布资料")).toBeVisible();
+  await expect(page.getByText("没有找到相关已发布作品")).toBeVisible();
   await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toHaveCount(0);
 
   const cleanup = await page.request.post(`${apiURL}/__test/reset-takedowns`);

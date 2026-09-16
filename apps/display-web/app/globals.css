@@ -152,9 +152,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .filter-tabs a:hover, .filter-tabs a.active { color: var(--ink); border-bottom-color: var(--teal); }
 .state-note { padding: 10px 12px; border-left: 3px solid var(--teal); background: white; font-size: 13px; }
 .state-note--warning { color: #75500f; border-color: #d39b31; background: #fff4dc; }
+.search-scope-note { margin: -4px 0 18px; color: var(--muted); font-size: 13px; }
 .empty-state { min-height: 220px; display: grid; place-items: center; align-content: center; gap: 7px; border-block: 1px solid var(--line); color: var(--muted); text-align: center; }
 .empty-state strong { color: var(--ink); }
 .empty-state span { font-size: 13px; }
+.empty-state__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .studio-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 .studio-link { min-width: 0; min-height: 88px; display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; column-gap: 10px; padding: 16px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: white; }
 .studio-link:nth-child(3n) { border-right: 0; }

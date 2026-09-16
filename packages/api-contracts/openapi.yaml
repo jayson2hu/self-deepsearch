@@ -117,7 +117,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/WorkSearchResponse"
         "400":
-          description: Invalid code query
+          description: Invalid query or query-bound cursor
   /api/v1/works/popular:
     get:
       operationId: listPopularWorks

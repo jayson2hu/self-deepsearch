@@ -42,6 +42,7 @@ type fakeCatalog struct {
 	detail            catalog.WorkDetail
 	searchRaw         string
 	searchCode        string
+	searchCalls       int
 	performer         catalog.PerformerDetail
 	studio            catalog.StudioDetail
 	pageViews         int
@@ -92,6 +93,7 @@ func (repository *fakeCatalog) MostViewedWorks(context.Context, *time.Duration, 
 	return repository.latest, repository.repositoryErr
 }
 func (repository *fakeCatalog) SearchWorks(_ context.Context, raw, compact, _ string, _ int) ([]catalog.WorkSummary, error) {
+	repository.searchCalls++
 	repository.searchRaw, repository.searchCode = raw, compact
 	return repository.latest, repository.repositoryErr
 }
@@ -421,6 +423,54 @@ func TestSearchNormalizesFullWidthCodeAndWhitespace(t *testing.T) {
 	}
 }
 
+func TestSearchAcceptsMultilingualText(t *testing.T) {
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/search/works?q=%E5%A4%8F%E3%81%AE%E8%A8%98%E9%8C%B2", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected multilingual query to return 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if repository.searchRaw != "夏の記録" || repository.searchCode != "夏の記録" || repository.searchCalls != 1 {
+		t.Fatalf("unexpected multilingual search: raw=%q compact=%q calls=%d", repository.searchRaw, repository.searchCode, repository.searchCalls)
+	}
+}
+
+func TestSearchFailureDoesNotRecordZeroResult(t *testing.T) {
+	repository := &fakeCatalog{repositoryErr: errors.New("synthetic search failure")}
+	handler := New(Options{Catalog: repository})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/search/works?q=failure", nil))
+	if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), `"code":"DEPENDENCY_UNAVAILABLE"`) {
+		t.Fatalf("expected explicit dependency failure, got %d: %s", response.Code, response.Body.String())
+	}
+	if repository.searchCalls != 1 || repository.searchMetricCalls != 0 {
+		t.Fatalf("failed search must not record a zero-result metric: calls=%d metrics=%d", repository.searchCalls, repository.searchMetricCalls)
+	}
+}
+
+func TestSearchCursorIsBoundToNormalizedQuery(t *testing.T) {
+	values := make([]catalog.WorkSummary, publicPageSize+1)
+	for index := range values {
+		values[index].ID = fmt.Sprintf("10000000-0000-4000-8000-%012d", index+1)
+	}
+	_, cursor := pageValues(values, searchCursorScope("first query"))
+	if cursor == nil {
+		t.Fatal("expected query cursor")
+	}
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
+	response := httptest.NewRecorder()
+	target := "/api/v1/search/works?q=second+query&cursor=" + url.QueryEscape(*cursor)
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, target, nil))
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"INVALID_CURSOR"`) {
+		t.Fatalf("expected query-bound cursor rejection, got %d: %s", response.Code, response.Body.String())
+	}
+	if repository.searchCalls != 0 || repository.searchMetricCalls != 0 {
+		t.Fatalf("invalid cursor reached search or metrics: calls=%d metrics=%d", repository.searchCalls, repository.searchMetricCalls)
+	}
+}
+
 func TestSitemapUsesPublishedRepository(t *testing.T) {
 	handler := New(Options{Catalog: &fakeCatalog{}})
 	response := httptest.NewRecorder()
@@ -477,12 +527,16 @@ func TestPublicDetailsExposePublicationTimeAndLinkedStudio(t *testing.T) {
 }
 
 func TestSearchRejectsEmptyCode(t *testing.T) {
-	handler := New(Options{Catalog: &fakeCatalog{}})
+	repository := &fakeCatalog{}
+	handler := New(Options{Catalog: repository})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/search/works?q=-", nil))
 
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", response.Code)
+	}
+	if !strings.Contains(response.Body.String(), `"code":"INVALID_QUERY"`) || repository.searchCalls != 0 || repository.searchMetricCalls != 0 {
+		t.Fatalf("invalid query must be distinguishable and side-effect free: %s", response.Body.String())
 	}
 }
 

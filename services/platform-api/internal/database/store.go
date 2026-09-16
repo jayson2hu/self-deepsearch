@@ -340,7 +340,7 @@ WHERE lower(document.canonical_code) = lower($1)
    OR document.compact_code LIKE $2 || '%'
    OR document.search_vector @@ plainto_tsquery('simple'::regconfig, $1)
    OR document.search_text ILIKE '%' || $1 || '%'
-   OR similarity(document.search_text, $1) >= 0.15
+   OR similarity(document.search_text, $1) >= 0.30
 ), cursor_anchor AS (
     SELECT search_rank, search_similarity, release_date IS NULL AS release_is_null, search_release, work_id
     FROM ranked WHERE work_id = nullif($3, '')::uuid

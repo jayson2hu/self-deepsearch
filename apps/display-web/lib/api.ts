@@ -30,12 +30,31 @@ export async function getSitemapEntries(entityType: "work" | "performer" | "stud
   }
 }
 
-export async function searchWorks(query: string, cursor = ""): Promise<{ data: WorkSearchResponse | null; degraded: boolean }> {
+export type WorkSearchResult =
+  | { status: "ok"; data: WorkSearchResponse }
+  | { status: "invalid_query"; data: null }
+  | { status: "invalid_cursor"; data: null }
+  | { status: "unavailable"; data: null };
+
+export async function searchWorks(query: string, cursor = ""): Promise<WorkSearchResult> {
   try {
     const path = `/api/v1/search/works?q=${encodeURIComponent(query)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
-    return { data: await fetchPlatformNoStore<WorkSearchResponse>(path), degraded: false };
+    const response = await platformNoStoreRequest(path);
+    if (response.ok) {
+      return { status: "ok", data: mediaProjection((await response.json()) as WorkSearchResponse) };
+    }
+    if (response.status === 400) {
+      const code = await response.json().then((body: unknown) => {
+        if (!body || typeof body !== "object" || !("error" in body)) return "";
+        const error = body.error;
+        return error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "";
+      }).catch(() => "");
+      if (code === "INVALID_QUERY") return { status: "invalid_query", data: null };
+      if (code === "INVALID_CURSOR") return { status: "invalid_cursor", data: null };
+    }
+    return { status: "unavailable", data: null };
   } catch {
-    return { data: null, degraded: true };
+    return { status: "unavailable", data: null };
   }
 }
 
@@ -125,15 +144,13 @@ async function fetchPlatform<T>(path: string, revalidate: number): Promise<T> {
   return mediaProjection((await response.json()) as T);
 }
 
-async function fetchPlatformNoStore<T>(path: string): Promise<T> {
+function platformNoStoreRequest(path: string): Promise<Response> {
   const baseURL = process.env.PLATFORM_API_URL ?? "http://127.0.0.1:8080";
-  const response = await fetch(`${baseURL}${path}`, {
+  return fetch(`${baseURL}${path}`, {
     headers: { Accept: "application/json" },
     cache: "no-store",
     signal: AbortSignal.timeout(2500),
   });
-  if (!response.ok) throw new Error(`platform API returned ${response.status}`);
-  return mediaProjection((await response.json()) as T);
 }
 
 function platformRequest(path: string, revalidate: number): Promise<Response> {
