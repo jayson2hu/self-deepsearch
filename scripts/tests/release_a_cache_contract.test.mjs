@@ -4,13 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
-  assertHidden, assertMediaState, assertVisible, CACHE_SITEMAP_PATH, cacheEvidencePath, createCatalog, createIsolatedStandalone,
+  assertHidden, assertMediaState, assertVisible, CACHE_SITEMAP_PATH, CACHE_SITE_URL, cacheEvidencePath, createCatalog, createIsolatedStandalone,
   parseCacheArgs, removeIsolatedRuntime, startCatalog,
 } from "../release_a_cache_contract.mjs";
 import { standalonePaths } from "../release_a_frontend_smoke.mjs";
 
 test("cache contract targets a sitemap leaf instead of the pagination redirect", () => {
   assert.equal(CACHE_SITEMAP_PATH, "/sitemaps/works/1");
+  assert.equal(CACHE_SITE_URL, "https://cache-contract.example.test");
 });
 
 test("isolated standalone uses independent writable copies and guarded cleanup", async () => {
@@ -114,6 +115,7 @@ test("hidden assertions support streamed notFound but reject stale data, URL or 
     sitemap: { status: 200, body: "<urlset/>" },
   };
   assertHidden(pages, catalog);
+  assertHidden({ ...pages, sitemap: { status: 404, body: "Not found" } }, catalog);
   assertHidden({ ...pages, work: { ...pages.work, status: 200 } }, catalog);
   assert.throws(() => assertHidden({ ...pages, work: { status: 200, body: "temporarily unavailable" } }, catalog));
   assert.throws(() => assertHidden({ ...pages, work: { ...pages.work, body: pages.work.body + catalog.after } }, catalog));

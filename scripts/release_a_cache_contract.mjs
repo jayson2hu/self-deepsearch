@@ -16,6 +16,7 @@ const GO_TIMEOUT_MS = 60_000;
 const CACHE_WINDOW_MS = 240_000; // Fail before the normal 300-second TTL could mask missing invalidation.
 const BOUNDARY = "Real Go processor and production Next.js; synthetic in-memory catalog; no PostgreSQL, dispatcher, SMTP, S3 or Cloudflare";
 export const CACHE_SITEMAP_PATH = "/sitemaps/works/1";
+export const CACHE_SITE_URL = "https://cache-contract.example.test";
 
 export function parseCacheArgs(argv) {
   const options = { build: false, help: false, output: "docs/evidence/release-a-cache-contract-local.json" };
@@ -77,8 +78,15 @@ export function createCatalog() {
       };
     } else if (url.pathname === "/api/v1/site/sitemap") {
       reads.sitemap += 1;
-      body = { items: !state.hidden && url.searchParams.get("entity_type") === "work"
-        ? [{ entity_type: "work", slug, updated_at: state.updatedAt }] : [] };
+      const items = !state.hidden && url.searchParams.get("entity_type") === "work"
+        ? [{ entity_type: "work", slug, updated_at: state.updatedAt }] : [];
+      body = {
+        items,
+        page: 1,
+        page_size: 50000,
+        total_items: items.length,
+        total_pages: items.length ? 1 : 0,
+      };
     } else {
       status = 404;
       body = { error: "unknown_fixture_route" };
@@ -171,7 +179,7 @@ export function assertVisible(pages, catalog, title, updatedAt) {
 
 export function assertHidden(pages, catalog) {
   assert.equal(pages.home.status, 200);
-  assert.equal(pages.sitemap.status, 200);
+  assert.ok([200, 404].includes(pages.sitemap.status), "empty sitemap leaf must be empty or absent");
   // Next can stream a 200 status before notFound(); require the noindex 404 UI as well.
   assert.ok([200, 404].includes(pages.work.status));
   assert.match(pages.work.body, /<meta name="robots" content="noindex"\s*\/?\s*>/);
@@ -228,7 +236,13 @@ export async function runCacheContract(options, repositoryRoot = REPOSITORY_ROOT
     display = startChild({
       name: "display-cache-contract", server: isolated.server, port,
       apiURL: `http://127.0.0.1:${upstream.port}`, repositoryRoot,
-      extraEnv: { CACHE_HMAC_SECRET: secret, SITE_URL: origin },
+      extraEnv: {
+        APP_ENV: "production",
+        CACHE_HMAC_SECRET: secret,
+        SEO_CONTENT_POLICY_READY: "true",
+        SEO_INDEXING_ENABLED: "true",
+        SITE_URL: CACHE_SITE_URL,
+      },
     });
     await waitForHTTP(display, "/robots.txt", 45_000);
     const invoke = (eventType, mode = "valid", eventID = randomUUID()) => runGo([
