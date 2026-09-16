@@ -178,7 +178,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn(f'noticeVersion = "{version}"', frontend)
         self.assertIn(f'"notice_version": "{version}"', email_e2e)
         self.assertEqual(spec["components"]["schemas"]["CloseAccountRequest"]["properties"]["notice_version"]["const"], version)
-        self.assertIn("部分操作记录、审计记录和隐私说明约定的信息会继续保存", frontend)
+        self.assertIn("关闭不等于全量物理删除", frontend)
+        self.assertIn('href="/privacy"', frontend)
 
     def test_record_timestamps_use_shared_second_precision_formatters(self) -> None:
         for app in ("display-web", "ops-web"):
@@ -537,7 +538,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn('process.env.NODE_ENV === "production"', site)
         self.assertIn("production ? undefined : process.env.NEXT_PUBLIC_SITE_URL", site)
         self.assertIn("SITE_URL must be configured as an HTTP(S) origin in production", site)
-        self.assertIn('extraEnv: { SITE_URL: displayOrigin, NEXT_PUBLIC_SITE_URL: displayOrigin }', smoke)
+        self.assertIn('SITE_URL: displayOrigin', smoke)
+        self.assertIn('NEXT_PUBLIC_SITE_URL: displayOrigin', smoke)
         self.assertIn('NEXT_PUBLIC_SITE_URL: "https://build-time.invalid"', smoke)
         self.assertIn("expected HTTP 500", smoke)
 
@@ -815,9 +817,10 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("onError", turnstile)
 
         footer = (ROOT / "apps" / "display-web" / "components" / "site-footer.tsx").read_text(encoding="utf-8")
+        contact = (ROOT / "apps" / "display-web" / "lib" / "public-contact.ts").read_text(encoding="utf-8")
         self.assertIn("隶属、授权、推荐或背书关系", footer)
-        self.assertIn('endsWith(".invalid")', footer)
-        self.assertNotIn('"rights@example.invalid"', footer)
+        self.assertIn('endsWith(".invalid")', contact)
+        self.assertNotIn('"rights@example.invalid"', footer + contact)
 
     def test_page_view_reporter_deduplicates_effect_replay_without_time_window(self) -> None:
         reporter = (ROOT / "apps" / "display-web" / "components" / "page-view-reporter.tsx").read_text(encoding="utf-8")

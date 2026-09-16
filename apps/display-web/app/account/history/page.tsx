@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClearHistoryButton } from "../../../components/clear-history-button";
 import { HistoryStudioCard } from "../../../components/history-studio-card";
@@ -22,7 +23,7 @@ export default async function HistoryPage() {
         </div>
         {data !== null ? <ClearHistoryButton /> : null}
       </header>
-      <p className="retention-note">清除后这些记录不再向你展示；底层记录会按隐私说明继续保留并可进入长期归档。</p>
+      <p className="retention-note">清除后这些记录不再向你展示，但不会物理删除底层记录；当前没有停止未来记录的开关。查看<Link href="/privacy">数据与隐私说明</Link>。</p>
       {data === null ? (
         <div className="state-note state-note--warning" role="alert">浏览历史暂时不可用，请稍后重试。</div>
       ) : data.items.length ? (

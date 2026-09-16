@@ -1368,19 +1368,22 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       port: displayPort,
       apiURL,
       repositoryRoot,
-      extraEnv: { SITE_URL: displayOrigin, NEXT_PUBLIC_SITE_URL: displayOrigin },
+      extraEnv: { SITE_URL: displayOrigin, NEXT_PUBLIC_SITE_URL: displayOrigin, RIGHTS_CONTACT_EMAIL: "rights@example.test" },
     });
     ops = startChild({ name: "ops-web", server: paths.ops.server, port: opsPort, apiURL, repositoryRoot });
     const [home, opsLogin] = await Promise.all([
       waitForHTTP(display, "/", timeoutMs),
       waitForHTTP(ops, "/login", timeoutMs),
     ]);
-    const [login, loginRepeat, register, robots, sitemap, defaultImage, displayProxy, opsProxy, opsAdminProxy, workDetail, performerDetail, studioDetail, opsLoginRepeat] = await Promise.all([
+    const [login, loginRepeat, register, about, privacy, robots, sitemap, pagesSitemap, defaultImage, displayProxy, opsProxy, opsAdminProxy, workDetail, performerDetail, studioDetail, opsLoginRepeat] = await Promise.all([
       request(display, "/login", timeoutMs),
       request(display, "/login", timeoutMs),
       request(display, "/register", timeoutMs),
+      request(display, "/about", timeoutMs),
+      request(display, "/privacy", timeoutMs),
       request(display, "/robots.txt", timeoutMs),
       request(display, "/sitemap.xml", timeoutMs),
+      request(display, "/sitemaps/pages", timeoutMs),
       request(display, "/default-work.svg", timeoutMs),
       request(display, "/api/v1/me", timeoutMs),
       request(ops, "/api/v1/me", timeoutMs),
@@ -1403,9 +1406,12 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
         includes: ["查询番号或名称，确认公开资料", "本站整理公开可访问的文字和图片资料", "仅限 18 岁以上用户", "示例作品资料：春日档案"],
       }),
       ...pageFailures("公开登录入口", login, { includes: ["登录", "/register"] }),
-      ...pageFailures("公开注册入口", register, { includes: ["注册账号", "邮箱验证"] }),
+      ...pageFailures("公开注册入口", register, { includes: ["注册账号", "邮箱验证", "/privacy"] }),
+      ...pageFailures("关于说明", about, { includes: ["关于幕鉴", "rights@example.test", "/privacy"] }),
+      ...pageFailures("数据与隐私说明", privacy, { includes: ["数据与隐私说明", "不会物理删除底层记录", "关闭账号不等于全量物理删除", "noindex"] }),
       ...pageFailures("robots", robots, { includes: [`${displayOrigin}/sitemap.xml`] }),
       ...pageFailures("sitemap index", sitemap, { includes: [`${displayOrigin}/sitemaps/pages`] }),
+      ...pageFailures("固定页面 sitemap", pagesSitemap, { includes: [`${displayOrigin}/about`] }),
       ...pageFailures("运营后台登录页", opsLogin, { includes: ["后台登录", "运营后台"] }),
       ...securityHeaderFailures("公开首页", home, { allowTurnstile: true }),
       ...securityHeaderFailures("公开登录入口", login, { allowTurnstile: true, requireScriptNonce: true }),
@@ -1464,7 +1470,7 @@ export async function runSmoke({ build = false, timeoutMs = DEFAULT_TIMEOUT_MS, 
       status: "passed",
       displayURL: `http://127.0.0.1:${displayPort}/`,
       opsURL: `http://127.0.0.1:${opsPort}/login`,
-      checks: ["首页", "登录/注册入口", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
+      checks: ["首页", "登录/注册与匿名说明入口", "关于/隐私当前行为与 noindex", "页脚免责声明与 18+", "广告默认空态、Release A 广告边界与默认图", "三类详情 JSON-LD 与脚本注入转义", "运行时 robots/sitemap 站点身份与误配置关闭", "两站安全响应头与 CSS 资源", "API proxy 503/no-store"],
     };
   } finally {
     process.off("SIGINT", handleInterrupt);

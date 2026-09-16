@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CloseAccountForm } from "../../../components/close-account-form";
 import { getCurrentUser } from "../../../lib/api";
@@ -8,5 +9,5 @@ export const metadata: Metadata = { title: "账号设置", robots: { index: fals
 export default async function AccountSettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return <main className="shell account-page"><header><p className="eyebrow">账号设置</p><h1>账号设置</h1><p>{user.email}</p></header><CloseAccountForm /></main>;
+  return <main className="shell account-page"><header><p className="eyebrow">账号设置</p><h1>账号设置</h1><p>{user.email}</p></header><p className="retention-note">关闭账号会撤销登录，但不等于全量物理删除。操作前请阅读<Link href="/privacy">数据与隐私说明</Link>。</p><CloseAccountForm /></main>;
 }

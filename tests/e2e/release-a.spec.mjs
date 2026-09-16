@@ -33,6 +33,7 @@ const uploadControl = { mode: "healthy", state: null, commands: [], requests: []
 test.beforeAll(async () => {
   process.env.APP_ENV = "test";
   process.env.TURNSTILE_BYPASS = "true";
+  process.env.RIGHTS_CONTACT_EMAIL = "rights@example.test";
 
   const paths = await ensureArtifacts({ repositoryRoot: REPOSITORY_ROOT });
   displayRuntime = await createIsolatedStandalone(paths.display);
@@ -461,7 +462,8 @@ test("关闭账号展示保留说明并要求邮箱验证码", async ({ page }) 
   await registerBrowserUser(page);
   await page.goto(`${displayURL}/account/settings`);
   await expect(page.getByRole("heading", { name: "关闭账号" })).toBeVisible();
-  await expect(page.getByText("部分操作记录、审计记录和隐私说明约定的信息会继续保存。", { exact: false })).toBeVisible();
+  await expect(page.getByText("关闭不等于全量物理删除", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "数据与隐私说明" }).first()).toHaveAttribute("href", "/privacy");
   await page.getByRole("button", { name: "发送关闭验证码" }).click();
   await expect(page.getByRole("status")).toContainText("关闭账号验证码已发送");
 
@@ -526,7 +528,7 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
 
   await page.goto(`${displayURL}/account/history`);
   await expect(page.getByRole("heading", { name: "浏览历史" })).toBeVisible();
-  await expect(page.getByText("清除后这些记录不再向你展示；底层记录会按隐私说明继续保留并可进入长期归档。")).toBeVisible();
+  await expect(page.getByText("清除后这些记录不再向你展示，但不会物理删除底层记录", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
   await page.getByRole("button", { name: "清除可见历史" }).click();
   await expect(page.getByText("暂无可见浏览历史")).toBeVisible();
@@ -535,6 +537,21 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await expect(page.getByRole("heading", { name: "我的反馈" })).toBeVisible();
   await expect(page.getByText("浏览器端合成资料纠错测试")).toBeVisible();
   await expect(page.getByText("pending")).toBeVisible();
+});
+
+test("说明页匿名可读并从注册和页脚可达", async ({ page }) => {
+  await page.goto(`${displayURL}/register`);
+  await expect(page.getByRole("link", { name: "数据与隐私说明" })).toHaveAttribute("href", "/privacy");
+  await page.getByRole("link", { name: "数据与隐私说明" }).click();
+  await expect(page).toHaveURL(`${displayURL}/privacy`);
+  await expect(page.getByRole("heading", { name: "数据与隐私说明" })).toBeVisible();
+  await expect(page.getByText("关闭账号不等于全量物理删除", { exact: false })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+
+  await page.getByRole("link", { name: "关于幕鉴" }).click();
+  await expect(page).toHaveURL(`${displayURL}/about`);
+  await expect(page.getByRole("heading", { name: "关于幕鉴" })).toBeVisible();
+  await expect(page.getByText("rights@example.test")).toBeVisible();
 });
 
 async function openMediaForm(page, { primary = true, mode = "success", shared = false, editor = false } = {}) {

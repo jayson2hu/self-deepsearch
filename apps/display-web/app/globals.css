@@ -221,6 +221,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .turnstile-status--error { color: #8c2a25; }
 .auth-submit:disabled, .button:disabled { opacity: .58; cursor: not-allowed; }
 .auth-links { margin-top: 18px; display: flex; justify-content: space-between; gap: 16px; color: var(--teal); font-size: 12px; }
+.auth-notice { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
+.auth-notice a, .retention-note a, .danger-zone a { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
 .form-message, .form-error { margin: 0; padding: 9px 10px; border-left: 3px solid var(--teal); background: #e9f5f3; font-size: 12px; }
 .form-error { color: #8c2a25; border-color: var(--accent); background: #fff0ef; }
 .account-page { min-height: 620px; padding-block: 48px 72px; }
@@ -254,6 +256,18 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .feedback-list article > div { display: flex; justify-content: space-between; gap: 16px; }
 .feedback-list span { color: var(--teal); font-size: 12px; }
 .feedback-list p { margin: 8px 0; font-size: 13px; }
+.information-page { max-width: 840px; padding-block: 52px 80px; }
+.information-page > header { padding-bottom: 28px; border-bottom: 2px solid var(--night); }
+.information-page h1 { margin: 0; font-size: 32px; }
+.information-page header > p:last-child { max-width: 680px; color: var(--muted); }
+.information-page section { padding: 26px 0; border-bottom: 1px solid var(--line); }
+.information-page h2 { margin: 0 0 10px; font-size: 19px; }
+.information-page p, .information-page li { color: #42484e; font-size: 14px; line-height: 1.75; }
+.information-page a { color: var(--teal); text-decoration: underline; text-underline-offset: 3px; }
+.information-page ul { margin: 0; padding-left: 22px; }
+.information-page footer { padding-top: 24px; color: var(--muted); }
+.information-page footer p { font-size: 12px; }
+.information-warning { padding: 10px 12px; color: #7a4d08 !important; border-left: 3px solid var(--yellow); background: #fff4dc; }
 
 .site-footer { color: #d7dbde; background: var(--night); }
 .footer-ad { padding-top: 28px; }
@@ -304,6 +318,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .fact-list > div { grid-template-columns: 112px 1fr; gap: 10px; }
   .detail-gallery { grid-template-columns: 1fr; }
   .auth-page { min-height: 540px; padding-inline: 16px; }
+  .information-page { padding-block: 34px 60px; }
+  .information-page h1 { font-size: 27px; }
   .auth-links { flex-direction: column; gap: 8px; }
   .account-heading { align-items: flex-start; flex-direction: column; }
   .history-list > div { grid-template-columns: 1fr; }

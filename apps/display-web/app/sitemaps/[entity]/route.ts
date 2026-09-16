@@ -23,7 +23,7 @@ export async function GET(_request: Request, context: Context) {
 
 function fixedPages() {
   const base = siteURL();
-  return ["/", "/latest", "/recent", "/performers", "/studios"].map((path) => ({
+  return ["/", "/about", "/latest", "/recent", "/performers", "/studios"].map((path) => ({
     location: new URL(path, base).toString(), lastModified: null,
   }));
 }

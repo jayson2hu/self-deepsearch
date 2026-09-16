@@ -1,6 +1,7 @@
 "use client";
 
 import type { MessageResponse } from "@self-deepsearch/api-contracts";
+import Link from "next/link";
 import { useState } from "react";
 import { authRequest, reloadAfterAuthChange } from "../lib/auth-client";
 
@@ -36,7 +37,7 @@ export function CloseAccountForm() {
   return (
     <div className="danger-zone">
       <h2>关闭账号</h2>
-      <p>关闭账号后将无法登录，收藏、关注和浏览记录将不再对你展示。部分操作记录、审计记录和隐私说明约定的信息会继续保存。</p>
+      <p>关闭账号后将无法登录，收藏、关注、推荐偏好和浏览记录将不再对你展示。关闭不等于全量物理删除，部分账号、反馈、安全、审计和历史记录会继续保存。查看<Link href="/privacy">数据与隐私说明</Link>。</p>
       {!sent ? <button className="button button--danger" type="button" onClick={requestCode} disabled={busy}>{busy ? "发送中…" : "发送关闭验证码"}</button> : (
         <form className="auth-form auth-form--compact" onSubmit={close}>
           <label>邮箱验证码<input name="code" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} /></label>
