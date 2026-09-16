@@ -97,7 +97,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           {work.summary && <section className="detail-section"><h2>作品资料</h2><p>{work.summary}</p></section>}
           {images.length > 1 && <section className="detail-section"><h2>展示图片</h2><div className="detail-gallery">{images.slice(1).map((image) => <SafeImage key={`${image.url}-${image.rendition}`} src={image.url} renditions={image.renditions} fallbackSrc="/default-work.svg" alt="作品精选图" sizes="(max-width: 760px) calc(100vw - 24px), 420px" width={image.width} height={image.height} />)}</div></section>}
           <AdSlot label="详情页信息流展示位" placement="infeed" />
-          {work.related_works.length > 0 && <section className="detail-section" aria-labelledby="related-works-title"><h2 id="related-works-title">相关作品</h2><PersonalizedWorkGrid items={work.related_works} emptyText="暂无可展示的相关作品" /></section>}
+          {work.related_works.length > 0 && <section className="detail-section" aria-labelledby="related-works-title"><h2 id="related-works-title">相关作品</h2><PersonalizedWorkGrid context="recommendation" items={work.related_works} emptyText="暂无可推荐的相关作品" /></section>}
         </article>
         <div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div>
       </div>

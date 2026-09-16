@@ -23,7 +23,7 @@ export function WorkCard({ item, position, onHide }: { item: HomeItem; position:
         {item.code && <p className="work-card__code">{item.code}</p>}
         <h3><Link href={item.href}>{item.title}</Link></h3>
         <p>{item.subtitle}</p>
-        {onHide ? <button className="card-action" type="button" onClick={() => onHide(item.id)}><EyeOff size={14} />不感兴趣</button> : null}
+        {onHide ? <button className="card-action" type="button" onClick={() => onHide(item.id)}><EyeOff size={14} />不再推荐</button> : null}
       </div>
     </article>
   );

@@ -524,7 +524,7 @@ paths:
   /api/v1/me/followed-works:
     get:
       operationId: listFollowedWorks
-      description: Published works from followed performers, excluding the user's active hidden preferences.
+      description: Published works from followed performers. Recommendation preferences do not remove works from this explicit list.
       security: [{ sessionCookie: [] }]
       responses:
         "200":

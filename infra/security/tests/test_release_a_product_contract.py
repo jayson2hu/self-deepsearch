@@ -780,7 +780,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         for page, phrase in (
             ("favorites", "收藏服务暂时不可用"),
             ("follows", "关注服务暂时不可用"),
-            ("hidden", "隐藏偏好暂时不可用"),
+            ("hidden", "推荐偏好暂时不可用"),
             ("history", "浏览历史暂时不可用"),
             ("feedback", "反馈记录暂时不可用"),
         ):

@@ -40,5 +40,5 @@ export function WorkActions({ targetPath, workID }: { targetPath: string; workID
   if (session.status === "unavailable") return <div className="client-action-state client-action-state--error" role="alert"><span>用户操作暂时不可用</span><button className="button button--quiet" onClick={() => { setSession({ status: "loading" }); setAttempt((current) => current + 1); }} type="button"><RefreshCw aria-hidden="true" size={15} />重试</button></div>;
   return session.status === "authenticated"
     ? <><FavoriteButton targetPath={targetPath} workID={workID} /><HiddenWorkButton workID={workID} /><FeedbackForm workID={workID} /></>
-    : <><AuthIntentLink entityId={workID} kind="favorite" targetPath={targetPath} /><Link className="button button--quiet" href={authPath("/login", targetPath)}><LogIn size={16} />登录后隐藏或纠错</Link></>;
+    : <><AuthIntentLink entityId={workID} kind="favorite" targetPath={targetPath} /><Link className="button button--quiet" href={authPath("/login", targetPath)}><LogIn size={16} />登录后设置推荐偏好或纠错</Link></>;
 }

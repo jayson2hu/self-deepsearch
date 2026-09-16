@@ -39,7 +39,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {valid && !result.degraded && items.length === 0 && (
               <div className="empty-state"><SearchX size={30} /><strong>没有找到已发布资料</strong><span>可尝试番号、标题、人物别名或厂牌名称。</span></div>
             )}
-            {items.length > 0 && <PersonalizedWorkGrid items={items} emptyText="匹配的作品均已被你隐藏" />}
+            {items.length > 0 && <PersonalizedWorkGrid context="catalog" items={items} emptyText="没有找到已发布资料" />}
             {result.data?.next_cursor ? <a className="button pagination-next" href={`/search?q=${encodeURIComponent(query)}&cursor=${encodeURIComponent(result.data.next_cursor)}`}>下一页</a> : null}
           </section>
         </div>

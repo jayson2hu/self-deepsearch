@@ -103,10 +103,6 @@ WHERE EXISTS (
       JOIN platform.follows follow ON follow.performer_id = link.performer_id
       WHERE link.work_id = work.work_id AND follow.user_id = $1::uuid AND NOT follow.is_deleted
   )
-  AND NOT EXISTS (
-      SELECT 1 FROM platform.hidden_preferences preference
-      WHERE preference.user_id = $1::uuid AND preference.work_id = work.work_id AND preference.status = 'active'
-  )
 ORDER BY work.release_date DESC NULLS LAST, work.published_at DESC, work.work_id
 LIMIT $2`
 	return store.queryWorkSummaries(ctx, query, userID, limit)

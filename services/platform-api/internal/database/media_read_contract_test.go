@@ -202,6 +202,49 @@ LIMIT 1`).Scan(&workSlug); err != nil {
 	}
 }
 
+func TestFollowedWorksIgnoreRecommendationPreferencePostgres(t *testing.T) {
+	harness := newInvitationContractHarness(t)
+	work, _ := publishedMediaReadContract(t, harness, "work")
+	performer, _ := publishedMediaReadContract(t, harness, "performer")
+
+	if _, err := harness.store.pool.Exec(harness.ctx, `
+INSERT INTO platform.work_performers (work_id, performer_id, role, position)
+VALUES ($1::uuid, $2::uuid, 'performer', 0)`, work.EntityID, performer.EntityID); err != nil {
+		t.Fatalf("link followed performer to work: %v", err)
+	}
+	if err := harness.store.SetFollow(harness.ctx, harness.actorID, performer.EntityID, true, contractNow()); err != nil {
+		t.Fatalf("follow performer: %v", err)
+	}
+	if err := harness.store.SetHiddenWork(harness.ctx, harness.actorID, work.EntityID, true, contractNow()); err != nil {
+		t.Fatalf("set recommendation preference: %v", err)
+	}
+
+	items, err := harness.store.ListFollowedWorks(harness.ctx, harness.actorID, 10)
+	if err != nil || len(items) != 1 || items[0].ID != work.EntityID {
+		t.Fatalf("recommendation preference filtered explicit followed works: %+v %v", items, err)
+	}
+	hidden, err := harness.store.ListHiddenWorks(harness.ctx, harness.actorID, 10)
+	if err != nil || len(hidden) != 1 || hidden[0].ID != work.EntityID {
+		t.Fatalf("recommendation preference management lost work: %+v %v", hidden, err)
+	}
+
+	command, err := harness.store.pool.Exec(harness.ctx, `
+UPDATE platform.publications
+SET publication_status = 'hidden', hidden_at = $2, updated_at = $2
+WHERE entity_type = 'work' AND entity_id = $1::uuid AND publication_status = 'published'`, work.EntityID, contractNow())
+	if err != nil || command.RowsAffected() != 1 {
+		t.Fatalf("apply administrator hidden state: rows=%d err=%v", command.RowsAffected(), err)
+	}
+	items, err = harness.store.ListFollowedWorks(harness.ctx, harness.actorID, 10)
+	if err != nil || len(items) != 0 {
+		t.Fatalf("administrator hidden work remained in followed list: %+v %v", items, err)
+	}
+	hidden, err = harness.store.ListHiddenWorks(harness.ctx, harness.actorID, 10)
+	if err != nil || len(hidden) != 0 {
+		t.Fatalf("administrator hidden work remained restorable in preference manager: %+v %v", hidden, err)
+	}
+}
+
 func TestDraftAndRepublishPublicUpdatedAtPostgres(t *testing.T) {
 	harness := newInvitationContractHarness(t)
 	var workID, slug, revisionID string

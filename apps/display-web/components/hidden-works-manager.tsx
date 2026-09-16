@@ -23,6 +23,6 @@ export function HiddenWorksManager({ initialItems }: { initialItems: HomeItem[] 
       setBusyID(null);
     }
   }
-  if (!items.length) return <div className="empty-state"><strong>没有隐藏的作品</strong></div>;
-  return <><div aria-busy={busyID !== null} className="work-grid private-grid">{items.map((item, index) => <div className="managed-work" key={item.id}><WorkCard item={item} position={index + 1} /><button aria-describedby={error ? errorID : undefined} className="button button--quiet" disabled={busyID !== null} type="button" onClick={() => restore(item.id)}><Eye aria-hidden="true" size={15} />{busyID === item.id ? "恢复中…" : "恢复展示"}</button></div>)}</div>{error ? <p className="form-error" id={errorID} role="alert">{error}</p> : null}</>;
+  if (!items.length) return <div className="empty-state"><strong>没有“不再推荐”的作品</strong></div>;
+  return <><div aria-busy={busyID !== null} className="work-grid private-grid">{items.map((item, index) => <div className="managed-work" key={item.id}><WorkCard item={item} position={index + 1} /><button aria-describedby={error ? errorID : undefined} className="button button--quiet" disabled={busyID !== null} type="button" onClick={() => restore(item.id)}><Eye aria-hidden="true" size={15} />{busyID === item.id ? "恢复中…" : "恢复推荐"}</button></div>)}</div>{error ? <p className="form-error" id={errorID} role="alert">{error}</p> : null}</>;
 }

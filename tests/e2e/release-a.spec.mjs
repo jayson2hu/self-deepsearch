@@ -474,7 +474,7 @@ test("关闭账号展示保留说明并要求邮箱验证码", async ({ page }) 
   await expect(page.getByRole("banner").getByRole("link", { name: "登录" })).toBeVisible();
 });
 
-test("注册用户可以收藏关注隐藏、查看历史并提交反馈", async ({ page }) => {
+test("注册用户可以收藏关注、管理推荐偏好、查看历史并提交反馈", async ({ page }) => {
   await registerBrowserUser(page);
   await page.goto(`${displayURL}/works/test-jsonld-00000001`);
 
@@ -488,8 +488,17 @@ test("注册用户可以收藏关注隐藏、查看历史并提交反馈", async
   await page.getByRole("button", { name: "提交反馈" }).click();
   await expect(page.getByRole("status")).toContainText("管理员审核后会更新状态");
 
-  await page.getByRole("button", { name: "不感兴趣" }).click();
-  await expect(page.getByRole("button", { name: "恢复展示" })).toBeVisible();
+  await page.getByRole("button", { name: "不再推荐" }).click();
+  await expect(page.getByRole("status")).toContainText("已减少这部作品的推荐，仍可搜索找到");
+  await expect(page.getByRole("button", { name: "恢复推荐" })).toBeVisible();
+
+  await page.goto(`${displayURL}/search?q=TEST-JSONLD`);
+  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
+
+  await page.goto(displayURL);
+  const latestRecommendation = page.locator("section").filter({ has: page.getByRole("heading", { name: "最新发行" }) });
+  await expect(latestRecommendation.getByRole("link", { name: "查看 TEST-JSONLD" })).toHaveCount(0);
+  await expect(latestRecommendation.getByRole("link", { name: "查看 TEST-001" })).toBeVisible();
 
   await page.goto(`${displayURL}/performers/test-jsonld-00000001`);
   const follow = page.getByRole("button", { name: "关注人物" });
@@ -504,10 +513,16 @@ test("注册用户可以收藏关注隐藏、查看历史并提交反馈", async
   await page.goto(`${displayURL}/account/follows`);
   await expect(page.getByRole("heading", { name: "关注人物" })).toBeVisible();
   await expect(page.getByRole("link", { name: "查看 测试人物 的人物资料" })).toBeVisible();
+  const followedWorks = await page.evaluate(async () => {
+    const response = await fetch("/api/v1/me/followed-works", { credentials: "same-origin", cache: "no-store" });
+    return { status: response.status, body: await response.json() };
+  });
+  expect(followedWorks.status).toBe(200);
+  expect(followedWorks.body.items.map((item) => item.code)).toContain("TEST-JSONLD");
 
   await page.goto(`${displayURL}/account/hidden`);
-  await expect(page.getByRole("heading", { name: "已隐藏作品" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "恢复展示" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "推荐偏好" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "恢复推荐" })).toBeVisible();
 
   await page.goto(`${displayURL}/account/history`);
   await expect(page.getByRole("heading", { name: "浏览历史" })).toBeVisible();

@@ -4,16 +4,19 @@ import type { HomeItem } from "@self-deepsearch/api-contracts";
 import { useEffect, useMemo, useState } from "react";
 import { PerformerCard } from "./performer-card";
 import { WorkCard } from "./work-card";
+import type { WorkGridContext } from "./personalized-work-grid";
 
-export function DiscoveryGrid({ items }: { items: HomeItem[] }) {
+export function DiscoveryGrid({ context, items }: { context: WorkGridContext; items: HomeItem[] }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [preferenceState, setPreferenceState] = useState<"loading" | "anonymous" | "ready" | "unavailable">("loading");
+  const [preferenceState, setPreferenceState] = useState<"inactive" | "loading" | "anonymous" | "ready" | "unavailable">(context === "recommendation" ? "loading" : "inactive");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [busyWorkID, setBusyWorkID] = useState<string | null>(null);
+  const [lastHiddenID, setLastHiddenID] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
+    if (context !== "recommendation") return;
     let active = true;
     fetch("/api/v1/me/hidden-works", { credentials: "same-origin", cache: "no-store" })
       .then(async (response) => {
@@ -33,9 +36,9 @@ export function DiscoveryGrid({ items }: { items: HomeItem[] }) {
       })
       .catch(() => { if (active) setPreferenceState("unavailable"); });
     return () => { active = false; };
-  }, [loadAttempt]);
+  }, [context, loadAttempt]);
 
-  const visible = useMemo(() => items.filter((item) => item.type === "performer" || !hidden.has(item.id)), [hidden, items]);
+  const visible = useMemo(() => context === "recommendation" ? items.filter((item) => item.type === "performer" || !hidden.has(item.id)) : items, [context, hidden, items]);
   async function hide(workID: string) {
     if (busyWorkID) return;
     setBusyWorkID(workID);
@@ -44,16 +47,31 @@ export function DiscoveryGrid({ items }: { items: HomeItem[] }) {
       const response = await fetch(`/api/v1/me/hidden-works/${encodeURIComponent(workID)}`, {
         method: "POST", credentials: "same-origin",
       });
-      if (!response.ok) throw new Error("暂时无法隐藏该作品，请稍后重试");
+      if (!response.ok) throw new Error("暂时无法更新推荐偏好，请稍后重试");
       setHidden((current) => new Set(current).add(workID));
+      setLastHiddenID(workID);
       setMessageIsError(false);
-      setMessage("已从你的发现列表中隐藏，可在账号菜单中恢复");
+      setMessage("已减少这部作品的推荐，仍可搜索找到");
     } catch (cause) {
       setMessageIsError(true);
-      setMessage(cause instanceof Error ? cause.message : "暂时无法隐藏该作品，请稍后重试");
+      setMessage(cause instanceof Error ? cause.message : "暂时无法更新推荐偏好，请稍后重试");
     } finally {
       setBusyWorkID(null);
     }
+  }
+
+  async function undoHide() {
+    if (!lastHiddenID || busyWorkID) return;
+    const workID = lastHiddenID;
+    setBusyWorkID(workID); setMessage("");
+    try {
+      const response = await fetch(`/api/v1/me/hidden-works/${encodeURIComponent(workID)}`, { method: "DELETE", credentials: "same-origin" });
+      if (!response.ok) throw new Error("暂时无法恢复推荐，请稍后重试");
+      setHidden((current) => { const next = new Set(current); next.delete(workID); return next; });
+      setLastHiddenID(null); setMessageIsError(false); setMessage("已恢复这部作品的推荐。");
+    } catch (cause) {
+      setMessageIsError(true); setMessage(cause instanceof Error ? cause.message : "暂时无法恢复推荐，请稍后重试");
+    } finally { setBusyWorkID(null); }
   }
 
   function retryPreferences() {
@@ -64,10 +82,10 @@ export function DiscoveryGrid({ items }: { items: HomeItem[] }) {
   return <div aria-busy={preferenceState === "loading" || busyWorkID !== null}>
     {visible.length ? <div className="discovery-grid">{visible.map((item, index) => item.type === "performer"
       ? <PerformerCard key={item.id} item={item} />
-      : <WorkCard key={item.id} item={item} position={index + 1} onHide={preferenceState === "ready" ? hide : undefined} />)}</div>
+      : <WorkCard key={item.id} item={item} position={index + 1} onHide={context === "recommendation" && preferenceState === "ready" ? hide : undefined} />)}</div>
       : <div className="empty-copy">暂无已发布资料</div>}
-    {preferenceState === "loading" ? <p className="preference-message" role="status">正在加载个性化设置…</p> : null}
-    {preferenceState === "unavailable" ? <div className="preference-message preference-message--error" role="alert"><span>个性化设置暂时不可用，当前展示完整列表。</span><button className="preference-retry" onClick={retryPreferences} type="button">重试</button></div> : null}
-    {message ? <p className={`preference-message${messageIsError ? " preference-message--error" : ""}`} role={messageIsError ? "alert" : "status"}>{message}</p> : null}
+    {preferenceState === "loading" ? <p className="preference-message" role="status">正在加载推荐偏好…</p> : null}
+    {preferenceState === "unavailable" ? <div className="preference-message preference-message--error" role="alert"><span>推荐偏好暂时不可用，当前展示完整列表。</span><button className="preference-retry" onClick={retryPreferences} type="button">重试</button></div> : null}
+    {message ? <div className={`preference-message${messageIsError ? " preference-message--error" : ""}`} role={messageIsError ? "alert" : "status"}><span>{message}</span>{lastHiddenID && !messageIsError ? <button className="preference-retry" onClick={undoHide} type="button">撤销</button> : null}</div> : null}
   </div>;
 }

@@ -437,7 +437,7 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
         generated_at: "2026-09-08T00:00:00Z",
         sections: [
           { key: "discovery", title: "发现", items: [MOCK_PREVIEW_WORK_ITEM, MOCK_PERFORMER_ITEM] },
-          { key: "latest", title: "最新发行", items: [MOCK_PREVIEW_WORK_ITEM] },
+          { key: "latest", title: "最新发行", items: [MOCK_WORK_ITEM, MOCK_PREVIEW_WORK_ITEM] },
           { key: "editorial", title: "编辑推荐", items: [] },
           { key: "performers", title: "人物资料", items: [MOCK_PERFORMER_ITEM] },
           { key: "trending", title: "近期热门", items: [] },
@@ -664,7 +664,7 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
     if (accountMode === "stateful" && url.pathname === "/api/v1/me/followed-works" && request.method === "GET") {
       if (mockSession(request) !== "browser-user") return writeMockError(response, "UNAUTHENTICATED", "请先登录", 401);
       return writeMockJSON(response, {
-        items: accountState.followed && accountState.hiddenWorkID !== MOCK_PREVIEW_WORK_ITEM.id ? [MOCK_PREVIEW_WORK_ITEM] : [],
+        items: accountState.followed ? [MOCK_WORK_ITEM] : [],
         next_cursor: null,
       });
     }
