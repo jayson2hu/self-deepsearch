@@ -6,6 +6,8 @@
 架构基线：[ARCHITECTURE.md](./ARCHITECTURE.md)  
 详细合同：[PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md)
 
+2026-09-16 后续开发入口：[RD v1 开发计划](./docs/redesign/DEVELOPMENT_PLAN.md)、[验收用例](./docs/redesign/ACCEPTANCE_PLAN.md)、[进度台账](./docs/redesign/PROGRESS.md)。本文件保留原 MVP 阶段和历史执行语境，不用其中旧广告占位/浏览优先描述覆盖用户新审核；新改版尚未开发或验收。
+
 ## 1. 交付目标
 
 2026-09-12 Ubuntu 验收更新：此前“缺少 PostgreSQL/Mailpit”和“本机 SQL 未执行”的记录已由本轮隔离 Docker 真实验收推进。当前结果与后续目标环境门槛统一见[Ubuntu 验收证据](./docs/evidence/release-a-ubuntu-acceptance-2026-09-12.md)及[发布就绪审计](./docs/RELEASE_A_READINESS.md)；本计划较早日期段落保留历史语境，M5 与公网仍待真实 R2/Cloudflare/目标主机验收。

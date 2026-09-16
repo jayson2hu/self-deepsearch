@@ -1,0 +1,50 @@
+{
+  "version": "rd-v1-dev-01",
+  "review_base_commit": "d79b304",
+  "schema_version_at_review": 21,
+  "current": {
+    "paths": [
+      "/api/v1/search/works",
+      "/api/v1/works/{slug}",
+      "/api/v1/performers/{slug}",
+      "/api/v1/studios/{slug}"
+    ],
+    "detail_schemas": {
+      "WorkDetailResponse": ["id", "code", "title", "release_date", "studio_name", "performers", "images", "related_works"],
+      "PerformerDetailResponse": ["id", "name", "aliases", "works", "images"],
+      "StudioDetailResponse": ["id", "name", "works"]
+    },
+    "known_limits": {
+      "search_entity_types": ["work"],
+      "performer_embedded_works_max": 100,
+      "studio_embedded_works_max": 200,
+      "schema_has_public_updated_at": false,
+      "work_schema_has_studio_object": false
+    }
+  },
+  "planned": {
+    "additive_fields": {
+      "WorkDetailResponse": ["public_updated_at", "studio"],
+      "PerformerDetailResponse": ["public_updated_at"],
+      "StudioDetailResponse": ["public_updated_at"]
+    },
+    "new_paths": [
+      "/api/v1/search/performers",
+      "/api/v1/search/studios",
+      "/api/v1/performers/{slug}/works",
+      "/api/v1/studios/{slug}/works"
+    ],
+    "compatibility": [
+      "keep /api/v1/search/works",
+      "keep studio_name while adding studio",
+      "front end tolerates missing public_updated_at",
+      "keep embedded works until paginated clients migrate"
+    ],
+    "cursor_invariants": [
+      "versioned",
+      "bound to query or parent",
+      "stable ordering tuple",
+      "invalid or cross-scope cursor returns INVALID_CURSOR"
+    ]
+  }
+}
