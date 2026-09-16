@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -271,6 +272,38 @@ func TestMediaReadsPostgresPrimarySlots(t *testing.T) {
 					setMediaReadSlot(t, harness, input, mediaReadSlot{purpose: input.Purpose, primary: true})
 					assertMediaReadSurfaces(t, harness, input, slug, true)
 				})
+			}
+		})
+	}
+}
+
+func TestFavoriteAndFollowSetOperationsAreIdempotentPostgres(t *testing.T) {
+	for _, entityType := range []string{"work", "performer"} {
+		t.Run(entityType, func(t *testing.T) {
+			harness := newInvitationContractHarness(t)
+			input, _ := publishedMediaReadContract(t, harness, entityType)
+			now := contractNow()
+			for attempt := 0; attempt < 2; attempt++ {
+				var err error
+				if entityType == "work" {
+					err = harness.store.SetFavorite(harness.ctx, harness.actorID, input.EntityID, true, now.Add(time.Duration(attempt)*time.Second))
+				} else {
+					err = harness.store.SetFollow(harness.ctx, harness.actorID, input.EntityID, true, now.Add(time.Duration(attempt)*time.Second))
+				}
+				if err != nil {
+					t.Fatalf("set %s attempt %d: %v", entityType, attempt+1, err)
+				}
+			}
+			table := "platform.favorites"
+			column := "work_id"
+			if entityType == "performer" {
+				table = "platform.follows"
+				column = "performer_id"
+			}
+			var count int
+			query := fmt.Sprintf("SELECT count(*) FROM %s WHERE user_id = $1::uuid AND %s = $2::uuid AND NOT is_deleted", table, column)
+			if err := harness.store.pool.QueryRow(harness.ctx, query, harness.actorID, input.EntityID).Scan(&count); err != nil || count != 1 {
+				t.Fatalf("%s relationship is not idempotent: count=%d err=%v", entityType, count, err)
 			}
 		})
 	}

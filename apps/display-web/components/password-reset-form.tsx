@@ -2,11 +2,13 @@
 
 import type { MessageResponse } from "@self-deepsearch/api-contracts";
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { authRequest } from "../lib/auth-client";
+import { authPath } from "../lib/return-target";
 import { TurnstileField } from "./turnstile-field";
 import type { TurnstilePublicConfig } from "../lib/turnstile-config";
 
-export function PasswordResetForm({ turnstile }: { turnstile: TurnstilePublicConfig }) {
+export function PasswordResetForm({ returnTo, turnstile }: { returnTo?: string | null; turnstile: TurnstilePublicConfig }) {
   const [token, setToken] = useState("");
   const [sent, setSent] = useState(false);
   const [done, setDone] = useState(false);
@@ -53,6 +55,7 @@ export function PasswordResetForm({ turnstile }: { turnstile: TurnstilePublicCon
       {message && <p className="form-message" role="status">{message}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {!done && <button className="button button--primary auth-submit" type="submit" disabled={busy || (!sent && !token)}>{busy ? "处理中…" : sent ? "重置密码" : "发送验证码"}</button>}
+      {done && <Link className="button button--primary auth-submit" href={authPath("/login", returnTo)}>使用新密码登录</Link>}
     </form>
   );
 }

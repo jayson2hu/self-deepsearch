@@ -56,7 +56,7 @@ export default async function PerformerDetailPage({ params }: { params: Promise<
           <div><dt><UserRound size={16} />罗马字</dt><dd>{performer.romanized_name ?? "待补充"}</dd></div>
           <div><dt>人物别名</dt><dd>{performer.aliases.length ? performer.aliases.join("、") : "待补充"}</dd></div>
         </dl>
-        <div className="detail-actions"><PerformerActions performerID={performer.id} /></div>
+        <div className="detail-actions"><PerformerActions performerID={performer.id} targetPath={`/performers/${slug}`} /></div>
       </div></div>
       <section className="detail-section"><h2>关联作品</h2>{performer.works.length ? <div className="work-grid">{performer.works.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : <p>暂无已发布关联作品。</p>}</section>
       <AdSlot label="详情页信息流展示位" placement="infeed" />

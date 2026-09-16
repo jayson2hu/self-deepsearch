@@ -1,10 +1,10 @@
 "use client";
 
 import type { UserSummary } from "@self-deepsearch/api-contracts";
-import { LoaderCircle, LogIn, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { LoaderCircle, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FollowButton } from "./follow-button";
+import { AuthIntentLink } from "./auth-intent-link";
 
 type SessionState =
   | { status: "loading" }
@@ -12,7 +12,7 @@ type SessionState =
   | { status: "authenticated"; user: UserSummary }
   | { status: "unavailable" };
 
-export function PerformerActions({ performerID }: { performerID: string }) {
+export function PerformerActions({ performerID, targetPath }: { performerID: string; targetPath: string }) {
   const [session, setSession] = useState<SessionState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -34,5 +34,5 @@ export function PerformerActions({ performerID }: { performerID: string }) {
   }, [attempt]);
   if (session.status === "loading") return <div className="client-action-state" role="status"><LoaderCircle aria-hidden="true" size={16} />正在加载用户操作…</div>;
   if (session.status === "unavailable") return <div className="client-action-state client-action-state--error" role="alert"><span>用户操作暂时不可用</span><button className="button button--quiet" onClick={() => { setSession({ status: "loading" }); setAttempt((current) => current + 1); }} type="button"><RefreshCw aria-hidden="true" size={15} />重试</button></div>;
-  return session.status === "authenticated" ? <FollowButton performerID={performerID} /> : <Link className="button button--primary" href="/login"><LogIn size={16} />登录后关注人物</Link>;
+  return session.status === "authenticated" ? <FollowButton performerID={performerID} targetPath={targetPath} /> : <AuthIntentLink entityId={performerID} kind="follow" targetPath={targetPath} />;
 }

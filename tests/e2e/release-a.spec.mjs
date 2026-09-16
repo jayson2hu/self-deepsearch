@@ -122,6 +122,37 @@ test("三类详情展示真实公开更新时间并链接已发布厂牌", async
   await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
 });
 
+test("游客登录后返回原资料，确认前不写收藏关系", async ({ page }) => {
+  await page.goto(`${displayURL}/works/test-jsonld-00000001`);
+  await page.getByRole("link", { name: "登录后收藏作品" }).click();
+  await expect(page).toHaveURL(`${displayURL}/login?returnTo=%2Fworks%2Ftest-jsonld-00000001`);
+  await expect(page.getByRole("link", { name: "注册新账号" })).toHaveAttribute("href", "/register?returnTo=%2Fworks%2Ftest-jsonld-00000001");
+  await expect(page.getByRole("link", { name: "忘记密码" })).toHaveAttribute("href", "/forgot-password?returnTo=%2Fworks%2Ftest-jsonld-00000001");
+
+  await page.getByLabel("邮箱").fill("browser-user@example.test");
+  await page.getByLabel("密码").fill("Release-A-browser-pass");
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(page).toHaveURL(`${displayURL}/works/test-jsonld-00000001`);
+  await expect(page.getByText("继续收藏这部作品？", { exact: true })).toBeVisible();
+  const before = await page.request.get(`${displayURL}/api/v1/me/favorites`);
+  expect((await before.json()).items).toHaveLength(0);
+
+  await page.getByRole("button", { name: "确认收藏" }).click();
+  await expect(page.getByText("已收藏这部作品。", { exact: true })).toBeVisible();
+  const after = await page.request.get(`${displayURL}/api/v1/me/favorites`);
+  expect((await after.json()).items.map((item) => item.id)).toContain("10000000-0000-4000-8000-000000000001");
+  expect(await page.evaluate(() => sessionStorage.getItem("mujian.auth-intent.v1"))).toBeNull();
+  expect(await page.evaluate(async () => (await fetch("/api/v1/me/favorites/10000000-0000-4000-8000-000000000001", { method: "DELETE" })).status)).toBe(204);
+});
+
+test("恶意 returnTo 被丢弃且普通登录回首页", async ({ page }) => {
+  await page.goto(`${displayURL}/login?returnTo=${encodeURIComponent("//evil.example/steal")}`);
+  await page.getByLabel("邮箱").fill("browser-user@example.test");
+  await page.getByLabel("密码").fill("Release-A-browser-pass");
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(page).toHaveURL(`${displayURL}/`);
+});
+
 test("公开账号页面使用独立 CSP nonce，同时保留目录 ISR 策略", async ({ page }) => {
   const policyErrors = [];
   page.on("console", (message) => {

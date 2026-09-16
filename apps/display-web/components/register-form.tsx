@@ -6,7 +6,7 @@ import { authRequest, reloadAfterAuthChange } from "../lib/auth-client";
 import { TurnstileField } from "./turnstile-field";
 import type { TurnstilePublicConfig } from "../lib/turnstile-config";
 
-export function RegisterForm({ turnstile }: { turnstile: TurnstilePublicConfig }) {
+export function RegisterForm({ returnTo, turnstile }: { returnTo?: string | null; turnstile: TurnstilePublicConfig }) {
   const [token, setToken] = useState("");
   const [sent, setSent] = useState(false);
   const [message, setMessage] = useState("");
@@ -39,7 +39,7 @@ export function RegisterForm({ turnstile }: { turnstile: TurnstilePublicConfig }
     setBusy(true); setError("");
     try {
       await authRequest<SessionResponse>("/api/v1/auth/signup/verify", { email: data.get("email"), code: data.get("code"), password: data.get("password") });
-	  reloadAfterAuthChange();
+	  reloadAfterAuthChange(returnTo || "/");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "注册失败，请稍后重试"); setBusy(false); }
   }
 

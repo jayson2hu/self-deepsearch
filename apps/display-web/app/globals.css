@@ -171,6 +171,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .inline-action { display: grid; gap: 5px; }
 .inline-action > span { color: var(--accent); font-size: 11px; }
 .detail-actions .inline-action > .button { min-width: 144px; }
+.resume-intent { grid-column: 1 / -1; display: grid; gap: 7px; min-width: min(360px, calc(100vw - 48px)); padding: 12px; border: 1px solid #b8d6d1; border-radius: 6px; background: #f5fbfa; color: var(--ink); font-size: 12px; }
+.resume-intent strong { font-size: 14px; }
+.resume-intent > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.resume-intent .button { min-height: 34px; }
+.resume-intent--unavailable { margin-block: 14px; border-color: #e4bab7; background: #fff8f7; }
+.resume-intent--unavailable a { color: var(--teal); font-weight: 700; }
 .client-action-state { min-height: 36px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 12px; }
 .client-action-state--error { color: #8c2a25; border-color: #e4bab7; background: #fff8f7; }
 .client-action-state .button { min-height: 28px; padding-inline: 8px; }

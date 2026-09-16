@@ -45,6 +45,12 @@
       "bound to query or parent",
       "stable ordering tuple",
       "invalid or cross-scope cursor returns INVALID_CURSOR"
-    ]
+    ],
+    "implemented_auth_continuation": {
+      "intent_kinds": ["favorite", "follow"],
+      "intent_ttl_seconds": 900,
+      "automatic_mutation_after_auth": false,
+      "unsafe_return_targets_fall_back_to": "/"
+    }
   }
 }

@@ -106,6 +106,9 @@ test("DEV-01 contract snapshot matches current OpenAPI and records planned addit
   assert.ok(openapi.includes("public_updated_at:"), "DEV-03 must expose public_updated_at in the contract");
   assert.ok(openapi.includes("studio:"), "DEV-03 must expose the linked studio object");
   assert.ok(contract.planned.compatibility.includes("keep /api/v1/search/works"));
+  assert.deepEqual(contract.planned.implemented_auth_continuation.intent_kinds, ["favorite", "follow"]);
+  assert.equal(contract.planned.implemented_auth_continuation.intent_ttl_seconds, 900);
+  assert.equal(contract.planned.implemented_auth_continuation.automatic_mutation_after_auth, false);
 });
 
 test("AC-29 documentation keeps every DEV and AC identifier traceable", async () => {

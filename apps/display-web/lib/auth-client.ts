@@ -1,4 +1,5 @@
 import type { ApiError } from "@self-deepsearch/api-contracts";
+import { sanitizeReturnTo } from "./return-target";
 
 export class AuthRequestError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -28,5 +29,5 @@ export async function apiMutation<T>(path: string, method: "POST" | "DELETE", bo
 }
 
 export function reloadAfterAuthChange(path = "/"): void {
-  window.location.assign(path);
+	window.location.assign(sanitizeReturnTo(path) ?? "/");
 }

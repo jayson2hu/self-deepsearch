@@ -4,7 +4,7 @@ import type { SessionResponse } from "@self-deepsearch/api-contracts";
 import { useState } from "react";
 import { authRequest, reloadAfterAuthChange } from "../lib/auth-client";
 
-export function LoginForm() {
+export function LoginForm({ returnTo }: { returnTo?: string | null }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -14,7 +14,7 @@ export function LoginForm() {
     setBusy(true); setError("");
     try {
       await authRequest<SessionResponse>("/api/v1/auth/login", { email: form.get("email"), password: form.get("password") });
-	  reloadAfterAuthChange();
+	  reloadAfterAuthChange(returnTo || "/");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "登录失败，请稍后重试");
       setBusy(false);

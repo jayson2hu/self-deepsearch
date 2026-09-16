@@ -91,7 +91,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                 <div><dt>厂牌 / 制作方</dt><dd>{work.studio ? <Link href={work.studio.href}>{work.studio.name}</Link> : work.studio_name || "待补充"}</dd></div>
                 <div><dt><UserRound size={16} />人物</dt><dd>{work.performers.length ? work.performers.map((person) => <Link key={person.id} href={person.href}>{person.name}</Link>) : "待补充"}</dd></div>
               </dl>
-			  <div className="detail-actions"><WorkActions workID={work.id} /></div>
+			  <div className="detail-actions"><WorkActions targetPath={`/works/${slug}`} workID={work.id} /></div>
             </div>
           </div>
           {work.summary && <section className="detail-section"><h2>作品资料</h2><p>{work.summary}</p></section>}
