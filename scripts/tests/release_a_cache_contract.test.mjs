@@ -4,10 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
-  assertHidden, assertMediaState, assertVisible, cacheEvidencePath, createCatalog, createIsolatedStandalone,
+  assertHidden, assertMediaState, assertVisible, CACHE_SITEMAP_PATH, cacheEvidencePath, createCatalog, createIsolatedStandalone,
   parseCacheArgs, removeIsolatedRuntime, startCatalog,
 } from "../release_a_cache_contract.mjs";
 import { standalonePaths } from "../release_a_frontend_smoke.mjs";
+
+test("cache contract targets a sitemap leaf instead of the pagination redirect", () => {
+  assert.equal(CACHE_SITEMAP_PATH, "/sitemaps/works/1");
+});
 
 test("isolated standalone uses independent writable copies and guarded cleanup", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cache-isolation-test-"));

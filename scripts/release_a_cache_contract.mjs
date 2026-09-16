@@ -15,6 +15,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const GO_TIMEOUT_MS = 60_000;
 const CACHE_WINDOW_MS = 240_000; // Fail before the normal 300-second TTL could mask missing invalidation.
 const BOUNDARY = "Real Go processor and production Next.js; synthetic in-memory catalog; no PostgreSQL, dispatcher, SMTP, S3 or Cloudflare";
+export const CACHE_SITEMAP_PATH = "/sitemaps/works/1";
 
 export function parseCacheArgs(argv) {
   const options = { build: false, help: false, output: "docs/evidence/release-a-cache-contract-local.json" };
@@ -241,7 +242,7 @@ export async function runCacheContract(options, repositoryRoot = REPOSITORY_ROOT
     const pages = async () => {
       const result = {
         home: await readPage(origin, "/"), work: await readPage(origin, `/works/${catalog.slug}`),
-        sitemap: await readPage(origin, "/sitemaps/works"),
+        sitemap: await readPage(origin, CACHE_SITEMAP_PATH),
       };
       pageStatuses = Object.fromEntries(Object.entries(result).map(([name, page]) => [name, page.status]));
       return result;
