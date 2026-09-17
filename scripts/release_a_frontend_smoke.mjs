@@ -69,7 +69,30 @@ export function pageFailures(name, result, { status = 200, includes = [] } = {})
   if (result.status !== status) failures.push(`${name}: expected HTTP ${status}, got ${result.status}`);
   const missing = missingSignals(result.body, includes);
   if (missing.length > 0) failures.push(`${name}: missing signals: ${missing.join(", ")}`);
+  for (const signal of streamedRenderFailureSignals(result.body)) {
+    failures.push(`${name}: streamed render failure detected: ${signal}`);
+  }
   return failures;
+}
+
+// Next.js may have committed a 200 response before a server component throws.
+// The full response body is therefore part of the health contract: checking the
+// status code alone would accept the error shell shown to a real visitor.
+export function streamedRenderFailureSignals(body) {
+  const text = String(body ?? "");
+  const lowered = text.toLowerCase();
+  const decodedQuotes = text.replaceAll('\\"', '"');
+  const signals = [];
+  if (lowered.includes("this page couldn’t load") || lowered.includes("this page couldn't load")) {
+    signals.push("browser error shell");
+  }
+  if (lowered.includes("a server error occurred") || lowered.includes("application error: a server-side exception")) {
+    signals.push("server error message");
+  }
+  if (/self\.__next_f\.push\(\[[^\n]{0,2000}"digest"\s*:/i.test(decodedQuotes)) {
+    signals.push("Next.js server-component digest");
+  }
+  return [...new Set(signals)];
 }
 
 export function proxyFailures(name, result) {

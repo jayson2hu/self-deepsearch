@@ -18,6 +18,7 @@ import {
   RELEASE_A_FORBIDDEN_AD_SIGNALS,
   securityHeaderFailures,
   standalonePaths,
+  streamedRenderFailureSignals,
   stylesheetFailures,
   stylesheetPaths,
 } from "../release_a_frontend_smoke.mjs";
@@ -47,6 +48,21 @@ test("pageFailures reports status and missing HTML signals", () => {
     pageFailures("首页", response(500, "hello"), { includes: ["hello", "18+"] }),
     ["首页: expected HTTP 200, got 500", "首页: missing signals: 18+"],
   );
+});
+
+test("pageFailures rejects a streamed server-component failure even after HTTP 200", () => {
+  const shell = "<html><body><h1>This page couldn’t load</h1><p>A server error occurred. Reload to try again.</p></body></html>";
+  assert.deepEqual(streamedRenderFailureSignals(shell), ["browser error shell", "server error message"]);
+  assert.deepEqual(pageFailures("首页", response(200, shell)), [
+    "首页: streamed render failure detected: browser error shell",
+    "首页: streamed render failure detected: server error message",
+  ]);
+
+  const rsc = '<script>self.__next_f.push([1,"{\\"digest\\":\\"123456\\"}"])</script>';
+  assert.deepEqual(streamedRenderFailureSignals(rsc), ["Next.js server-component digest"]);
+  assert.deepEqual(pageFailures("详情", response(200, rsc)), [
+    "详情: streamed render failure detected: Next.js server-component digest",
+  ]);
 });
 
 test("proxyFailures enforces 503, no-store, and API_UNAVAILABLE", () => {
