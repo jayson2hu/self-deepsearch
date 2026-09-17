@@ -44,3 +44,22 @@ test("SEO issue workflow is bounded, deduplicated and requires successful retest
   assert.match(store, /publication_status='published' AND content_classification<>'unknown' AND seo_quality_status='eligible'/);
   assert.match(manager, /复测未通过/);
 });
+
+test("SEO report import is owner-only, bounded and keeps real data separate from demos", async () => {
+  const [handler, migration, manager, proxy] = await Promise.all([
+    readFile(new URL("../../services/platform-api/internal/httpapi/seo_report_handlers.go", import.meta.url), "utf8"),
+    readFile(new URL("../../db/migrations/00026_seo_report_imports.sql", import.meta.url), "utf8"),
+    readFile(new URL("../../apps/ops-web/components/seo-report-manager.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../apps/ops-web/app/admin/v1/[...path]/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(handler, /requireAdminRole\(w, r, "owner"\)/);
+  assert.match(handler, /maxSEOReportBytes = 5 \* 1024 \* 1024/);
+  assert.match(handler, /maxSEOReportRows = 10000/);
+  assert.match(handler, /strings\.ContainsRune\("=\+-@"/);
+  assert.match(migration, /dataset_kind text NOT NULL CHECK \(dataset_kind IN \('real', 'demo'\)\)/);
+  assert.match(migration, /UNIQUE \(report_type, dataset_kind, property_uri, file_sha256\)/);
+  assert.match(manager, /真实授权导出/);
+  assert.match(manager, /演示数据/);
+  assert.match(manager, /尚未导入真实报表/);
+  assert.match(proxy, /5 \* 1024 \* 1024 \+ 128 \* 1024/);
+});

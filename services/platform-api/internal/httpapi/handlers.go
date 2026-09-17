@@ -20,7 +20,7 @@ import (
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 var publicEntityPathPattern = regexp.MustCompile(`^/(?:works|performers|studios)/[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
-const requiredDatabaseSchemaVersion = 25
+const requiredDatabaseSchemaVersion = 26
 
 type healthResponse struct {
 	Status  string `json:"status"`

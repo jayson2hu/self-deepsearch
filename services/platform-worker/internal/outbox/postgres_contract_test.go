@@ -86,7 +86,7 @@ func TestPostgresOutboxLeaseContract(t *testing.T) {
 		_, _ = lockConnection.Exec(unlockCtx, `SELECT pg_advisory_unlock(hashtext('release-a-worker-outbox-contract'))`)
 	}()
 	var version, initialEvents int
-	if err := admin.QueryRow(ctx, `SELECT schema_version, (SELECT count(*) FROM platform.outbox_events) + (SELECT count(*) FROM platform.users) + (SELECT count(*) FROM platform.works) + (SELECT count(*) FROM platform.media_assets) FROM platform.system_metadata WHERE singleton`).Scan(&version, &initialEvents); err != nil || version != 25 || initialEvents != 0 {
+	if err := admin.QueryRow(ctx, `SELECT schema_version, (SELECT count(*) FROM platform.outbox_events) + (SELECT count(*) FROM platform.users) + (SELECT count(*) FROM platform.works) + (SELECT count(*) FROM platform.media_assets) FROM platform.system_metadata WHERE singleton`).Scan(&version, &initialEvents); err != nil || version != 26 || initialEvents != 0 {
 		t.Fatal("contract requires migrated schema 21 and an empty dedicated database")
 	}
 	var restricted bool

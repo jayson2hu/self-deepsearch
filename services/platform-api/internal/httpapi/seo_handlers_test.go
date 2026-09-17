@@ -1,7 +1,10 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,6 +22,23 @@ type fakeSEOInventory struct {
 type fakeSEOIssues struct {
 	*fakeSEOInventory
 	update operations.SEOIssueUpdate
+}
+
+type fakeSEOReports struct {
+	*fakeOperations
+	input operations.SEOReportImportInput
+}
+
+func (repository *fakeSEOReports) ImportSEOReport(_ context.Context, input operations.SEOReportImportInput, _, _ string, now time.Time) (operations.SEOReportImport, error) {
+	repository.input = input
+	return operations.SEOReportImport{ID: "40000000-0000-4000-8000-000000000001", ReportType: input.ReportType,
+		DatasetKind: input.DatasetKind, PropertyURI: input.PropertyURI, PeriodStart: input.PeriodStart, PeriodEnd: input.PeriodEnd,
+		ExportedAt: input.ExportedAt, FileSHA256: input.FileSHA256, RowCount: len(input.Rows), Status: "imported",
+		ImportedBy: "owner@example.test", CreatedAt: now}, repository.operationErr
+}
+
+func (repository *fakeSEOReports) ListSEOReports(context.Context, int) ([]operations.SEOReportImport, error) {
+	return []operations.SEOReportImport{}, repository.operationErr
 }
 
 func (repository *fakeSEOIssues) RunSEOScan(_ context.Context, _, _ string, now time.Time) (operations.SEOScan, error) {
@@ -117,4 +137,55 @@ func TestSEOIssueRoutesRunBoundedScanAndValidateTransitionInput(t *testing.T) {
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("short issue evidence returned %d: %s", response.Code, response.Body.String())
 	}
+}
+
+func TestSEOReportImportValidatesOfficialShapeAndOwnerRole(t *testing.T) {
+	repository := &fakeSEOReports{fakeOperations: &fakeOperations{}}
+	request := seoReportRequest(t, "performance.csv", "query,page,country,device,date,clicks,impressions,ctr,position\n幕鉴,https://example.test/works/a,CN,DESKTOP,2026-09-16,1,10,10%,2.5\n")
+	response := httptest.NewRecorder()
+	adminHandler("owner", repository).ServeHTTP(response, request)
+	if response.Code != http.StatusCreated || len(repository.input.Rows) != 1 || repository.input.DatasetKind != "demo" ||
+		repository.input.Rows[0].Metrics["ctr"] != 0.1 {
+		t.Fatalf("unexpected report import %d: %s input=%+v", response.Code, response.Body.String(), repository.input)
+	}
+
+	request = seoReportRequest(t, "performance.csv", "query,page,country,device,date,clicks,impressions,ctr,position\n=formula,https://example.test/works/a,CN,DESKTOP,2026-09-16,1,10,0.1,2.5\n")
+	response = httptest.NewRecorder()
+	adminHandler("owner", repository).ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("formula CSV returned %d: %s", response.Code, response.Body.String())
+	}
+
+	request = seoReportRequest(t, "performance.csv", "query,page,country,device,date,clicks,impressions,ctr,position\n幕鉴,https://example.test/works/a,CN,DESKTOP,2026-09-16,1,10,0.1,2.5\n")
+	response = httptest.NewRecorder()
+	adminHandler("admin", repository).ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("admin import returned %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func seoReportRequest(t *testing.T, filename, csvContent string) *http.Request {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	for key, value := range map[string]string{"report_type": "performance", "dataset_kind": "demo", "property_uri": "https://example.test/", "period_start": "2026-09-01", "period_end": "2026-09-16", "exported_at": "2026-09-17T00:00:00Z"} {
+		if err := writer.WriteField(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Write([]byte(csvContent)); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := authenticatedAdminRequest(http.MethodPost, "/admin/v1/seo/reports/import", "")
+	request.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
+	request.ContentLength = int64(body.Len())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	return request
 }

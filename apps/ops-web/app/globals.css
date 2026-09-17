@@ -211,6 +211,10 @@ table select { min-height: 30px; padding: 0 8px; border: 1px solid var(--line); 
 .seo-issue-table td small, .seo-issue-table td code { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .seo-issue-actions { display: flex; gap: 6px; margin-top: 8px; }
 .seo-issue-actions button { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--green); color: white; background: var(--green); border-radius: 4px; }
+.seo-report-manager { display: grid; gap: 24px; }
+.seo-report-form { padding: 20px; border: 1px solid var(--line); background: white; }
+.seo-format-hint { margin: 0; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.seo-report-list small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(12 18 24 / 58%); }
 .merge-dialog { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: white; box-shadow: 0 24px 70px rgb(0 0 0 / 22%); }
 .merge-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }

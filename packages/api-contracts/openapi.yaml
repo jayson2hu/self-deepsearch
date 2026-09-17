@@ -1428,6 +1428,36 @@ paths:
       responses:
         "200": { description: Updated issue, content: { application/json: { schema: { $ref: "#/components/schemas/SEOIssue" } } } }
         "409": { description: Invalid transition or failed retest }
+  /admin/v1/seo/reports:
+    get:
+      operationId: adminListSeoReports
+      description: Lists imported official export metadata while keeping real and demo datasets separate. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200": { description: SEO report imports, content: { application/json: { schema: { $ref: "#/components/schemas/SEOReportImportListResponse" } } } }
+  /admin/v1/seo/reports/import:
+    post:
+      operationId: adminImportSeoReport
+      description: Imports an owner-supplied CSV export. Maximum 5 MiB and 10,000 rows. Requires owner and recent authentication.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [report_type, dataset_kind, property_uri, period_start, period_end, exported_at, file]
+              properties:
+                report_type: { enum: [performance, indexing] }
+                dataset_kind: { enum: [real, demo] }
+                property_uri: { type: string, maxLength: 500 }
+                period_start: { type: string, format: date }
+                period_end: { type: string, format: date }
+                exported_at: { type: string, format: date-time }
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Imported or idempotently matched report, content: { application/json: { schema: { $ref: "#/components/schemas/SEOReportImport" } } } }
+        "400": { description: Invalid metadata, CSV, formula cell, row limit or file size }
   /admin/v1/users/{user_id}/role:
     parameters:
       - in: path
@@ -2978,6 +3008,29 @@ components:
       additionalProperties: false
       required: [items]
       properties: { items: { type: array, items: { $ref: "#/components/schemas/SEOIssue" } } }
+    SEOReportImport:
+      type: object
+      additionalProperties: false
+      required: [id, report_type, dataset_kind, property_uri, period_start, period_end, exported_at, file_sha256, row_count, status, error_summary, imported_by, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        report_type: { enum: [performance, indexing] }
+        dataset_kind: { enum: [real, demo] }
+        property_uri: { type: string }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        exported_at: { type: string, format: date-time }
+        file_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        row_count: { type: integer, minimum: 1, maximum: 10000 }
+        status: { enum: [imported, failed] }
+        error_summary: { type: [string, "null"] }
+        imported_by: { type: string, format: email }
+        created_at: { type: string, format: date-time }
+    SEOReportImportListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/SEOReportImport" } } }
     EditorialRecommendation:
       type: object
       required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]

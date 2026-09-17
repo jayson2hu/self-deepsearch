@@ -306,6 +306,8 @@ func (s *Server) routes() http.Handler {
 	router.Post("/admin/v1/seo/scans", s.adminRunSEOScan)
 	router.Get("/admin/v1/seo/issues", s.adminListSEOIssues)
 	router.Patch("/admin/v1/seo/issues/{issueID}", s.adminUpdateSEOIssue)
+	router.Get("/admin/v1/seo/reports", s.adminListSEOReports)
+	router.Post("/admin/v1/seo/reports/import", s.adminImportSEOReport)
 	router.Get("/admin/v1/ads", s.adminListAds)
 	router.Post("/admin/v1/ads", s.adminCreateAd)
 	router.Patch("/admin/v1/ads/{campaignID}", s.adminUpdateAd)
@@ -413,6 +415,9 @@ func recentAuthRequired(r *http.Request) bool {
 		return r.Method == http.MethodPost && (strings.HasSuffix(path, "/publish") || strings.HasSuffix(path, "/pause"))
 	}
 	if path == "/admin/v1/invitations" {
+		return r.Method == http.MethodPost
+	}
+	if path == "/admin/v1/seo/reports/import" {
 		return r.Method == http.MethodPost
 	}
 	if strings.HasPrefix(path, "/admin/v1/invitations/") && strings.HasSuffix(path, "/revoke") {

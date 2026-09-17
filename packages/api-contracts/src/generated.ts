@@ -858,6 +858,26 @@ export type SEOIssueListResponse = {
   items: Array<SEOIssue>;
 };
 
+export type SEOReportImport = {
+  id: string;
+  report_type: "performance" | "indexing";
+  dataset_kind: "real" | "demo";
+  property_uri: string;
+  period_start: string;
+  period_end: string;
+  exported_at: string;
+  file_sha256: string;
+  row_count: number;
+  status: "imported" | "failed";
+  error_summary: string | null;
+  imported_by: string;
+  created_at: string;
+};
+
+export type SEOReportImportListResponse = {
+  items: Array<SEOReportImport>;
+};
+
 export type EditorialRecommendation = {
   id: string;
   work_id: string;

@@ -16,6 +16,7 @@ import type {
   SEOIssueListResponse,
   SEOPageListResponse,
   SEOScanListResponse,
+  SEOReportImportListResponse,
   SessionResponse,
   TakedownListResponse,
   UserSummary,
@@ -96,6 +97,11 @@ export async function getSEOIssues(status = "all"): Promise<SEOIssueListResponse
 export async function getSEOScans(): Promise<SEOScanListResponse | null> {
   const response = await privateRequest("/admin/v1/seo/scans");
   return response?.ok ? ((await response.json()) as SEOScanListResponse) : null;
+}
+
+export async function getSEOReports(): Promise<SEOReportImportListResponse | null> {
+  const response = await privateRequest("/admin/v1/seo/reports");
+  return response?.ok ? ((await response.json()) as SEOReportImportListResponse) : null;
 }
 
 export async function getAuditLogs(requestID: string): Promise<AuditLogListResponse | null> {

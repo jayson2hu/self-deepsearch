@@ -15,7 +15,7 @@ export default async function SEOPage({ searchParams }: { searchParams: Promise<
   for (const key of ["q", "entity_type", "status", "offset"] as const) if (search[key]) params.set(key, search[key]!);
   const [summary, pages] = await Promise.all([getSEOInventorySummary(), getSEOPages(params.toString())]);
   return <AdminShell active="SEO 中心" user={operator}><main className="main-content">
-    <div className="page-heading"><div><p>统一查看发布资格、metadata、canonical、robots 与 sitemap 候选</p><h1>SEO 中心</h1></div><div className="heading-actions"><Link className="button" href="/seo/issues">优化问题</Link></div></div>
+    <div className="page-heading"><div><p>统一查看发布资格、metadata、canonical、robots 与 sitemap 候选</p><h1>SEO 中心</h1></div><div className="heading-actions"><Link className="button" href="/seo/reports">搜索报表</Link><Link className="button" href="/seo/issues">优化问题</Link></div></div>
     {summary ? <><div className="metric-grid seo-metrics">
       <article><div><small>发布记录</small><strong>{summary.total}</strong><p>当前环境的正式 publication 清单</p></div></article>
       <article><div><small>技术可索引</small><strong>{summary.indexable}</strong><p>仅表示资格通过，不代表已被搜索引擎收录</p></div></article>

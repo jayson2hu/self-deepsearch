@@ -10,7 +10,7 @@ function proxyError(code: string, message: string, status: number): NextResponse
   return response;
 }
 
-export async function proxyPlatform(request: NextRequest, prefix: string, segments: string[]): Promise<NextResponse> {
+export async function proxyPlatform(request: NextRequest, prefix: string, segments: string[], maximumBytes = maximumBodyBytes): Promise<NextResponse> {
   const base = process.env.PLATFORM_API_URL ?? "http://127.0.0.1:8080";
   const path = segments.map(encodeURIComponent).join("/");
   const url = new URL(`${prefix}/${path}${request.nextUrl.search}`, base);
@@ -22,11 +22,11 @@ export async function proxyPlatform(request: NextRequest, prefix: string, segmen
   if (!headers.has("origin")) headers.set("origin", request.nextUrl.origin);
 
   const declared = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(declared) || declared < 0 || declared > maximumBodyBytes) {
+  if (!Number.isFinite(declared) || declared < 0 || declared > maximumBytes) {
     return proxyError("BODY_TOO_LARGE", "请求内容过大", 413);
   }
   const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
-  if (body && body.byteLength > maximumBodyBytes) {
+  if (body && body.byteLength > maximumBytes) {
     return proxyError("BODY_TOO_LARGE", "请求内容过大", 413);
   }
 

@@ -99,3 +99,40 @@ type SEOIssueRepository interface {
 	ListSEOIssues(context.Context, string, int) ([]SEOIssue, error)
 	UpdateSEOIssue(context.Context, string, SEOIssueUpdate, string, string, time.Time) (SEOIssue, error)
 }
+
+type SEOReportRow struct {
+	Dimensions map[string]string
+	Metrics    map[string]float64
+}
+
+type SEOReportImportInput struct {
+	ReportType  string
+	DatasetKind string
+	PropertyURI string
+	PeriodStart time.Time
+	PeriodEnd   time.Time
+	ExportedAt  time.Time
+	FileSHA256  string
+	Rows        []SEOReportRow
+}
+
+type SEOReportImport struct {
+	ID           string
+	ReportType   string
+	DatasetKind  string
+	PropertyURI  string
+	PeriodStart  time.Time
+	PeriodEnd    time.Time
+	ExportedAt   time.Time
+	FileSHA256   string
+	RowCount     int
+	Status       string
+	ErrorSummary *string
+	ImportedBy   string
+	CreatedAt    time.Time
+}
+
+type SEOReportRepository interface {
+	ImportSEOReport(context.Context, SEOReportImportInput, string, string, time.Time) (SEOReportImport, error)
+	ListSEOReports(context.Context, int) ([]SEOReportImport, error)
+}

@@ -533,6 +533,7 @@ func TestRecentAuthenticationRoutePolicy(t *testing.T) {
 		{http.MethodPost, "/admin/v1/ads/10000000-0000-4000-8000-000000000001/publish", true},
 		{http.MethodPost, "/admin/v1/ads/10000000-0000-4000-8000-000000000001/pause", true},
 		{http.MethodPost, "/admin/v1/ads", false},
+		{http.MethodPost, "/admin/v1/seo/reports/import", true},
 		{http.MethodPost, "/admin/v1/review-tasks/10000000-0000-4000-8000-000000000001/claim", false},
 		{http.MethodPost, "/admin/v1/takedowns", false},
 		{http.MethodPost, "/admin/v1/works", false},
