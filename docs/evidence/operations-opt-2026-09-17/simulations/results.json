@@ -7,6 +7,7 @@
     "review_environment_after_acceptance": {
       "accounts_total": 7,
       "management_accounts": 7,
+      "locked_synthetic_seo_reviewers": 4,
       "ordinary_accounts": 0,
       "public_registrations": 0,
       "advertising_campaigns": 0,
@@ -77,6 +78,7 @@
       "production_gate_probe_origin": "https://seo-review.example.test",
       "public_meta_robots": "index, follow",
       "sitemap_contains": ["/works/test-001", "/works/test-002"],
+      "synthetic_reviewers_locked_after_test": 4,
       "passed": true
     },
     "seo_report_import": {
