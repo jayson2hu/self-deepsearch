@@ -142,14 +142,14 @@ test("page governance keeps search and account-wide footer free of ads", async (
 
 test("work catalogs use a native eighth card and a banner after the complete grid", async () => {
   const lists = [
-    ["latest", "latest.native_card", "latest.after_grid", "latest.desktop_right"],
-    ["recent", "recent.native_card", "recent.after_grid", "recent.desktop_right"],
-    ["popular", "popular.native_card", "popular.after_grid", "popular.desktop_right"],
+    ["latest", "latest.native_card", "latest.after_grid", "latest.desktop_right", 8],
+    ["recent", "recent.native_card", "recent.after_grid", "recent.desktop_right", 8],
+    ["popular", "popular.native_card", "popular.after_grid", "popular.desktop_right", 4],
   ];
-  for (const [path, native, banner, rail] of lists) {
+  for (const [path, native, banner, rail, position] of lists) {
     const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
     assert.match(source, /items=\{(?:result\.data\.)?items\}/);
-    assert.match(source, /nativeAdPosition=\{8\}/);
+    assert.match(source, new RegExp(`nativeAdPosition=\\{${position}\\}`));
     assert.match(source, new RegExp(`placement="native" slot="${native.replaceAll(".", "\\.")}"`));
     assert.match(source, new RegExp(`placement="banner" slot="${banner.replaceAll(".", "\\.")}"`));
     assert.match(source, new RegExp(`slot="${rail.replaceAll(".", "\\.")}"`));
