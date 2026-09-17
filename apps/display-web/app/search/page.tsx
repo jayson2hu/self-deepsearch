@@ -2,7 +2,6 @@ import type { HomeItem } from "@self-deepsearch/api-contracts";
 import { Building2, Search, SearchX } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AdSlot } from "../../components/ad-slot";
 import { PerformerCard } from "../../components/performer-card";
 import { PersonalizedWorkGrid } from "../../components/personalized-work-grid";
 import { searchPerformers, searchStudios, searchWorks, type PerformerSearchResult, type SearchEntityType, type StudioSearchResult, type WorkSearchResult } from "../../lib/api";
@@ -76,9 +75,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         </div>
       </section>
       <div className="shell content-with-rails">
-        <div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
         <div className="content-column">
-          <AdSlot label="顶部横幅" placement="banner" />
           <section className="section-block" aria-labelledby="results-title">
             <div className="section-heading"><div><p className="section-kicker">{publishedTypeLabel}</p><h2 id="results-title">{query ? `“${displayedQuery}” 的结果` : "输入关键词开始查询"}</h2></div></div>
             <nav className="filter-tabs" aria-label="搜索类型">
@@ -109,7 +106,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {nextCursor ? <Link className="button pagination-next" href={searchHref(displayedQuery, nextCursor, activeType)}>下一页</Link> : null}
           </section>
         </div>
-        <div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div>
       </div>
     </main>
   );

@@ -3,10 +3,10 @@
 
 import { resolveAdSlot, type AdPlacement } from "../lib/ad-policy";
 
-type AdSlotProps = { label: string; placement: AdPlacement; preview?: boolean };
+type AdSlotProps = { label: string; placement: AdPlacement; preview?: boolean; slot: string };
 
-export function AdSlot({ label, placement, preview = false }: AdSlotProps) {
-  const result = resolveAdSlot(placement, label, process.env, new Date(), preview);
+export function AdSlot({ label, placement, preview = false, slot }: AdSlotProps) {
+  const result = resolveAdSlot(placement, label, process.env, new Date(), preview, slot);
   if (!("creative" in result)) return null;
   const { creative } = result;
   const content = <>
@@ -18,6 +18,7 @@ export function AdSlot({ label, placement, preview = false }: AdSlotProps) {
       className={`ad-slot ad-slot--${placement}`}
       aria-label={`广告：${creative.title}，广告主 ${creative.sponsor}`}
       data-ad-placement={placement}
+      data-ad-slot={creative.slot}
       data-ad-state={result.state}
     >
       {creative.targetUrl

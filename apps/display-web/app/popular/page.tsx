@@ -20,9 +20,9 @@ export default async function PopularPage({ searchParams }: { searchParams: Prom
   const result = await getPopularWorks(selected, cursor);
   return <main>
     <section className="page-band"><div className="shell page-band__inner"><div><p className="eyebrow"><BarChart3 size={14} /> 按小时聚合浏览次数</p><h1>热门浏览</h1></div><p className="page-band__copy">只展示已审核发布的作品。匿名浏览只进入小时聚合，不保存用户标识。</p></div></section>
-    <div className="shell content-with-rails"><div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
-      <div className="content-column"><AdSlot label="顶部横幅" placement="banner" /><nav className="filter-tabs" aria-label="排行时间范围">{ranges.map((range) => <Link className={selected === range.key ? "active" : ""} href={`/popular?range=${range.key}`} key={range.key}>{range.label}</Link>)}</nav>
-        <section className="section-block">{result.degraded ? <p className="state-note state-note--warning">排行服务暂时不可用。</p> : null}{result.data?.items.length ? <PersonalizedWorkGrid context="recommendation" items={result.data.items} emptyText="暂无可推荐的热门作品" /> : <div className="empty-state"><strong>暂无足够的浏览数据</strong></div>}{result.data?.next_cursor ? <a className="button pagination-next" href={`/popular?range=${selected}&cursor=${encodeURIComponent(result.data.next_cursor)}`}>下一页</a> : null}</section>
-      </div><div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div></div>
+    <div className="shell content-with-rails">
+      <div className="content-column"><nav className="filter-tabs" aria-label="排行时间范围">{ranges.map((range) => <Link className={selected === range.key ? "active" : ""} href={`/popular?range=${range.key}`} key={range.key}>{range.label}</Link>)}</nav>
+        <section className="section-block">{result.degraded ? <p className="state-note state-note--warning">排行服务暂时不可用。</p> : null}{result.data?.items.length ? <><PersonalizedWorkGrid context="recommendation" items={result.data.items.slice(0, 8)} emptyText="暂无可推荐的热门作品" />{result.data.items.length >= 12 ? <AdSlot label="列表第八项后广告" placement="infeed" slot="popular.after8" /> : null}{result.data.items.length > 8 ? <PersonalizedWorkGrid context="recommendation" items={result.data.items.slice(8)} emptyText="" /> : null}</> : <div className="empty-state"><strong>暂无足够的浏览数据</strong></div>}{result.data?.next_cursor ? <a className="button pagination-next" href={`/popular?range=${selected}&cursor=${encodeURIComponent(result.data.next_cursor)}`}>下一页</a> : null}</section>
+      </div><div className="ad-rail ad-rail--right"><AdSlot label="热门目录右侧广告" placement="rail" slot="popular.desktop_right" /></div></div>
   </main>;
 }

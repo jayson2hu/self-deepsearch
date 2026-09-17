@@ -39,8 +39,11 @@ export function resolveAdSlot(
   environment: Environment = process.env,
   now = new Date(),
   preview = false,
+  slotCode = "",
 ): AdSlotResolution {
-  if (preview) return previewResolution(placement, label, environment);
+  const slot = slotCode.trim() || adSlotKey(placement, label);
+  if (!safeText.test(slot)) return { state: "error" };
+  if (preview) return previewResolution(placement, label, slot, environment);
   if (environment.DISPLAY_ADS_ENABLED !== "true") return { state: "empty" };
   const raw = environment.DISPLAY_AD_SLOTS_JSON;
   if (!raw) return { state: "empty" };
@@ -52,7 +55,6 @@ export function resolveAdSlot(
     return { state: "error" };
   }
   if (!Array.isArray(entries) || entries.length > 20) return { state: "error" };
-  const slot = adSlotKey(placement, label);
   const matches = entries.filter(isObject).filter((entry) => entry.slot === slot);
   if (matches.length === 0) return { state: "empty" };
   if (matches.length !== 1) return { state: "error" };
@@ -61,13 +63,13 @@ export function resolveAdSlot(
   return creative ? { state: "ready", creative } : { state: "error" };
 }
 
-function previewResolution(placement: AdPlacement, label: string, environment: Environment): AdSlotResolution {
+function previewResolution(placement: AdPlacement, label: string, slot: string, environment: Environment): AdSlotResolution {
   if (environment.NODE_ENV === "production" || environment.DISPLAY_AD_PREVIEW_FIXTURE !== "enabled") return { state: "error" };
   const size = dimensions[placement];
   return {
     state: "preview",
     creative: {
-      slot: adSlotKey(placement, label),
+      slot,
       placement,
       title: label,
       sponsor: "设计预览",

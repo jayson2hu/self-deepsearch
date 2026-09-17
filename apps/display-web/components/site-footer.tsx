@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AdSlot } from "./ad-slot";
 import { configuredRightsEmail } from "../lib/public-contact";
 
 export function SiteFooter() {
@@ -7,7 +6,6 @@ export function SiteFooter() {
 
   return (
     <footer className="site-footer">
-      <div className="shell footer-ad"><AdSlot label="页脚展示位" placement="footer" /></div>
       <div className="shell footer-grid">
         <div><strong className="footer-brand">幕鉴</strong><p>作品与人物公开资料索引。</p></div>
         <div><strong>资料说明</strong><p>本站整理公开可访问的文字和图片资料，可能存在误差或更新延迟。</p><p><Link href="/about">关于幕鉴</Link> · <Link href="/privacy">数据与隐私说明</Link></p></div>

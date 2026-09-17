@@ -40,7 +40,6 @@ export default async function HomePage() {
         </section>
 
         <div className="shell content-with-rails">
-          <div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
           <div className="content-column">
             <section className="section-block" aria-labelledby="latest-title">
               <div className="section-heading">
@@ -53,6 +52,8 @@ export default async function HomePage() {
               {degraded && <p className="degraded-note">目录服务暂时不可用，当前不展示作品或人物资料。</p>}
               <PersonalizedWorkGrid context="recommendation" items={latest} emptyText="暂无可推荐的已发布作品" />
             </section>
+
+            <AdSlot label="最新内容后广告" placement="banner" slot="home.after_latest" />
 
             <section className="section-block" aria-labelledby="browse-title">
               <div className="section-heading">
@@ -80,10 +81,8 @@ export default async function HomePage() {
               </div>
             </section>
 
-            <AdSlot label="正文后横幅" placement="banner" />
-            <AdSlot label="信息流展示位" placement="infeed" />
           </div>
-          <div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div>
+          <div className="ad-rail ad-rail--right"><AdSlot label="首页右侧广告" placement="rail" slot="home.desktop_right" /></div>
         </div>
     </main>
   );

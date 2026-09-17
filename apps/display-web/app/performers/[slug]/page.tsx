@@ -52,8 +52,8 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
     height: performer.height_cm ? { "@type": "QuantitativeValue", value: performer.height_cm, unitCode: "CMT" } : undefined,
     memberOf: performer.agency ? { "@type": "Organization", name: performer.agency } : undefined,
     mainEntityOfPage: canonicalURL, isFamilyFriendly: seo.adult_rating ? false : undefined,
-  }} /><PageViewReporter contentType="performer" contentID={performer.id} /><div className="shell content-with-rails detail-layout"><div className="ad-rail ad-rail--left"><AdSlot label="左侧展示位" placement="rail" /></div>
-    <article className="content-column work-detail"><AdSlot label="顶部横幅" placement="banner" />
+  }} /><PageViewReporter contentType="performer" contentID={performer.id} /><div className="shell content-with-rails detail-layout">
+    <article className="content-column work-detail">
       <Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "人物资料", href: "/performers" }, { label: performer.name }]} />
       <div className="work-detail__header performer-detail__header"><div className="work-detail__visual performer-detail__visual">
         <SafeImage src={primary || "/default-performer.svg"} renditions={primaryImage?.renditions} fallbackSrc="/default-performer.svg" sizes="(max-width: 760px) calc(100vw - 24px), 420px" alt={`${performer.name} 人物图`} loading="eager" fetchPriority="high" width={640} height={800} />
@@ -70,6 +70,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
         </dl>
         <div className="detail-actions"><PerformerActions performerID={performer.id} targetPath={`/performers/${slug}`} /></div>
       </div></div>
+      <AdSlot label="人物资料后广告" placement="infeed" slot="performer.after_summary" />
       <section className="detail-section"><div className="section-heading"><div><h2>关联作品</h2></div></div>
         {worksResult.status === "invalid_cursor" ? <div className="empty-state"><strong>分页地址已失效</strong><p>请从关联作品第一页重新开始。</p><Link className="button button--quiet" href={`/performers/${slug}`}>返回第一页</Link></div> : null}
         {worksResult.status === "degraded" ? <div className="empty-state"><strong>关联作品暂时无法加载</strong><p>人物资料仍可浏览，请稍后重试作品列表。</p><Link className="button button--quiet" href={`/performers/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}>重试</Link></div> : null}
@@ -77,8 +78,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
         {worksResult.status === "ok" && !worksResult.data.items.length ? <p>{cursor ? "本页没有更多已发布关联作品。" : "暂无已发布关联作品。"}</p> : null}
         {worksResult.status === "ok" && (cursor || worksResult.data.next_cursor) ? <nav className="pagination" aria-label="关联作品分页">{cursor ? <Link className="button button--quiet" href={`/performers/${slug}`}>第一页</Link> : null}{worksResult.data.next_cursor ? <Link className="button" href={`/performers/${slug}?cursor=${encodeURIComponent(worksResult.data.next_cursor)}`}>下一页</Link> : <span>已到最后一页</span>}</nav> : null}
       </section>
-      <AdSlot label="详情页信息流展示位" placement="infeed" />
-    </article><div className="ad-rail ad-rail--right"><AdSlot label="右侧展示位" placement="rail" /></div></div></main>;
+    </article><div className="ad-rail ad-rail--right"><AdSlot label="人物详情右侧广告" placement="rail" slot="performer.desktop_right" /></div></div></main>;
 }
 
 function activityLabel(status: "active" | "retired" | "unknown") {
