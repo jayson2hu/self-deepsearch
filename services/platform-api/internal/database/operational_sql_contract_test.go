@@ -232,7 +232,7 @@ func TestPostgresOperationalSystemHealthContract(t *testing.T) {
 	h := newInvitationContractHarness(t)
 	now := contractNow()
 	actual, err := h.store.SystemHealth(h.ctx, now)
-	if err != nil || actual.SchemaVersion != 26 || !actual.CheckedAt.Equal(now) || actual.SearchZeroResults24h > actual.SearchRequests24h {
+	if err != nil || actual.SchemaVersion != 27 || !actual.CheckedAt.Equal(now) || actual.SearchZeroResults24h > actual.SearchRequests24h {
 		t.Fatalf("read operational system health: %+v, %v", actual, err)
 	}
 }
