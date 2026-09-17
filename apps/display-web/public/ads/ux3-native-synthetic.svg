@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" aria-labelledby="title description">
+  <title id="title">幕鉴原生广告卡模拟素材</title>
+  <desc id="description">用于审查作品网格广告卡布局的非商业模拟广告</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#20383b"/>
+      <stop offset="1" stop-color="#11181b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e3b74d"/>
+      <stop offset="1" stop-color="#c7463a"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#background)"/>
+  <rect x="34" y="34" width="572" height="332" rx="18" fill="none" stroke="#426368" stroke-width="2"/>
+  <rect x="58" y="62" width="94" height="30" rx="15" fill="url(#accent)"/>
+  <text x="105" y="83" fill="#11181b" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" text-anchor="middle">模拟广告</text>
+  <text x="58" y="166" fill="#f3f4f3" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="42" font-weight="800">原生广告卡</text>
+  <text x="58" y="212" fill="#bcc8c8" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="22">与作品卡同宽 · 无广告时作品自动补位</text>
+  <path d="M58 264h524" stroke="#426368" stroke-width="2"/>
+  <text x="58" y="314" fill="#e3b74d" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="18" font-weight="700">幕鉴测试环境</text>
+  <text x="582" y="314" fill="#819394" font-family="Arial, sans-serif" font-size="16" text-anchor="end">640 × 400</text>
+</svg>

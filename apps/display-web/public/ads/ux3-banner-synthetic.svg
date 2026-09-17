@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="90" viewBox="0 0 960 90" role="img" aria-labelledby="title description">
+  <title id="title">幕鉴列表下方横幅模拟素材</title>
+  <desc id="description">用于审查作品列表下方广告布局的非商业模拟广告</desc>
+  <rect width="960" height="90" fill="#19282b"/>
+  <rect x="0" width="10" height="90" fill="#d9ad45"/>
+  <text x="36" y="38" fill="#ffffff" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="24" font-weight="800">列表下方横幅广告</text>
+  <text x="36" y="64" fill="#aebfc0" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="15">幕鉴测试环境 · 无商业跳转 · 无第三方脚本</text>
+  <rect x="810" y="25" width="118" height="40" rx="20" fill="#c7463a"/>
+  <text x="869" y="51" fill="#ffffff" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" text-anchor="middle">模拟广告</text>
+</svg>
