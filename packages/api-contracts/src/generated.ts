@@ -818,6 +818,46 @@ export type SEOPageListResponse = {
   next_offset: number | null;
 };
 
+export type SEOScan = {
+  id: string;
+  source: "manual" | "scheduled";
+  status: "running" | "completed" | "failed";
+  scanned_count: number;
+  issue_count: number;
+  skipped_count: number;
+  truncated: boolean;
+  error_summary: string | null;
+  started_at: string;
+  completed_at: string | null;
+};
+
+export type SEOScanListResponse = {
+  items: Array<SEOScan>;
+};
+
+export type SEOIssue = {
+  id: string;
+  rule_code: string;
+  entity_type: "work" | "performer" | "studio";
+  entity_id: string;
+  url_path: string;
+  priority: "P0" | "P1" | "P2";
+  status: "open" | "in_progress" | "retest" | "closed";
+  evidence: Record<string, unknown>;
+  assignee_id: string | null;
+  assignee: string | null;
+  due_at: string | null;
+  resolution_note: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  closed_at: string | null;
+  updated_at: string;
+};
+
+export type SEOIssueListResponse = {
+  items: Array<SEOIssue>;
+};
+
 export type EditorialRecommendation = {
   id: string;
   work_id: string;

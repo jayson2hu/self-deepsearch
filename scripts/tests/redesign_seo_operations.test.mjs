@@ -29,3 +29,18 @@ test("SEO management routes require operations roles and do not expose a public 
   assert.doesNotMatch(routes, /\/api\/v1\/site\/seo/);
   assert.match(handler, /requireAdminRole\(w, r, "admin", "owner"\)/);
 });
+
+test("SEO issue workflow is bounded, deduplicated and requires successful retest before close", async () => {
+  const [migration, store, manager] = await Promise.all([
+    readFile(new URL("../../db/migrations/00025_seo_issue_workflow.sql", import.meta.url), "utf8"),
+    readFile(new URL("../../services/platform-api/internal/database/seo_issues.go", import.meta.url), "utf8"),
+    readFile(new URL("../../apps/ops-web/components/seo-issue-manager.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(migration, /seo_issues_active_rule_url_idx/);
+  assert.match(migration, /WHERE status <> 'closed'/);
+  assert.match(store, /LIMIT 1001/);
+  assert.match(store, /if len\(targets\) > 1000/);
+  assert.match(store, /retest_failed/);
+  assert.match(store, /publication_status='published' AND content_classification<>'unknown' AND seo_quality_status='eligible'/);
+  assert.match(manager, /复测未通过/);
+});

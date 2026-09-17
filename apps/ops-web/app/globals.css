@@ -197,6 +197,20 @@ table select { min-height: 30px; padding: 0 8px; border: 1px solid var(--line); 
 .seo-table td { white-space: normal; vertical-align: top; }
 .seo-table td strong, .seo-table td small, .seo-table td code { display: block; max-width: 390px; overflow-wrap: anywhere; }
 .seo-table td small, .seo-table td code { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.seo-issue-manager { display: grid; gap: 16px; }
+.seo-scan-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px; border: 1px solid var(--line); background: white; }
+.seo-scan-bar p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
+.seo-scan-bar button { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 4px; }
+.seo-issue-filter { display: flex; align-items: end; gap: 14px; }
+.seo-issue-filter label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.seo-issue-filter select { min-height: 34px; padding: 0 9px; border: 1px solid var(--line); background: white; }
+.seo-issue-filter span { color: var(--muted); font-size: 10px; }
+.seo-issue-table { min-width: 1120px; }
+.seo-issue-table td { white-space: normal; vertical-align: top; }
+.seo-issue-table td strong, .seo-issue-table td small, .seo-issue-table td code { display: block; max-width: 300px; overflow-wrap: anywhere; }
+.seo-issue-table td small, .seo-issue-table td code { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.seo-issue-actions { display: flex; gap: 6px; margin-top: 8px; }
+.seo-issue-actions button { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--green); color: white; background: var(--green); border-radius: 4px; }
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(12 18 24 / 58%); }
 .merge-dialog { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: white; box-shadow: 0 24px 70px rgb(0 0 0 / 22%); }
 .merge-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }

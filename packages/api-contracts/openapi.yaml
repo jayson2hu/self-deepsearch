@@ -1382,6 +1382,52 @@ paths:
         "200":
           description: SEO page inventory
           content: { application/json: { schema: { $ref: "#/components/schemas/SEOPageListResponse" } } }
+  /admin/v1/seo/scans:
+    get:
+      operationId: adminListSeoScans
+      description: Lists recent bounded internal SEO scans. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200": { description: Scan history, content: { application/json: { schema: { $ref: "#/components/schemas/SEOScanListResponse" } } } }
+    post:
+      operationId: adminRunSeoScan
+      description: Runs one internal publication scan of at most 1,000 targets. No caller-supplied URL is accepted. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "201": { description: Completed scan, content: { application/json: { schema: { $ref: "#/components/schemas/SEOScan" } } } }
+        "409": { description: Another scan is active }
+  /admin/v1/seo/issues:
+    get:
+      operationId: adminListSeoIssues
+      description: Lists deduplicated SEO optimization issues and closed history. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { in: query, name: status, schema: { enum: [all, open, in_progress, retest, closed], default: all } }
+      responses:
+        "200": { description: SEO issue queue, content: { application/json: { schema: { $ref: "#/components/schemas/SEOIssueListResponse" } } } }
+  /admin/v1/seo/issues/{issue_id}:
+    parameters:
+      - { in: path, name: issue_id, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: adminUpdateSeoIssue
+      description: Assigns or transitions an issue. Closing is allowed only when current publication eligibility passes retest. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status, assignee_id, due_at, note]
+              properties:
+                status: { enum: [open, in_progress, retest, closed] }
+                assignee_id: { type: [string, "null"], format: uuid }
+                due_at: { type: [string, "null"], format: date-time }
+                note: { type: string, minLength: 2, maxLength: 2000 }
+      responses:
+        "200": { description: Updated issue, content: { application/json: { schema: { $ref: "#/components/schemas/SEOIssue" } } } }
+        "409": { description: Invalid transition or failed retest }
   /admin/v1/users/{user_id}/role:
     parameters:
       - in: path
@@ -2886,6 +2932,52 @@ components:
         items: { type: array, items: { $ref: "#/components/schemas/SEOPage" } }
         total: { type: integer, minimum: 0 }
         next_offset: { type: [integer, "null"], minimum: 0 }
+    SEOScan:
+      type: object
+      additionalProperties: false
+      required: [id, source, status, scanned_count, issue_count, skipped_count, truncated, error_summary, started_at, completed_at]
+      properties:
+        id: { type: string, format: uuid }
+        source: { enum: [manual, scheduled] }
+        status: { enum: [running, completed, failed] }
+        scanned_count: { type: integer, minimum: 0, maximum: 1000 }
+        issue_count: { type: integer, minimum: 0 }
+        skipped_count: { type: integer, minimum: 0 }
+        truncated: { type: boolean }
+        error_summary: { type: [string, "null"] }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+    SEOScanListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/SEOScan" } } }
+    SEOIssue:
+      type: object
+      additionalProperties: false
+      required: [id, rule_code, entity_type, entity_id, url_path, priority, status, evidence, assignee_id, assignee, due_at, resolution_note, first_seen_at, last_seen_at, closed_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        rule_code: { type: string, pattern: "^SEO_[A-Z0-9_]{3,80}$" }
+        entity_type: { enum: [work, performer, studio] }
+        entity_id: { type: string, format: uuid }
+        url_path: { type: string }
+        priority: { enum: [P0, P1, P2] }
+        status: { enum: [open, in_progress, retest, closed] }
+        evidence: { type: object, additionalProperties: true }
+        assignee_id: { type: [string, "null"], format: uuid }
+        assignee: { type: [string, "null"], format: email }
+        due_at: { type: [string, "null"], format: date-time }
+        resolution_note: { type: [string, "null"] }
+        first_seen_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        closed_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: string, format: date-time }
+    SEOIssueListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/SEOIssue" } } }
     EditorialRecommendation:
       type: object
       required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]

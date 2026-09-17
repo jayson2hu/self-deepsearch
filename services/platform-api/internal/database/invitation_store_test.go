@@ -57,7 +57,7 @@ func newInvitationContractHarness(t *testing.T) *invitationContractHarness {
 	}
 	if schemaVersion != 23 {
 		store.Close()
-		t.Fatal("invitation contract requires migrated schema 24")
+		t.Fatal("invitation contract requires migrated schema 25")
 	}
 	var restricted bool
 	if err := store.pool.QueryRow(openContext, `SELECT current_user = 'platform_api_login' AND NOT rolsuper AND NOT rolbypassrls FROM pg_roles WHERE rolname = current_user`).Scan(&restricted); err != nil || !restricted {
