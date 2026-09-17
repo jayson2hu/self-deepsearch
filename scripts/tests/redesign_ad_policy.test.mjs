@@ -109,6 +109,18 @@ test("backend creatives allow no-click ads and enforce device scope", () => {
   assert.equal(policy.resolveAdCreative(creative({ device_scope: "television" }), "banner", environment(), now).state, "error");
 });
 
+test("native creatives use the same 16:10 ratio as work cards", () => {
+  const native = creative({
+    slot: "home.recommendation_card", placement: "native", width: 640, height: 400,
+    image_url: "/ads/native-card.webp", target_url: null,
+  });
+  const result = policy.resolveAdCreative(native, "native", environment([native]), now, native.slot);
+  assert.equal(result.state, "ready");
+  assert.equal(result.creative.width, 640);
+  assert.equal(result.creative.height, 400);
+  assert.equal(policy.resolveAdCreative({ ...native, height: 120 }, "native", environment([native]), now, native.slot).state, "error");
+});
+
 test("page governance keeps search and account-wide footer free of ads", async () => {
   const [search, footer, home, work, css] = await Promise.all([
     readFile(new URL("../../apps/display-web/app/search/page.tsx", import.meta.url), "utf8"),
@@ -120,26 +132,60 @@ test("page governance keeps search and account-wide footer free of ads", async (
   assert.doesNotMatch(search, /AdSlot|顶部横幅|左侧展示位|右侧展示位/);
   assert.doesNotMatch(footer, /AdSlot|footer-ad/);
   assert.match(home, /slot="home\.after_latest"/);
+  assert.match(home, /slot="home\.recommendation_card"/);
   assert.doesNotMatch(home, /ad-rail--left|信息流展示位/);
   assert.match(work, /slot="work\.after_summary"/);
+  assert.match(work, /slot="work\.related_card"/);
   assert.doesNotMatch(work, /ad-rail--left|顶部横幅/);
   assert.match(css, /@media \(max-width: 1199px\)[\s\S]*?\.ad-rail \{ display: none; \}/);
 });
 
-test("catalog lists request one in-feed ad after eight natural items", async () => {
+test("work catalogs use a native eighth card and a banner after the complete grid", async () => {
   const lists = [
-    ["latest", "latest.after8", "latest.desktop_right"],
-    ["recent", "recent.after8", "recent.desktop_right"],
-    ["popular", "popular.after8", "popular.desktop_right"],
+    ["latest", "latest.native_card", "latest.after_grid", "latest.desktop_right"],
+    ["recent", "recent.native_card", "recent.after_grid", "recent.desktop_right"],
+    ["popular", "popular.native_card", "popular.after_grid", "popular.desktop_right"],
+  ];
+  for (const [path, native, banner, rail] of lists) {
+    const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
+    assert.match(source, /items=\{(?:result\.data\.)?items\}/);
+    assert.match(source, /nativeAdPosition=\{8\}/);
+    assert.match(source, new RegExp(`placement="native" slot="${native.replaceAll(".", "\\.")}"`));
+    assert.match(source, new RegExp(`placement="banner" slot="${banner.replaceAll(".", "\\.")}"`));
+    assert.match(source, new RegExp(`slot="${rail.replaceAll(".", "\\.")}"`));
+    assert.doesNotMatch(source, /\.after8|items\.slice/);
+  }
+});
+
+test("recommendation grids reserve a fourth native ad candidate without dropping works", async () => {
+  const recommendations = [
+    ["page.tsx", "home.recommendation_card"],
+    ["works/[slug]/page.tsx", "work.related_card"],
+    ["performers/[slug]/page.tsx", "performer.related_card"],
+    ["studios/[slug]/page.tsx", "studio.related_card"],
+  ];
+  for (const [path, slot] of recommendations) {
+    const source = await readFile(new URL(`../../apps/display-web/app/${path}`, import.meta.url), "utf8");
+    assert.match(source, /nativeAdPosition=\{4\}/);
+    assert.match(source, new RegExp(`placement="native" slot="${slot.replaceAll(".", "\\.")}"`));
+  }
+
+  const grid = await readFile(new URL("../../apps/display-web/components/personalized-work-grid.tsx", import.meta.url), "utf8");
+  assert.match(grid, /visible\.map\(\(item, index\)/);
+  assert.match(grid, /index === nativeAdPosition - 1 \? nativeAd : null/);
+  assert.match(grid, /<WorkCard item=\{item\}/);
+  assert.doesNotMatch(grid, /splice|slice\(0, nativeAdPosition|filter\([^)]*nativeAd/);
+});
+
+test("non-work entity directories keep their existing list and rail placements", async () => {
+  const lists = [
     ["performers", "performer.list_after8", "performer.list_desktop_right"],
     ["studios", "studio.list_after8", "studio.list_desktop_right"],
   ];
   for (const [path, infeed, rail] of lists) {
     const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
-    assert.match(source, /length >= 8 \? <AdSlot/);
     assert.match(source, new RegExp(`slot="${infeed.replaceAll(".", "\\.")}"`));
     assert.match(source, new RegExp(`slot="${rail.replaceAll(".", "\\.")}"`));
-    assert.equal((source.match(/placement="infeed"/g) ?? []).length, 1);
   }
 });
 

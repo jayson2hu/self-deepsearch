@@ -21,7 +21,7 @@ export default async function LatestPage({ searchParams }: { searchParams: Promi
     <div className="shell content-with-rails">
       <div className="content-column"><section className="section-block">
         {result.degraded ? <p className="state-note state-note--warning">资料服务暂时不可用，当前显示测试内容。</p> : null}
-        {items.length ? <><PersonalizedWorkGrid context="catalog" items={items.slice(0, 8)} emptyText="暂无已发布作品" />{items.length >= 8 ? <AdSlot label="列表第八项后广告" placement="infeed" slot="latest.after8" /> : null}{items.length > 8 ? <PersonalizedWorkGrid context="catalog" items={items.slice(8)} emptyText="" startPosition={9} /> : null}</> : <div className="empty-state"><Clock3 size={30} /><strong>暂无已发布作品</strong></div>}
+        {items.length ? <><PersonalizedWorkGrid context="catalog" items={items} emptyText="暂无已发布作品" nativeAd={<AdSlot label="最新发行原生作品卡广告" placement="native" slot="latest.native_card" />} nativeAdPosition={8} /><AdSlot label="最新发行列表下方广告" placement="banner" slot="latest.after_grid" /></> : <div className="empty-state"><Clock3 size={30} /><strong>暂无已发布作品</strong></div>}
         {result.data?.next_cursor ? <a className="button pagination-next" href={`/latest?cursor=${encodeURIComponent(result.data.next_cursor)}`}>下一页</a> : null}
       </section></div><div className="ad-rail ad-rail--right"><AdSlot label="最新目录右侧广告" placement="rail" slot="latest.desktop_right" /></div></div>
   </main>;

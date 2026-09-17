@@ -50,7 +50,7 @@ export default async function HomePage() {
                 <Link href="/latest">查看全部 <ArrowRight size={16} /></Link>
               </div>
               {degraded && <p className="degraded-note">目录服务暂时不可用，当前不展示作品或人物资料。</p>}
-              <PersonalizedWorkGrid context="recommendation" items={latest} emptyText="暂无可推荐的已发布作品" />
+              <PersonalizedWorkGrid context="recommendation" items={latest} emptyText="暂无可推荐的已发布作品" nativeAd={<AdSlot label="首页推荐原生作品卡广告" placement="native" slot="home.recommendation_card" />} nativeAdPosition={4} />
             </section>
 
             <AdSlot label="最新内容后广告" placement="banner" slot="home.after_latest" />

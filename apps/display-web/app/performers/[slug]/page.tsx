@@ -6,10 +6,10 @@ import { AdSlot } from "../../../components/ad-slot";
 import { Breadcrumbs } from "../../../components/breadcrumbs";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
+import { PersonalizedWorkGrid } from "../../../components/personalized-work-grid";
 import { PerformerActions } from "../../../components/performer-actions";
 import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { ViewStats } from "../../../components/view-stats";
-import { WorkCard } from "../../../components/work-card";
 import { SafeImage } from "../../../components/safe-image";
 import { getPerformer, getPerformerWorks } from "../../../lib/api";
 import { canonicalWithCursor, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
@@ -76,7 +76,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
       <section className="detail-section"><div className="section-heading"><div><h2>关联作品</h2></div></div>
         {worksResult.status === "invalid_cursor" ? <div className="empty-state"><strong>分页地址已失效</strong><p>请从关联作品第一页重新开始。</p><Link className="button button--quiet" href={`/performers/${slug}`}>返回第一页</Link></div> : null}
         {worksResult.status === "degraded" ? <div className="empty-state"><strong>关联作品暂时无法加载</strong><p>人物资料仍可浏览，请稍后重试作品列表。</p><Link className="button button--quiet" href={`/performers/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}>重试</Link></div> : null}
-        {worksResult.status === "ok" && worksResult.data.items.length ? <div className="work-grid">{worksResult.data.items.map((item, index) => <WorkCard item={item} key={item.id} position={index + 1} />)}</div> : null}
+        {worksResult.status === "ok" && worksResult.data.items.length ? <PersonalizedWorkGrid context="catalog" items={worksResult.data.items} emptyText="暂无已发布关联作品" nativeAd={<AdSlot label="人物关联作品原生广告" placement="native" slot="performer.related_card" />} nativeAdPosition={4} /> : null}
         {worksResult.status === "ok" && !worksResult.data.items.length ? <p>{cursor ? "本页没有更多已发布关联作品。" : "暂无已发布关联作品。"}</p> : null}
         {worksResult.status === "ok" && (cursor || worksResult.data.next_cursor) ? <nav className="pagination" aria-label="关联作品分页">{cursor ? <Link className="button button--quiet" href={`/performers/${slug}`}>第一页</Link> : null}{worksResult.data.next_cursor ? <Link className="button" href={`/performers/${slug}?cursor=${encodeURIComponent(worksResult.data.next_cursor)}`}>下一页</Link> : <span>已到最后一页</span>}</nav> : null}
       </section>
