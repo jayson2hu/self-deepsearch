@@ -1,4 +1,5 @@
 import type {
+  AdCampaignListResponse,
   AdminFeedbackListResponse,
   AuditLogListResponse,
   CatalogEntityListResponse,
@@ -66,6 +67,11 @@ export async function getOperationsUsers(query = ""): Promise<OperationsUserList
 export async function getOperationsUserSummary(): Promise<OperationsUserSummary | null> {
   const response = await privateRequest("/admin/v1/users/summary");
   return response?.ok ? ((await response.json()) as OperationsUserSummary) : null;
+}
+
+export async function getAdCampaigns(): Promise<AdCampaignListResponse | null> {
+  const response = await privateRequest("/admin/v1/ads");
+  return response?.ok ? ((await response.json()) as AdCampaignListResponse) : null;
 }
 
 export async function getAuditLogs(requestID: string): Promise<AuditLogListResponse | null> {

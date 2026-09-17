@@ -1,5 +1,5 @@
 import type { UserSummary } from "@self-deepsearch/api-contracts";
-import { BookOpen, FileCheck2, FileUp, Gauge, Gavel, GitCompareArrows, Image as ImageIcon, Library, LogOut, MessageSquare, PauseCircle, ScrollText, Settings2, ShieldCheck, Sparkles } from "lucide-react";
+import { BookOpen, FileCheck2, FileUp, Gauge, Gavel, GitCompareArrows, Image as ImageIcon, Library, LogOut, Megaphone, MessageSquare, PauseCircle, ScrollText, Settings2, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -10,6 +10,7 @@ const navigation: Array<{ href: string; label: string; icon: typeof Gauge; roles
   { href: "/catalog", label: "资料目录", icon: Library },
   { href: "/editorial", label: "编辑推荐", icon: Sparkles },
   { href: "/settings", label: "首页配置", icon: Settings2 },
+  { href: "/ads", label: "广告管理", icon: Megaphone, roles: ["admin", "owner"] },
   { href: "/#review-title", label: "审核队列", icon: FileCheck2 },
   { href: "/conflicts", label: "字段冲突", icon: GitCompareArrows },
   { href: "/feedback", label: "反馈审核", icon: MessageSquare },

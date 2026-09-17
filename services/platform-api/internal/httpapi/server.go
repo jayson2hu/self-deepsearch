@@ -226,6 +226,7 @@ func (s *Server) routes() http.Handler {
 	router.Get("/api/v1/site/home", s.home)
 	router.Get("/api/v1/site/editorial", s.editorialWorks)
 	router.Get("/api/v1/site/sitemap", s.sitemap)
+	router.Get("/api/v1/site/ads", s.publicAd)
 	router.Get("/api/v1/site/redirect", s.publicRedirect)
 	router.Get("/api/v1/search/works", s.searchWorks)
 	router.Get("/api/v1/search/performers", s.searchPerformers)
@@ -299,6 +300,11 @@ func (s *Server) routes() http.Handler {
 	router.Get("/admin/v1/users", s.adminListUsers)
 	router.Get("/admin/v1/users/summary", s.adminUserSummary)
 	router.Get("/admin/v1/users/{userID}", s.adminGetUser)
+	router.Get("/admin/v1/ads", s.adminListAds)
+	router.Post("/admin/v1/ads", s.adminCreateAd)
+	router.Patch("/admin/v1/ads/{campaignID}", s.adminUpdateAd)
+	router.Post("/admin/v1/ads/{campaignID}/publish", s.adminPublishAd)
+	router.Post("/admin/v1/ads/{campaignID}/pause", s.adminPauseAd)
 	router.Post("/admin/v1/users/{userID}/role", s.adminChangeUserRole)
 	router.Post("/admin/v1/users/{userID}/status", s.adminChangeUserStatus)
 	router.Get("/admin/v1/invitations", s.adminListInvitations)
@@ -396,6 +402,9 @@ func recentAuthRequired(r *http.Request) bool {
 	}
 	if strings.HasPrefix(path, "/admin/v1/users/") {
 		return r.Method == http.MethodPost && (strings.HasSuffix(path, "/role") || strings.HasSuffix(path, "/status"))
+	}
+	if strings.HasPrefix(path, "/admin/v1/ads/") {
+		return r.Method == http.MethodPost && (strings.HasSuffix(path, "/publish") || strings.HasSuffix(path, "/pause"))
 	}
 	if path == "/admin/v1/invitations" {
 		return r.Method == http.MethodPost

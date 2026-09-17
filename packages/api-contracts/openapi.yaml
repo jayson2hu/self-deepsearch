@@ -85,6 +85,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/SitemapResponse" }
+  /api/v1/site/ads:
+    get:
+      operationId: getEffectiveAd
+      description: Returns at most one currently effective reviewed creative for an exact stable slot. An empty creative is a successful no-fill response.
+      parameters:
+        - { in: query, name: slot, required: true, schema: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" } }
+        - { in: query, name: placement, required: true, schema: { enum: [banner, rail, infeed] } }
+      responses:
+        "200":
+          description: Effective creative or no fill
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicAdResponse" }
+        "400": { description: Invalid slot }
   /api/v1/site/redirect:
     get:
       operationId: resolvePublicRedirect
@@ -1263,6 +1277,87 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/OperationsUser" }
         "404": { description: User not found }
+  /admin/v1/ads:
+    get:
+      operationId: adminListAds
+      description: Lists the latest draft or published version of each campaign. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Advertisement campaigns
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdCampaignListResponse" }
+    post:
+      operationId: adminCreateAd
+      description: Creates a draft campaign. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdCampaignRequest" }
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdCampaign" }
+        "400": { description: Invalid campaign }
+  /admin/v1/ads/{campaign_id}:
+    parameters:
+      - { in: path, name: campaign_id, required: true, schema: { type: string, format: uuid } }
+    patch:
+      operationId: adminUpdateAd
+      description: Updates the latest draft or creates a new draft from a published version using optimistic version locking. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/AdCampaignRequest"
+                - type: object
+                  required: [expected_version]
+                  properties: { expected_version: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Draft updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/AdCampaign" } } }
+        "409": { description: Version conflict }
+  /admin/v1/ads/{campaign_id}/publish:
+    parameters:
+      - { in: path, name: campaign_id, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: adminPublishAd
+      description: Publishes an exact draft version and clears pause. Requires owner and recent authentication.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_version]
+              properties: { expected_version: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Version published
+          content: { application/json: { schema: { $ref: "#/components/schemas/AdCampaign" } } }
+        "409": { description: Version conflict }
+  /admin/v1/ads/{campaign_id}/pause:
+    parameters:
+      - { in: path, name: campaign_id, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: adminPauseAd
+      description: Immediately pauses the published campaign. Requires owner and recent authentication.
+      security: [{ sessionCookie: [], recentAuthCookie: [] }]
+      responses:
+        "200":
+          description: Campaign paused
+          content: { application/json: { schema: { $ref: "#/components/schemas/AdCampaign" } } }
   /admin/v1/users/{user_id}/role:
     parameters:
       - in: path
@@ -2656,6 +2751,73 @@ components:
         public_registrations_seven_days: { type: integer, minimum: 0 }
         unknown_origin: { type: integer, minimum: 0 }
         coverage_started_at: { type: [string, "null"], format: date-time }
+    PublicAdCreative:
+      type: object
+      additionalProperties: false
+      required: [slot, placement, device_scope, title, sponsor, image_url, image_alt, target_url, width, height, starts_at, ends_at]
+      properties:
+        slot: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" }
+        placement: { enum: [banner, rail, infeed] }
+        device_scope: { enum: [all, desktop, mobile] }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        sponsor: { type: string, minLength: 1, maxLength: 120 }
+        image_url: { type: string, minLength: 1, maxLength: 2000 }
+        image_alt: { type: string, maxLength: 160 }
+        target_url: { type: [string, "null"], maxLength: 2000 }
+        width: { type: integer, minimum: 1 }
+        height: { type: integer, minimum: 1 }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
+    PublicAdResponse:
+      type: object
+      additionalProperties: false
+      required: [creative]
+      properties:
+        creative:
+          anyOf:
+            - { $ref: "#/components/schemas/PublicAdCreative" }
+            - { type: "null" }
+    AdCampaignRequest:
+      type: object
+      additionalProperties: false
+      required: [name, advertiser, slot_code, placement, page_scope, device_scope, title, sponsor, image_url, image_alt, target_url, width, height, priority, starts_at, ends_at]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        advertiser: { type: string, minLength: 1, maxLength: 120 }
+        slot_code: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" }
+        placement: { enum: [banner, rail, infeed] }
+        page_scope: { enum: [home, work, performer, studio, latest, recent, popular] }
+        device_scope: { enum: [all, desktop, mobile] }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        sponsor: { type: string, minLength: 1, maxLength: 120 }
+        image_url: { type: string, minLength: 1, maxLength: 2000 }
+        image_alt: { type: string, maxLength: 160 }
+        target_url: { type: [string, "null"], maxLength: 2000 }
+        width: { type: integer, minimum: 1 }
+        height: { type: integer, minimum: 1 }
+        priority: { type: integer, minimum: -1000, maximum: 1000 }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
+    AdCampaign:
+      allOf:
+        - { $ref: "#/components/schemas/AdCampaignRequest" }
+        - type: object
+          required: [id, version, version_state, status, published_at, paused_at, created_at, updated_at]
+          properties:
+            id: { type: string, format: uuid }
+            version: { type: integer, minimum: 1 }
+            version_state: { enum: [draft, published] }
+            status: { enum: [draft, scheduled, live, paused, expired] }
+            published_at: { type: [string, "null"], format: date-time }
+            paused_at: { type: [string, "null"], format: date-time }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    AdCampaignListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AdCampaign" } }
     EditorialRecommendation:
       type: object
       required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]

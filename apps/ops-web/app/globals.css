@@ -180,6 +180,13 @@ table select { min-height: 30px; padding: 0 8px; border: 1px solid var(--line); 
 .form-actions { display: flex; justify-content: flex-end; }
 .form-actions { gap: 8px; }
 .editorial-manager { display: grid; gap: 20px; }
+.ad-manager { display: grid; gap: 20px; }
+.ad-form { padding: 20px; border: 1px solid var(--line); background: white; }
+.ad-table { min-width: 930px; }
+.ad-table td { white-space: normal; vertical-align: top; }
+.ad-table td strong, .ad-table td small { display: block; }
+.ad-table td small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.ad-table code { overflow-wrap: anywhere; font-size: 10px; }
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(12 18 24 / 58%); }
 .merge-dialog { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: white; box-shadow: 0 24px 70px rgb(0 0 0 / 22%); }
 .merge-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }

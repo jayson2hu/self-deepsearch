@@ -246,6 +246,62 @@ type UserManagementRepository interface {
 	GetUser(context.Context, string) (User, error)
 }
 
+type AdCampaignInput struct {
+	Name        string
+	Advertiser  string
+	SlotCode    string
+	Placement   string
+	PageScope   string
+	DeviceScope string
+	Title       string
+	Sponsor     string
+	ImageURL    string
+	ImageAlt    string
+	TargetURL   *string
+	Width       int
+	Height      int
+	Priority    int
+	StartsAt    time.Time
+	EndsAt      time.Time
+}
+
+type AdCampaign struct {
+	ID           string
+	Name         string
+	Advertiser   string
+	VersionID    string
+	Version      int
+	VersionState string
+	Status       string
+	SlotCode     string
+	Placement    string
+	PageScope    string
+	DeviceScope  string
+	Title        string
+	Sponsor      string
+	ImageURL     string
+	ImageAlt     string
+	TargetURL    *string
+	Width        int
+	Height       int
+	Priority     int
+	StartsAt     time.Time
+	EndsAt       time.Time
+	PublishedAt  *time.Time
+	PausedAt     *time.Time
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type AdManagementRepository interface {
+	ListAdCampaigns(context.Context, int) ([]AdCampaign, error)
+	CreateAdCampaign(context.Context, AdCampaignInput, string, string, time.Time) (AdCampaign, error)
+	UpdateAdCampaign(context.Context, string, int, AdCampaignInput, string, string, time.Time) (AdCampaign, error)
+	PublishAdCampaign(context.Context, string, int, string, string, time.Time) (AdCampaign, error)
+	PauseAdCampaign(context.Context, string, string, string, time.Time) (AdCampaign, error)
+	EffectiveAd(context.Context, string, string, time.Time) (AdCampaign, error)
+}
+
 type EditorialRecommendation struct {
 	ID        string
 	WorkID    string

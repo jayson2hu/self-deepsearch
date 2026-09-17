@@ -10,6 +10,7 @@ export type AdCreative = {
   targetUrl: string | null;
   width: number;
   height: number;
+  deviceScope: "all" | "desktop" | "mobile";
 };
 
 export type AdSlotResolution =
@@ -27,7 +28,7 @@ const dimensions: Record<AdPlacement, { width: number; height: number }> = {
 const safeText = /^[^<>\u0000-\u001f\u007f]{1,120}$/;
 const safeAltText = /^[^<>\u0000-\u001f\u007f]{0,160}$/;
 const rfc3339Pattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
-const creativeKeys = new Set(["slot", "placement", "title", "sponsor", "image_url", "image_alt", "target_url", "width", "height", "starts_at", "ends_at"]);
+const creativeKeys = new Set(["slot", "placement", "device_scope", "title", "sponsor", "image_url", "image_alt", "target_url", "width", "height", "starts_at", "ends_at"]);
 
 export function adSlotKey(placement: AdPlacement, label: string): string {
   return `${placement}:${label}`;
@@ -59,8 +60,14 @@ export function resolveAdSlot(
   if (matches.length === 0) return { state: "empty" };
   if (matches.length !== 1) return { state: "error" };
 
-  const creative = validateCreative(matches[0], placement, environment, now);
-  return creative ? { state: "ready", creative } : { state: "error" };
+  return resolveAdCreative(matches[0], placement, environment, now, slot);
+}
+
+export function resolveAdCreative(value: unknown, placement: AdPlacement, environment: Environment = process.env, now = new Date(), expectedSlot = ""): AdSlotResolution {
+  if (!isObject(value)) return { state: "error" };
+  const creative = validateCreative(value, placement, environment, now);
+  if (!creative || (expectedSlot && creative.slot !== expectedSlot)) return { state: "error" };
+  return { state: "ready", creative };
 }
 
 function previewResolution(placement: AdPlacement, label: string, slot: string, environment: Environment): AdSlotResolution {
@@ -78,6 +85,7 @@ function previewResolution(placement: AdPlacement, label: string, slot: string, 
       targetUrl: null,
       width: size.width,
       height: size.height,
+      deviceScope: "all",
     },
   };
 }
@@ -86,11 +94,14 @@ function validateCreative(value: Record<string, unknown>, placement: AdPlacement
   const size = dimensions[placement];
   if (Object.keys(value).some((key) => !creativeKeys.has(key))) return null;
   if (value.placement !== placement || value.width !== size.width || value.height !== size.height) return null;
-  if (![value.slot, value.title, value.sponsor, value.image_url, value.image_alt, value.target_url, value.starts_at, value.ends_at].every((item) => typeof item === "string")) return null;
+  if (![value.slot, value.title, value.sponsor, value.image_url, value.image_alt, value.starts_at, value.ends_at].every((item) => typeof item === "string")) return null;
+  if (value.target_url !== null && typeof value.target_url !== "string") return null;
+  if (value.device_scope !== undefined && !["all", "desktop", "mobile"].includes(String(value.device_scope))) return null;
   const strings = value as Record<string, string>;
   if (!safeText.test(strings.slot) || !safeText.test(strings.title) || !safeText.test(strings.sponsor) || !safeAltText.test(strings.image_alt)) return null;
   if (strings.slot.length > 200) return null;
-  if (!validAssetURL(strings.image_url, environment) || !validTargetURL(strings.target_url, environment)) return null;
+  const targetURL = value.target_url as string | null;
+  if (!validAssetURL(strings.image_url, environment) || (targetURL !== null && !validTargetURL(targetURL, environment))) return null;
   if (!rfc3339Pattern.test(strings.starts_at) || !rfc3339Pattern.test(strings.ends_at)) return null;
   const startsAt = Date.parse(strings.starts_at);
   const endsAt = Date.parse(strings.ends_at);
@@ -103,9 +114,10 @@ function validateCreative(value: Record<string, unknown>, placement: AdPlacement
     sponsor: strings.sponsor,
     imageUrl: strings.image_url,
     imageAlt: strings.image_alt,
-    targetUrl: strings.target_url,
+    targetUrl: targetURL,
     width: size.width,
     height: size.height,
+    deviceScope: (value.device_scope ?? "all") as AdCreative["deviceScope"],
   };
 }
 

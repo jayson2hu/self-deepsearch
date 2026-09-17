@@ -182,7 +182,7 @@ class MigrationContractTests(unittest.TestCase):
         self.assertIn("release_a_fixture' = '1'", seed_source)
         self.assertIn("SET LOCAL lock_timeout = '5s'", seed_source)
         self.assertIn("IN SHARE ROW EXCLUSIVE MODE", seed_source)
-        self.assertIn("current_schema_version IS DISTINCT FROM 23", seed_source)
+        self.assertIn("current_schema_version IS DISTINCT FROM 24", seed_source)
         self.assertIn("fixtures require schema version 23", seed_source)
         self.assertIn("empty or fixture-only catalog database", seed_source)
         self.assertIn("account_status <> 'closed'", seed_source)

@@ -91,12 +91,22 @@ test("stable slot codes separate page placement from translated labels", () => {
 });
 
 test("AdSlot has no auth split, script injection or arbitrary HTML path", async () => {
-  const component = await readFile(new URL("../../apps/display-web/components/ad-slot.tsx", import.meta.url), "utf8");
+  const component = `${await readFile(new URL("../../apps/display-web/components/ad-slot.tsx", import.meta.url), "utf8")}\n${await readFile(new URL("../../apps/display-web/components/live-ad-slot.tsx", import.meta.url), "utf8")}`;
   assert.doesNotMatch(component, /session|authenticated|cookie/i);
   assert.doesNotMatch(component, /dangerouslySetInnerHTML|<script/i);
   assert.match(component, /rel="noopener noreferrer sponsored"/);
   assert.match(component, /data-ad-slot/);
-  assert.match(component, /!\("creative" in result\)/);
+  assert.match(component, /setInterval\(refresh, 30_000\)/);
+  assert.match(component, /setCreative\(null\)/);
+});
+
+test("backend creatives allow no-click ads and enforce device scope", () => {
+  const noClick = creative({ target_url: null, device_scope: "mobile" });
+  const result = policy.resolveAdCreative(noClick, "banner", environment(), now, noClick.slot);
+  assert.equal(result.state, "ready");
+  assert.equal(result.creative.targetUrl, null);
+  assert.equal(result.creative.deviceScope, "mobile");
+  assert.equal(policy.resolveAdCreative(creative({ device_scope: "television" }), "banner", environment(), now).state, "error");
 });
 
 test("page governance keeps search and account-wide footer free of ads", async () => {

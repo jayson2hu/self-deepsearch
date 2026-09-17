@@ -368,14 +368,19 @@ def validate_japan(env: dict[str, str], report: Report, *, mode: str, check_file
         report.error(scope, "SEO_INDEXING_ENABLED", "requires SEO_CONTENT_POLICY_READY=true")
 
     display_ads_enabled = boolean_value(report, {"DISPLAY_ADS_ENABLED": env.get("DISPLAY_ADS_ENABLED", "false")}, scope, "DISPLAY_ADS_ENABLED")
+    display_ad_source = env.get("DISPLAY_AD_SOURCE", "backend").strip()
+    if display_ad_source not in {"backend", "env"}:
+        report.error(scope, "DISPLAY_AD_SOURCE", "must be backend or env")
     if display_ads_enabled:
-        require_real(report, env, scope, ("DISPLAY_AD_SLOTS_JSON", "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS"))
-        try:
-            slots = json.loads(env.get("DISPLAY_AD_SLOTS_JSON", ""))
-            if not isinstance(slots, list) or not slots:
-                raise ValueError
-        except (json.JSONDecodeError, ValueError):
-            report.error(scope, "DISPLAY_AD_SLOTS_JSON", "must be a non-empty JSON array while ads are enabled")
+        require_real(report, env, scope, ("DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS"))
+        if display_ad_source == "env":
+            require_real(report, env, scope, ("DISPLAY_AD_SLOTS_JSON",))
+            try:
+                slots = json.loads(env.get("DISPLAY_AD_SLOTS_JSON", ""))
+                if not isinstance(slots, list) or not slots:
+                    raise ValueError
+            except (json.JSONDecodeError, ValueError):
+                report.error(scope, "DISPLAY_AD_SLOTS_JSON", "must be a non-empty JSON array while env-sourced ads are enabled")
         for key in ("DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS"):
             for index, hostname in enumerate(env.get(key, "").split(","), start=1):
                 validate_plain_hostname(report, {f"host_{index}": hostname.strip()}, scope, f"{key}[{index}]")

@@ -711,6 +711,75 @@ export type OperationsUserSummary = {
   coverage_started_at: string | null;
 };
 
+export type PublicAdCreative = {
+  slot: string;
+  placement: "banner" | "rail" | "infeed";
+  device_scope: "all" | "desktop" | "mobile";
+  title: string;
+  sponsor: string;
+  image_url: string;
+  image_alt: string;
+  target_url: string | null;
+  width: number;
+  height: number;
+  starts_at: string;
+  ends_at: string;
+};
+
+export type PublicAdResponse = {
+  creative: PublicAdCreative | null;
+};
+
+export type AdCampaignRequest = {
+  name: string;
+  advertiser: string;
+  slot_code: string;
+  placement: "banner" | "rail" | "infeed";
+  page_scope: "home" | "work" | "performer" | "studio" | "latest" | "recent" | "popular";
+  device_scope: "all" | "desktop" | "mobile";
+  title: string;
+  sponsor: string;
+  image_url: string;
+  image_alt: string;
+  target_url: string | null;
+  width: number;
+  height: number;
+  priority: number;
+  starts_at: string;
+  ends_at: string;
+};
+
+export type AdCampaign = {
+  name: string;
+  advertiser: string;
+  slot_code: string;
+  placement: "banner" | "rail" | "infeed";
+  page_scope: "home" | "work" | "performer" | "studio" | "latest" | "recent" | "popular";
+  device_scope: "all" | "desktop" | "mobile";
+  title: string;
+  sponsor: string;
+  image_url: string;
+  image_alt: string;
+  target_url: string | null;
+  width: number;
+  height: number;
+  priority: number;
+  starts_at: string;
+  ends_at: string;
+  id: string;
+  version: number;
+  version_state: "draft" | "published";
+  status: "draft" | "scheduled" | "live" | "paused" | "expired";
+  published_at: string | null;
+  paused_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdCampaignListResponse = {
+  items: Array<AdCampaign>;
+};
+
 export type EditorialRecommendation = {
   id: string;
   work_id: string;
