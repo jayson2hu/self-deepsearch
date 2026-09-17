@@ -12,6 +12,8 @@ import type {
   OperationsUserListResponse,
   OperationsUserSummary,
   ReviewTaskListResponse,
+  SEOInventorySummary,
+  SEOPageListResponse,
   SessionResponse,
   TakedownListResponse,
   UserSummary,
@@ -72,6 +74,16 @@ export async function getOperationsUserSummary(): Promise<OperationsUserSummary 
 export async function getAdCampaigns(): Promise<AdCampaignListResponse | null> {
   const response = await privateRequest("/admin/v1/ads");
   return response?.ok ? ((await response.json()) as AdCampaignListResponse) : null;
+}
+
+export async function getSEOInventorySummary(): Promise<SEOInventorySummary | null> {
+  const response = await privateRequest("/admin/v1/seo/summary");
+  return response?.ok ? ((await response.json()) as SEOInventorySummary) : null;
+}
+
+export async function getSEOPages(query = "limit=25"): Promise<SEOPageListResponse | null> {
+  const response = await privateRequest(`/admin/v1/seo/pages?${query}`);
+  return response?.ok ? ((await response.json()) as SEOPageListResponse) : null;
 }
 
 export async function getAuditLogs(requestID: string): Promise<AuditLogListResponse | null> {

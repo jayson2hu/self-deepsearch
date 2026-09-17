@@ -300,6 +300,8 @@ func (s *Server) routes() http.Handler {
 	router.Get("/admin/v1/users", s.adminListUsers)
 	router.Get("/admin/v1/users/summary", s.adminUserSummary)
 	router.Get("/admin/v1/users/{userID}", s.adminGetUser)
+	router.Get("/admin/v1/seo/summary", s.adminSEOSummary)
+	router.Get("/admin/v1/seo/pages", s.adminSEOPages)
 	router.Get("/admin/v1/ads", s.adminListAds)
 	router.Post("/admin/v1/ads", s.adminCreateAd)
 	router.Patch("/admin/v1/ads/{campaignID}", s.adminUpdateAd)

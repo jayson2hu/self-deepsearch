@@ -187,6 +187,16 @@ table select { min-height: 30px; padding: 0 8px; border: 1px solid var(--line); 
 .ad-table td strong, .ad-table td small { display: block; }
 .ad-table td small { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .ad-table code { overflow-wrap: anywhere; font-size: 10px; }
+.seo-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seo-observed { color: var(--muted); font-size: 10px; }
+.seo-filters { display: grid; grid-template-columns: minmax(220px, 1.5fr) 150px 150px auto auto; align-items: end; gap: 10px; margin: 18px 0 12px; padding: 14px; border: 1px solid var(--line); background: white; }
+.seo-filters label { display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.seo-filters input, .seo-filters select, .seo-filters button { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: white; }
+.seo-filters button { color: white; border-color: var(--green); background: var(--green); }
+.seo-table { min-width: 1120px; }
+.seo-table td { white-space: normal; vertical-align: top; }
+.seo-table td strong, .seo-table td small, .seo-table td code { display: block; max-width: 390px; overflow-wrap: anywhere; }
+.seo-table td small, .seo-table td code { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(12 18 24 / 58%); }
 .merge-dialog { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: white; box-shadow: 0 24px 70px rgb(0 0 0 / 22%); }
 .merge-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }

@@ -1358,6 +1358,30 @@ paths:
         "200":
           description: Campaign paused
           content: { application/json: { schema: { $ref: "#/components/schemas/AdCampaign" } } }
+  /admin/v1/seo/summary:
+    get:
+      operationId: adminGetSeoSummary
+      description: Summarizes the authoritative publication SEO eligibility inventory. Indexable does not mean indexed. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: SEO eligibility summary
+          content: { application/json: { schema: { $ref: "#/components/schemas/SEOInventorySummary" } } }
+  /admin/v1/seo/pages:
+    get:
+      operationId: adminListSeoPages
+      description: Lists actual metadata templates and eligibility decisions for publication records. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { in: query, name: q, schema: { type: string, maxLength: 200 } }
+        - { in: query, name: entity_type, schema: { enum: [work, performer, studio] } }
+        - { in: query, name: status, schema: { enum: [published, hidden, takedown] } }
+        - { in: query, name: offset, schema: { type: integer, minimum: 0, default: 0 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200":
+          description: SEO page inventory
+          content: { application/json: { schema: { $ref: "#/components/schemas/SEOPageListResponse" } } }
   /admin/v1/users/{user_id}/role:
     parameters:
       - in: path
@@ -2818,6 +2842,50 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/AdCampaign" } }
+    SEOInventorySummary:
+      type: object
+      additionalProperties: false
+      required: [observed_at, total, indexable, excluded, unknown, sitemap_candidates, published, hidden, takedown, exclusion_reasons]
+      properties:
+        observed_at: { type: string, format: date-time }
+        total: { type: integer, minimum: 0 }
+        indexable: { type: integer, minimum: 0, description: Technically eligible; not a search-engine indexing claim. }
+        excluded: { type: integer, minimum: 0 }
+        unknown: { type: integer, minimum: 0 }
+        sitemap_candidates: { type: integer, minimum: 0 }
+        published: { type: integer, minimum: 0 }
+        hidden: { type: integer, minimum: 0 }
+        takedown: { type: integer, minimum: 0 }
+        exclusion_reasons: { type: object, additionalProperties: { type: integer, minimum: 0 } }
+    SEOPage:
+      type: object
+      additionalProperties: false
+      required: [entity_type, entity_id, url_path, title, description, canonical, robots, publication_status, content_classification, quality_status, media_policy, indexable, sitemap_eligible, exclusion_reason, updated_at, revision_href]
+      properties:
+        entity_type: { enum: [work, performer, studio] }
+        entity_id: { type: string, format: uuid }
+        url_path: { type: string, pattern: "^/(works|performers|studios)/" }
+        title: { type: string }
+        description: { type: string }
+        canonical: { type: string }
+        robots: { enum: ["index,follow", "noindex,nofollow"] }
+        publication_status: { enum: [published, hidden, takedown] }
+        content_classification: { enum: [unknown, non_explicit, explicit] }
+        quality_status: { enum: [unknown, eligible, ineligible] }
+        media_policy: { enum: [preview_allowed, preview_blocked, missing] }
+        indexable: { type: boolean }
+        sitemap_eligible: { type: boolean }
+        exclusion_reason: { type: [string, "null"], enum: [not_published, classification_unknown, quality_unknown, quality_ineligible, null] }
+        updated_at: { type: string, format: date-time }
+        revision_href: { type: string, pattern: "^/catalog/" }
+    SEOPageListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, total, next_offset]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/SEOPage" } }
+        total: { type: integer, minimum: 0 }
+        next_offset: { type: [integer, "null"], minimum: 0 }
     EditorialRecommendation:
       type: object
       required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]

@@ -780,6 +780,44 @@ export type AdCampaignListResponse = {
   items: Array<AdCampaign>;
 };
 
+export type SEOInventorySummary = {
+  observed_at: string;
+  total: number;
+  indexable: number;
+  excluded: number;
+  unknown: number;
+  sitemap_candidates: number;
+  published: number;
+  hidden: number;
+  takedown: number;
+  exclusion_reasons: Record<string, number>;
+};
+
+export type SEOPage = {
+  entity_type: "work" | "performer" | "studio";
+  entity_id: string;
+  url_path: string;
+  title: string;
+  description: string;
+  canonical: string;
+  robots: "index,follow" | "noindex,nofollow";
+  publication_status: "published" | "hidden" | "takedown";
+  content_classification: "unknown" | "non_explicit" | "explicit";
+  quality_status: "unknown" | "eligible" | "ineligible";
+  media_policy: "preview_allowed" | "preview_blocked" | "missing";
+  indexable: boolean;
+  sitemap_eligible: boolean;
+  exclusion_reason: "not_published" | "classification_unknown" | "quality_unknown" | "quality_ineligible" | null;
+  updated_at: string;
+  revision_href: string;
+};
+
+export type SEOPageListResponse = {
+  items: Array<SEOPage>;
+  total: number;
+  next_offset: number | null;
+};
+
 export type EditorialRecommendation = {
   id: string;
   work_id: string;
