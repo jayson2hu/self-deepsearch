@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="120" viewBox="0 0 640 120" role="img" aria-labelledby="title description">
+  <title id="title">UX2 列表模拟广告</title>
+  <desc id="description">用于验证列表第八项后的广告布局，不代表真实商业投放。</desc>
+  <rect width="640" height="120" fill="#123f39"/>
+  <rect x="22" y="24" width="72" height="72" rx="18" fill="#f4c34f"/>
+  <path d="M43 60l13 13 24-29" fill="none" stroke="#123f39" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="118" y="54" fill="#ffffff" font-family="sans-serif" font-size="24" font-weight="700">列表广告位效果验证</text>
+  <text x="118" y="82" fill="#b9d8d2" font-family="sans-serif" font-size="15">第 8 条内容后 · 合成素材 · 非真实投放</text>
+</svg>

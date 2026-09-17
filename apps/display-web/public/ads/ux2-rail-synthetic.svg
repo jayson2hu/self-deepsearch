@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="600" viewBox="0 0 160 600" role="img" aria-labelledby="title description">
+  <title id="title">UX2 侧栏模拟广告</title>
+  <desc id="description">用于验证桌面列表侧栏广告布局，不代表真实商业投放。</desc>
+  <rect width="160" height="600" fill="#123f39"/>
+  <circle cx="80" cy="74" r="38" fill="#f4c34f"/>
+  <path d="M59 74l14 14 30-37" fill="none" stroke="#123f39" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="80" y="160" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="700" text-anchor="middle">侧栏广告</text>
+  <text x="80" y="190" fill="#b9d8d2" font-family="sans-serif" font-size="13" text-anchor="middle">效果验证</text>
+  <line x1="34" y1="226" x2="126" y2="226" stroke="#4e7a74"/>
+  <text x="80" y="274" fill="#ffffff" font-family="sans-serif" font-size="14" text-anchor="middle">仅桌面展示</text>
+  <text x="80" y="304" fill="#b9d8d2" font-family="sans-serif" font-size="12" text-anchor="middle">合成素材</text>
+  <text x="80" y="326" fill="#b9d8d2" font-family="sans-serif" font-size="12" text-anchor="middle">非真实投放</text>
+  <rect x="24" y="490" width="112" height="42" rx="6" fill="#f4c34f"/>
+  <text x="80" y="517" fill="#123f39" font-family="sans-serif" font-size="14" font-weight="700" text-anchor="middle">广告测试</text>
+</svg>

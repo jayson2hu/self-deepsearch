@@ -127,12 +127,18 @@ test("page governance keeps search and account-wide footer free of ads", async (
 });
 
 test("catalog lists request one in-feed ad after eight natural items", async () => {
-  const paths = ["latest", "recent", "popular", "performers", "studios"];
-  for (const path of paths) {
+  const lists = [
+    ["latest", "latest.after8", "latest.desktop_right"],
+    ["recent", "recent.after8", "recent.desktop_right"],
+    ["popular", "popular.after8", "popular.desktop_right"],
+    ["performers", "performer.list_after8", "performer.list_desktop_right"],
+    ["studios", "studio.list_after8", "studio.list_desktop_right"],
+  ];
+  for (const [path, infeed, rail] of lists) {
     const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
     assert.match(source, /length >= 8 \? <AdSlot/);
-    assert.match(source, new RegExp(`slot="${path}\\.after8"`));
-    assert.match(source, new RegExp(`slot="${path}\\.desktop_right"`));
+    assert.match(source, new RegExp(`slot="${infeed.replaceAll(".", "\\.")}"`));
+    assert.match(source, new RegExp(`slot="${rail.replaceAll(".", "\\.")}"`));
     assert.equal((source.match(/placement="infeed"/g) ?? []).length, 1);
   }
 });

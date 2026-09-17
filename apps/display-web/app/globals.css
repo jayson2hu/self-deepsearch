@@ -418,6 +418,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .primary-search { min-height: 52px; grid-template-columns: 42px minmax(0, 1fr) 68px; }
   .content-with-rails { padding-top: 14px; }
   .ad-slot--banner, .ad-slot--infeed { margin-bottom: 12px; }
+  .ad-slot--banner > a, .ad-slot--banner > div, .ad-slot--infeed > a, .ad-slot--infeed > div { grid-template-columns: 1fr; }
+  .ad-slot--banner img, .ad-slot--infeed img { height: auto; max-height: none; object-fit: contain; }
   .ad-slot--banner small, .ad-slot--infeed small { display: none; }
   .ad-slot--footer small { display: none; }
   .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

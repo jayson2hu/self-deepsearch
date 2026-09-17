@@ -67,8 +67,8 @@
 | 最新发行 | `latest.after8` | `latest.desktop_right` |
 | 最近收录 | `recent.after8` | `recent.desktop_right` |
 | 热门浏览 | `popular.after8` | `popular.desktop_right` |
-| 人物资料 | `performers.after8` | `performers.desktop_right` |
-| 厂牌资料 | `studios.after8` | `studios.desktop_right` |
+| 人物资料 | `performer.list_after8` | `performer.list_desktop_right` |
+| 厂牌资料 | `studio.list_after8` | `studio.list_desktop_right` |
 
 ## 3. 验收标准
 
