@@ -6,7 +6,7 @@ import { WorkCard } from "./work-card";
 
 export type WorkGridContext = "recommendation" | "catalog";
 
-export function PersonalizedWorkGrid({ context, items, emptyText }: { context: WorkGridContext; items: HomeItem[]; emptyText: string }) {
+export function PersonalizedWorkGrid({ context, items, emptyText, startPosition = 1 }: { context: WorkGridContext; items: HomeItem[]; emptyText: string; startPosition?: number }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [preferenceState, setPreferenceState] = useState<"inactive" | "loading" | "anonymous" | "ready" | "unavailable">(context === "recommendation" ? "loading" : "inactive");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -80,7 +80,7 @@ export function PersonalizedWorkGrid({ context, items, emptyText }: { context: W
   }
 
   return <div aria-busy={preferenceState === "loading" || busyWorkID !== null}>
-    {visible.length ? <div className="work-grid">{visible.map((item, index) => <WorkCard key={item.id} item={item} position={index + 1} onHide={context === "recommendation" && preferenceState === "ready" ? hide : undefined} />)}</div> : <div className="empty-copy">{emptyText}</div>}
+    {visible.length ? <div className="work-grid">{visible.map((item, index) => <WorkCard key={item.id} item={item} position={startPosition + index} onHide={context === "recommendation" && preferenceState === "ready" ? hide : undefined} />)}</div> : <div className="empty-copy">{emptyText}</div>}
     {preferenceState === "loading" ? <p className="preference-message" role="status">正在加载推荐偏好…</p> : null}
     {preferenceState === "unavailable" ? <div className="preference-message preference-message--error" role="alert"><span>推荐偏好暂时不可用，当前展示完整列表。</span><button className="preference-retry" onClick={retryPreferences} type="button">重试</button></div> : null}
     {message ? <div className={`preference-message${messageIsError ? " preference-message--error" : ""}`} role={messageIsError ? "alert" : "status"}><span>{message}</span>{lastHiddenID && !messageIsError ? <button className="preference-retry" onClick={undoHide} type="button">撤销</button> : null}</div> : null}

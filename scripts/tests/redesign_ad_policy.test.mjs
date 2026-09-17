@@ -125,3 +125,27 @@ test("page governance keeps search and account-wide footer free of ads", async (
   assert.doesNotMatch(work, /ad-rail--left|顶部横幅/);
   assert.match(css, /@media \(max-width: 1199px\)[\s\S]*?\.ad-rail \{ display: none; \}/);
 });
+
+test("catalog lists request one in-feed ad after eight natural items", async () => {
+  const paths = ["latest", "recent", "popular", "performers", "studios"];
+  for (const path of paths) {
+    const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
+    assert.match(source, /length >= 8 \? <AdSlot/);
+    assert.match(source, new RegExp(`slot="${path}\\.after8"`));
+    assert.match(source, new RegExp(`slot="${path}\\.desktop_right"`));
+    assert.equal((source.match(/placement="infeed"/g) ?? []).length, 1);
+  }
+});
+
+test("list navigation never reports a detail page view", async () => {
+  const listPaths = ["latest", "recent", "popular", "performers", "studios", "search"];
+  for (const path of listPaths) {
+    const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /PageViewReporter|metrics\/page-view/);
+  }
+  const details = ["works/[slug]", "performers/[slug]", "studios/[slug]"];
+  for (const path of details) {
+    const source = await readFile(new URL(`../../apps/display-web/app/${path}/page.tsx`, import.meta.url), "utf8");
+    assert.match(source, /<PageViewReporter contentType=/);
+  }
+});

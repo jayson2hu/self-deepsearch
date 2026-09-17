@@ -1,5 +1,6 @@
 import { UsersRound } from "lucide-react";
 import type { Metadata } from "next";
+import { AdSlot } from "../../components/ad-slot";
 import { PerformerCard } from "../../components/performer-card";
 import { getPerformers } from "../../lib/api";
 import { canonicalWithCursor, pageRobots } from "../../lib/seo-policy";
@@ -21,8 +22,8 @@ export default async function PerformersPage({ searchParams }: { searchParams: P
       <div className="content-column"><section className="section-block">
         {result.degraded ? <p className="state-note state-note--warning">人物资料暂时无法加载。</p> : null}
         {!result.degraded && items.length === 0 ? <div className="empty-state"><UsersRound size={30} /><strong>暂无已发布人物资料</strong></div> : null}
-        {items.length ? <div className="performer-grid">{items.map((item) => <PerformerCard item={item} key={item.id} />)}</div> : null}
+        {items.length ? <><div className="performer-grid">{items.slice(0, 8).map((item) => <PerformerCard item={item} key={item.id} />)}</div>{items.length >= 8 ? <AdSlot label="人物列表第八项后广告" placement="infeed" slot="performers.after8" /> : null}{items.length > 8 ? <div className="performer-grid">{items.slice(8).map((item) => <PerformerCard item={item} key={item.id} />)}</div> : null}</> : null}
         {result.data?.next_cursor ? <a className="button pagination-next" href={`/performers?cursor=${encodeURIComponent(result.data.next_cursor)}`}>下一页</a> : null}
-      </section></div></div>
+      </section></div><div className="ad-rail ad-rail--right"><AdSlot label="人物目录右侧广告" placement="rail" slot="performers.desktop_right" /></div></div>
   </main>;
 }
