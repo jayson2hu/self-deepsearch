@@ -1,0 +1,55 @@
+{
+  "liveLatest": {
+    "workCount": 24,
+    "childCount": 25,
+    "nativeCount": 1,
+    "nativeIndex": 8,
+    "bannerVisible": true,
+    "railVisible": true
+  },
+  "additionalCatalogs": {
+    "recent": {
+      "nativeIndex": 8,
+      "workCount": 24,
+      "bannerVisible": true
+    },
+    "popular": {
+      "nativeIndex": 4,
+      "workCount": 5,
+      "bannerVisible": true
+    }
+  },
+  "noAdsLatest": {
+    "workCount": 24,
+    "childCount": 24,
+    "nativeCount": 0,
+    "bannerCount": 0,
+    "eighthPosition": "article",
+    "sameWorksAsLive": true
+  },
+  "homeRecommendation": {
+    "nativeIndex": 4,
+    "workCount": 8
+  },
+  "workRecommendation": {
+    "nativeIndex": 4,
+    "workCount": 8
+  },
+  "entityRecommendations": {
+    "performer": {
+      "nativeIndex": 4,
+      "workCount": 4
+    },
+    "studio": {
+      "nativeIndex": 4,
+      "workCount": 24
+    }
+  },
+  "mobileLatest": {
+    "nativeIndex": 8,
+    "nativeVisible": true,
+    "bannerVisible": true,
+    "railVisible": false,
+    "overflow": 0
+  }
+}
