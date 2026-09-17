@@ -23,6 +23,8 @@ type performerDetailResponse struct {
 	DebutYear       *int               `json:"debut_year"`
 	ImageURL        *string            `json:"image_url"`
 	PublicUpdatedAt *string            `json:"public_updated_at"`
+	ViewCount30D    int64              `json:"view_count_30d"`
+	ViewCountTotal  int64              `json:"view_count_total"`
 	Works           []homeItem         `json:"works"`
 	Images          []imageResponse    `json:"images"`
 	SEO             seoProfileResponse `json:"seo"`
@@ -69,7 +71,7 @@ func (s *Server) performerDetail(w http.ResponseWriter, r *http.Request) {
 		ID: detail.ID, Name: detail.Name, NameOriginal: detail.NameOriginal, RomanizedName: detail.RomanizedName, Aliases: detail.Aliases,
 		ActivityStatus: detail.ActivityStatus, Agency: detail.Agency, BirthYear: detail.BirthYear,
 		HeightCM: detail.HeightCM, Measurements: detail.Measurements, DebutYear: detail.DebutYear,
-		ImageURL: detail.ImageURL, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt),
+		ImageURL: detail.ImageURL, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt), ViewCount30D: detail.ViewCount30D, ViewCountTotal: detail.ViewCountTotal,
 		Works: workItems(detail.Works), Images: make([]imageResponse, 0, len(detail.Images)),
 		SEO: seoResponseFromCatalog(detail.SEO),
 	}

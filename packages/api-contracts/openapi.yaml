@@ -2178,7 +2178,7 @@ components:
           enum: [standard, none]
     WorkDetailResponse:
       type: object
-      required: [id, code, title, title_original, release_date, studio_name, summary, performers, images, related_works, seo]
+      required: [id, code, title, title_original, release_date, studio_name, summary, performers, images, related_works, view_count_30d, view_count_total, seo]
       properties:
         id:
           type: string
@@ -2203,6 +2203,8 @@ components:
           type: [string, "null"]
           format: date-time
           description: Most recent formal publication time of the currently public text profile; not the release date or verification time.
+        view_count_30d: { type: integer, format: int64, minimum: 0, description: Aggregated detail page views in the trailing 30 days; not unique visitors. }
+        view_count_total: { type: integer, format: int64, minimum: 0, description: Aggregated lifetime detail page views; not unique visitors. }
         summary:
           type: [string, "null"]
         performers:
@@ -2221,7 +2223,7 @@ components:
         seo: { $ref: "#/components/schemas/SEOProfile" }
     PerformerDetailResponse:
       type: object
-      required: [id, name, name_original, romanized_name, aliases, activity_status, agency, birth_year, height_cm, measurements, debut_year, image_url, works, images, seo]
+      required: [id, name, name_original, romanized_name, aliases, activity_status, agency, birth_year, height_cm, measurements, debut_year, image_url, view_count_30d, view_count_total, works, images, seo]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -2244,6 +2246,8 @@ components:
           type: [string, "null"]
           format: date-time
           description: Most recent formal publication time of the currently public text profile.
+        view_count_30d: { type: integer, format: int64, minimum: 0, description: Aggregated detail page views in the trailing 30 days; not unique visitors. }
+        view_count_total: { type: integer, format: int64, minimum: 0, description: Aggregated lifetime detail page views; not unique visitors. }
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
         images: { type: array, items: { $ref: "#/components/schemas/WorkImage" } }
         seo: { $ref: "#/components/schemas/SEOProfile" }
@@ -2262,7 +2266,7 @@ components:
         next_cursor: { type: [string, "null"], maxLength: 256 }
     StudioDetailResponse:
       type: object
-      required: [id, name, works, seo]
+      required: [id, name, view_count_30d, view_count_total, works, seo]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -2270,6 +2274,8 @@ components:
           type: [string, "null"]
           format: date-time
           description: Most recent formal publication time of the currently public text profile.
+        view_count_30d: { type: integer, format: int64, minimum: 0, description: Aggregated detail page views in the trailing 30 days; not unique visitors. }
+        view_count_total: { type: integer, format: int64, minimum: 0, description: Aggregated lifetime detail page views; not unique visitors. }
         works: { type: array, items: { $ref: "#/components/schemas/HomeItem" } }
         seo: { $ref: "#/components/schemas/SEOProfile" }
     MessageResponse:

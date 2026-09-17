@@ -911,7 +911,7 @@ func TestDiscoveryMixNormalizesInvalidRuntimeRule(t *testing.T) {
 func TestWorkDetailIsReadOnly(t *testing.T) {
 	repository := &fakeCatalog{detail: catalog.WorkDetail{WorkSummary: catalog.WorkSummary{
 		ID: "10000000-0000-4000-8000-000000000001", Code: "TEST-001", Title: "测试作品", Slug: "test-001",
-	}, RelatedWorks: []catalog.WorkSummary{{
+	}, ViewCount30D: 12, ViewCountTotal: 34, RelatedWorks: []catalog.WorkSummary{{
 		ID: "10000000-0000-4000-8000-000000000002", Code: "TEST-002", Title: "相关作品", Slug: "test-002",
 	}}}}
 	handler := New(Options{Catalog: repository})
@@ -930,6 +930,9 @@ func TestWorkDetailIsReadOnly(t *testing.T) {
 	}
 	if len(body.RelatedWorks) != 1 || body.RelatedWorks[0].Code != "TEST-002" {
 		t.Fatalf("expected related works in detail response, got %#v", body.RelatedWorks)
+	}
+	if body.ViewCount30D != 12 || body.ViewCountTotal != 34 {
+		t.Fatalf("expected aggregate view counts, got 30d=%d total=%d", body.ViewCount30D, body.ViewCountTotal)
 	}
 }
 

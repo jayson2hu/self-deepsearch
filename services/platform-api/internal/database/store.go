@@ -547,7 +547,10 @@ func (store *Store) StudioBySlug(ctx context.Context, slug string) (catalog.Stud
 	defer func() { _ = tx.Rollback(ctx) }()
 	var detail catalog.StudioDetail
 	var contentClassification, qualityStatus string
-	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug, published_at, content_classification, seo_quality_status FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &detail.PublicUpdatedAt, &contentClassification, &qualityStatus); errors.Is(err, pgx.ErrNoRows) {
+	if err := tx.QueryRow(ctx, `SELECT studio_id::text, name, canonical_slug, published_at, content_classification, seo_quality_status,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'studio' AND content_id = studio_id AND hour_bucket >= now() - interval '30 days'), 0)::bigint,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'studio' AND content_id = studio_id), 0)::bigint
+FROM platform.public_published_studios WHERE canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &detail.PublicUpdatedAt, &contentClassification, &qualityStatus, &detail.ViewCount30D, &detail.ViewCountTotal); errors.Is(err, pgx.ErrNoRows) {
 		return catalog.StudioDetail{}, catalog.ErrNotFound
 	} else if err != nil {
 		return catalog.StudioDetail{}, fmt.Errorf("query studio detail: %w", err)
@@ -584,13 +587,15 @@ func (store *Store) PerformerBySlug(ctx context.Context, slug string) (catalog.P
        performer.name_original, performer.romanized_name,
        performer.activity_status, performer.agency, performer.birth_year,
        performer.height_cm, performer.measurements, performer.debut_year,
-	       performer.published_at, performer.content_classification, performer.seo_quality_status
+	       performer.published_at, performer.content_classification, performer.seo_quality_status,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'performer' AND content_id = performer.performer_id AND hour_bucket >= now() - interval '30 days'), 0)::bigint,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'performer' AND content_id = performer.performer_id), 0)::bigint
 FROM platform.public_published_performers performer
 `+performerSummaryJoins+`
 WHERE performer.canonical_slug = $1`, slug).Scan(&detail.ID, &detail.Name, &detail.Slug, &primaryRenditions,
 		&detail.NameOriginal, &detail.RomanizedName, &detail.ActivityStatus, &detail.Agency,
 		&detail.BirthYear, &detail.HeightCM, &detail.Measurements, &detail.DebutYear,
-		&detail.PublicUpdatedAt, &contentClassification, &qualityStatus)
+		&detail.PublicUpdatedAt, &contentClassification, &qualityStatus, &detail.ViewCount30D, &detail.ViewCountTotal)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.PerformerDetail{}, catalog.ErrNotFound
 	}
@@ -733,7 +738,9 @@ SELECT work.work_id::text, work.canonical_code, work.title, work.release_date,
        coalesce(studio.name, ''), work.canonical_slug, media.renditions,
 	       work.title_original, work.summary, work.published_at,
        studio.studio_id::text, studio.name, studio.canonical_slug,
-       work.content_classification, work.seo_quality_status
+       work.content_classification, work.seo_quality_status,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'work' AND content_id = work.work_id AND hour_bucket >= now() - interval '30 days'), 0)::bigint,
+       coalesce((SELECT sum(page_views) FROM platform.content_metrics_hourly WHERE content_type = 'work' AND content_id = work.work_id), 0)::bigint
 FROM platform.public_published_works AS work
 `+workSummaryJoins+`
 WHERE work.canonical_slug = $1`, slug).Scan(
@@ -741,7 +748,7 @@ WHERE work.canonical_slug = $1`, slug).Scan(
 		&detail.StudioName, &detail.Slug, &primaryRenditions,
 		&detail.TitleOriginal, &detail.Summary, &detail.PublicUpdatedAt,
 		&studioID, &studioName, &studioSlug,
-		&contentClassification, &qualityStatus,
+		&contentClassification, &qualityStatus, &detail.ViewCount30D, &detail.ViewCountTotal,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return catalog.WorkDetail{}, catalog.ErrNotFound

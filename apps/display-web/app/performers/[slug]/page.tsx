@@ -8,6 +8,7 @@ import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PerformerActions } from "../../../components/performer-actions";
 import { PublicUpdatedAt } from "../../../components/public-updated-at";
+import { ViewStats } from "../../../components/view-stats";
 import { WorkCard } from "../../../components/work-card";
 import { SafeImage } from "../../../components/safe-image";
 import { getPerformer, getPerformerWorks } from "../../../lib/api";
@@ -60,6 +61,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
       </div><div className="work-detail__identity"><p className="work-card__code">人物公开资料</p><h1>{performer.name}</h1>
         {performer.name_original ? <p className="original-title">{performer.name_original}</p> : null}
         <PublicUpdatedAt value={performer.public_updated_at} />
+        <ViewStats last30Days={performer.view_count_30d} total={performer.view_count_total} />
         <dl className="fact-list">
           <div><dt><Activity size={16} />活动状态</dt><dd>{activityLabel(performer.activity_status)}</dd></div>
           <div><dt><Building2 size={16} />所属</dt><dd>{performer.agency ?? "待补充"}</dd></div>

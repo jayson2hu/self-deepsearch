@@ -249,6 +249,8 @@ export type WorkDetailResponse = {
   studio_name: string;
   studio?: StudioSummary | null;
   public_updated_at?: string | null;
+  view_count_30d: number;
+  view_count_total: number;
   summary: string | null;
   performers: Array<PerformerSummary>;
   images: Array<WorkImage>;
@@ -270,6 +272,8 @@ export type PerformerDetailResponse = {
   debut_year: number | null;
   image_url: string | null;
   public_updated_at?: string | null;
+  view_count_30d: number;
+  view_count_total: number;
   works: Array<HomeItem>;
   images: Array<WorkImage>;
   seo: SEOProfile;
@@ -290,6 +294,8 @@ export type StudioDetailResponse = {
   id: string;
   name: string;
   public_updated_at?: string | null;
+  view_count_30d: number;
+  view_count_total: number;
   works: Array<HomeItem>;
   seo: SEOProfile;
 };

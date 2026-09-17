@@ -75,6 +75,8 @@ func (item StudioSearchResult) RankedCursor() SearchCursor { return item.Cursor 
 type StudioDetail struct {
 	StudioSummary
 	PublicUpdatedAt *time.Time
+	ViewCount30D    int64
+	ViewCountTotal  int64
 	Works           []WorkSummary
 	SEO             SEOProfile
 }
@@ -82,6 +84,8 @@ type StudioDetail struct {
 type PerformerDetail struct {
 	PerformerSummary
 	PublicUpdatedAt *time.Time
+	ViewCount30D    int64
+	ViewCountTotal  int64
 	NameOriginal    *string
 	RomanizedName   *string
 	Aliases         []string
@@ -99,6 +103,8 @@ type PerformerDetail struct {
 type WorkDetail struct {
 	WorkSummary
 	PublicUpdatedAt *time.Time
+	ViewCount30D    int64
+	ViewCountTotal  int64
 	Studio          *StudioSummary
 	TitleOriginal   *string
 	Summary         *string

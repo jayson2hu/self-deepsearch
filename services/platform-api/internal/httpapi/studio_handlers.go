@@ -24,6 +24,8 @@ type studioDetailResponse struct {
 	ID              string             `json:"id"`
 	Name            string             `json:"name"`
 	PublicUpdatedAt *string            `json:"public_updated_at"`
+	ViewCount30D    int64              `json:"view_count_30d"`
+	ViewCountTotal  int64              `json:"view_count_total"`
 	Works           []homeItem         `json:"works"`
 	SEO             seoProfileResponse `json:"seo"`
 }
@@ -70,6 +72,6 @@ func (s *Server) studioDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.writeMediaJSON(w, r, http.StatusOK, studioDetailResponse{
-		ID: detail.ID, Name: detail.Name, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt), Works: workItems(detail.Works), SEO: seoResponseFromCatalog(detail.SEO),
+		ID: detail.ID, Name: detail.Name, PublicUpdatedAt: formatRFC3339(detail.PublicUpdatedAt), ViewCount30D: detail.ViewCount30D, ViewCountTotal: detail.ViewCountTotal, Works: workItems(detail.Works), SEO: seoResponseFromCatalog(detail.SEO),
 	})
 }

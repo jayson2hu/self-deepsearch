@@ -9,6 +9,7 @@ import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PersonalizedWorkGrid } from "../../../components/personalized-work-grid";
 import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { WorkActions } from "../../../components/work-actions";
+import { ViewStats } from "../../../components/view-stats";
 import { SafeImage } from "../../../components/safe-image";
 import { getWork } from "../../../lib/api";
 import { pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
@@ -91,6 +92,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
               <h1>{work.title}</h1>
               {work.title_original && <p className="original-title">{work.title_original}</p>}
               <PublicUpdatedAt value={work.public_updated_at} />
+              <ViewStats last30Days={work.view_count_30d} total={work.view_count_total} />
               <dl className="fact-list">
                 <div><dt><CalendarDays size={16} />发行日期</dt><dd>{work.release_date ?? "待补充"}</dd></div>
                 <div><dt>厂牌 / 制作方</dt><dd>{work.studio ? <Link href={work.studio.href}>{work.studio.name}</Link> : work.studio_name || "待补充"}</dd></div>

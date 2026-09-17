@@ -179,6 +179,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .original-title { margin: 0 0 24px; color: var(--muted); font-size: 13px; }
 .public-updated-at { margin: 8px 0 18px; color: var(--muted); font-size: 12px; }
 .public-updated-at time { color: var(--ink); font-variant-numeric: tabular-nums; }
+.view-stats { margin: -8px 0 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; color: var(--muted); font-size: 11px; }
+.view-stats span { display: inline-flex; gap: 4px; }
+.view-stats strong { color: var(--ink); }
 .fact-list { margin: 24px 0 0; border-top: 1px solid var(--line); }
 .fact-list > div { display: grid; grid-template-columns: 140px 1fr; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .fact-list dt { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }

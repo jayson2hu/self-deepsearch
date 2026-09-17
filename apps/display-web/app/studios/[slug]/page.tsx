@@ -7,6 +7,7 @@ import { Breadcrumbs } from "../../../components/breadcrumbs";
 import { JsonLD } from "../../../components/json-ld";
 import { PageViewReporter } from "../../../components/page-view-reporter";
 import { PublicUpdatedAt } from "../../../components/public-updated-at";
+import { ViewStats } from "../../../components/view-stats";
 import { WorkCard } from "../../../components/work-card";
 import { getStudio, getStudioWorks } from "../../../lib/api";
 import { canonicalWithCursor, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
@@ -35,7 +36,7 @@ export default async function StudioPage({ params, searchParams }: { params: Pro
   return <main><JsonLD data={{
     "@context": "https://schema.org", "@type": "Organization", "@id": canonicalURL,
     url: canonicalURL, name: result.data.name, mainEntityOfPage: canonicalURL, isFamilyFriendly: seo.adult_rating ? false : undefined,
-  }} /><PageViewReporter contentType="studio" contentID={result.data.id} /><section className="page-band"><div className="shell page-band__inner"><div><p className="eyebrow"><Building2 size={16} />厂牌公开资料</p><h1>{result.data.name}</h1><PublicUpdatedAt value={result.data.public_updated_at} /></div><p className="page-band__copy">已发布关联作品按页展示</p></div></section>
+  }} /><PageViewReporter contentType="studio" contentID={result.data.id} /><section className="page-band"><div className="shell page-band__inner"><div><p className="eyebrow"><Building2 size={16} />厂牌公开资料</p><h1>{result.data.name}</h1><PublicUpdatedAt value={result.data.public_updated_at} /><ViewStats last30Days={result.data.view_count_30d} total={result.data.view_count_total} /></div><p className="page-band__copy">已发布关联作品按页展示</p></div></section>
     <div className="shell content-with-rails"><div className="content-column"><Breadcrumbs items={[{ label: "首页", href: "/" }, { label: "厂牌资料", href: "/studios" }, { label: result.data.name }]} /><AdSlot label="厂牌资料后广告" placement="infeed" slot="studio.after_summary" /><section className="section-block"><div className="section-heading"><div><h2>关联作品</h2></div></div>
       {worksResult.status === "invalid_cursor" ? <div className="empty-state"><strong>分页地址已失效</strong><p>请从关联作品第一页重新开始。</p><Link className="button button--quiet" href={`/studios/${slug}`}>返回第一页</Link></div> : null}
       {worksResult.status === "degraded" ? <div className="empty-state"><strong>关联作品暂时无法加载</strong><p>厂牌资料仍可浏览，请稍后重试作品列表。</p><Link className="button button--quiet" href={`/studios/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}>重试</Link></div> : null}
