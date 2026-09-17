@@ -18,8 +18,8 @@
 | 8 | [DEV-15 集成验收与交接](./DEV15_HANDOFF.md) | 代码冻结、本地制品指纹、配置/迁移/回退、阻塞与接手顺序 |
 | 9 | [验收执行标准](./ACCEPTANCE_EXECUTION_STANDARD.md) | PASS/PARTIAL/BLOCKED 口径、六层门禁、命令、阈值与证据要求 |
 | 10 | [2026-09-17 可执行验收终检](../evidence/redesign-2026-09-17-acceptance/README.md) | 当前代码、五镜像、真实 PG/API/邮件、缓存与全部 AC 的实测结论 |
-| 11 | [广告、用户管理与 SEO 运营审查](./OPERATIONS_REVIEW_2026-09-17.md) | 测试库人数、现有能力与缺口、增量建议及验收标准；新增方案尚未实施 |
-| 12 | [运营优化开发执行书](./OPERATIONS_OPTIMIZATION_PLAN.md) | 广告/用户/SEO 的 OPT-00～08 开发包、OA-01～24 验收、测试、进度汇报与逐包提交规范；文档交付，尚未开工 |
+| 11 | [广告、用户管理与 SEO 运营审查](./OPERATIONS_REVIEW_2026-09-17.md) | 测试库人数、现有能力与缺口、增量建议及验收标准；后续实施状态见 OPT 台账 |
+| 12 | [运营优化开发执行书](./OPERATIONS_OPTIMIZATION_PLAN.md) | 广告/用户/SEO 的 OPT-00～08 开发包、OA-01～24 验收、测试、进度汇报与逐包提交规范；已进入开发自测与待验收，见[聚合证据](../evidence/operations-opt-2026-09-17/README.md) |
 
 ## 本版范围
 

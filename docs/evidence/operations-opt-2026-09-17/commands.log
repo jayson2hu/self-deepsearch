@@ -1,0 +1,20 @@
+# 脱敏命令摘要；不含密码、会话 Cookie、验证码或用户个人数据。
+npm run check:markdown-links
+npm run check:api-types
+npm run typecheck
+npm run lint
+npm run test:preflight
+npm run test:frontend:smoke
+node --test scripts/tests/redesign_*.test.mjs
+python3 -m pytest
+ruff check
+mypy
+go test -count=1 ./services/platform-api/... ./services/platform-worker/...
+go vet ./services/platform-api/... ./services/platform-worker/...
+npm run build
+npx playwright test --list
+docker build ... opt-57818cd
+docker compose ... up -d
+curl http://127.0.0.1:18080/healthz
+curl http://127.0.0.1:13000/
+curl http://127.0.0.1:13001/login

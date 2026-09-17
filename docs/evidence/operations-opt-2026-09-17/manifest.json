@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-17T12:21:31+08:00",
+  "timezone": "Asia/Shanghai",
+  "implementation_sha": "57818cd5150e36a4dc4a2fdfee80495267869b31",
+  "branch": "master",
+  "scope": ["OPT-00", "OPT-01", "OPT-02", "OPT-03", "OPT-04", "OPT-05", "OPT-06", "OPT-07", "OPT-08"],
+  "acceptance_summary": {
+    "pass": 11,
+    "partial": 12,
+    "blocked": 1,
+    "fail": 0,
+    "not_run": 0
+  },
+  "environment": {
+    "kernel": "Linux 5.15.0-60-generic x86_64",
+    "node": "v22.22.2",
+    "npm": "10.9.7",
+    "python": "3.10.12",
+    "docker": "29.1.3",
+    "browser": "missing",
+    "review_schema": 26,
+    "review_api_version": "opt-57818cd"
+  },
+  "images": {
+    "platform_api": "sha256:52fa1122d89bb71eccf5f8b2f303be356ad7c0d286fe2bfae5eba08ee9d04ea7",
+    "platform_worker": "sha256:34d6c73442dd0b752da104ff182afee33aa93477b1863046925cd8d7321401dd",
+    "display_web": "sha256:36eb0da08ef72ca08f71daba203f7702b305b067d79ffbff177a3bd54b18a464",
+    "ops_web": "sha256:c109ccc13ccf284b011843bb419a2f57e840daf0bcf907f528ea7f1b557b117d"
+  },
+  "backups": {
+    "isolated_restore_sha256": "542984d87320fd6cf30100d31daf4918e9e8c22d85cfc2b768a8979b75797025",
+    "review_pre_upgrade_sha256": "1ed7d9268c124ae07d9b0e5a029d1b3f3ac856c61983b970e72e82416c2e03ec"
+  },
+  "data_classification": "synthetic test data only",
+  "signoff": {
+    "development_self_test": "Codex / complete",
+    "independent_test": "pending",
+    "product": "pending",
+    "production_release": "not authorized"
+  }
+}
