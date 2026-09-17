@@ -2,6 +2,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { AccountActions } from "./account-actions";
 import { MainNav } from "./main-nav";
+import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   return (
@@ -26,6 +27,7 @@ export function SiteHeader() {
             <input id="header-query" name="q" placeholder="搜索番号或名称" />
             <button type="submit" aria-label="搜索"><Search size={18} /></button>
           </form>
+          <ThemeToggle />
           <AccountActions />
         </div>
       </header>

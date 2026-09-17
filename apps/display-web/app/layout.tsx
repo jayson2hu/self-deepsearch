@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
@@ -16,9 +17,11 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const preference = (await cookies()).get("mujian_theme")?.value;
+  const theme = preference === "light" || preference === "dark" ? preference : undefined;
   return (
-    <html lang="zh-CN">
+    <html data-theme={theme} lang="zh-CN" suppressHydrationWarning>
       <body>
         <SiteHeader />
         {children}
