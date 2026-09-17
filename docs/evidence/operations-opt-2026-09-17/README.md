@@ -1,9 +1,9 @@
 # 运营优化开发自测与验收记录
 
 - 日期：2026-09-17（Asia/Shanghai）
-- 固定实现：`57818cd5150e36a4dc4a2fdfee80495267869b31`
+- 固定实现：`90a09612ea6ce1ca5f5784a2d83c35e337bc018d`
 - 范围：OPT-00～08 / OA-01～24
-- 结论：开发自测完成，待独立测试与产品验收；不满足生产放行条件。
+- 结论：开发自测与当前服务器可执行的真实/合成数据验收已完成；18 PASS、5 PARTIAL、1 BLOCKED。仍待独立测试与产品验收，不满足生产放行条件。
 
 ## 1. 已交付能力
 
@@ -21,15 +21,15 @@
 
 | 工作包 | 实现提交 | 结果 |
 | --- | --- | --- |
-| OPT-00 | `ec0ac54` | 已提交，OA-01 PASS、OA-02 PARTIAL |
+| OPT-00 | `ec0ac54` | 已提交，OA-01/02 PASS |
 | OPT-01 | `5374f1b` | 已提交，OA-03～06 PASS |
-| OPT-02 | `795c903` | 已提交，OA-07/08 PARTIAL |
-| OPT-03 | `ee5b51e` | 已提交，OA-09～11 PARTIAL |
-| OPT-04 | `f054616` | 已提交，OA-12/13/15 PASS、OA-14 PARTIAL |
+| OPT-02 | `795c903`、`7964fad` | 已提交，OA-07/08 PASS |
+| OPT-03 | `ee5b51e` | 已提交，OA-09～11 PASS |
+| OPT-04 | `f054616` | 已提交，OA-12～15 PASS |
 | OPT-05 | `c60773b` | 已提交，OA-16 PASS、OA-17 PARTIAL |
 | OPT-06 | `78d0bc7` | 已提交，OA-18 PARTIAL、OA-19 PASS；每日调度和稳定续批仍缺 |
-| OPT-07 | `8f01b3c` | 已提交，OA-20 PARTIAL、OA-21 BLOCKED |
-| OPT-08 | `6075181`、`57818cd` | 已提交，OA-22 PASS、OA-23/24 PARTIAL |
+| OPT-07 | `8f01b3c` | 已提交，OA-20 PARTIAL、OA-21 BLOCKED；性能部分已补实测 |
+| OPT-08 | `6075181`、`57818cd`、`253b5d5`、`7964fad`、`90a0961` | 已提交，OA-22 PASS、OA-23/24 PARTIAL |
 
 固定镜像均带实现 SHA 标签：
 
@@ -37,8 +37,8 @@
 | --- | --- |
 | `self-deepsearch/platform-api:opt-57818cd` | `sha256:52fa1122d89bb71eccf5f8b2f303be356ad7c0d286fe2bfae5eba08ee9d04ea7` |
 | `self-deepsearch/platform-worker:opt-57818cd` | `sha256:34d6c73442dd0b752da104ff182afee33aa93477b1863046925cd8d7321401dd` |
-| `self-deepsearch/display-web:opt-57818cd` | `sha256:36eb0da08ef72ca08f71daba203f7702b305b067d79ffbff177a3bd54b18a464` |
-| `self-deepsearch/ops-web:opt-57818cd` | `sha256:c109ccc13ccf284b011843bb419a2f57e840daf0bcf907f528ea7f1b557b117d` |
+| `self-deepsearch/display-web:opt-90a0961` | `sha256:8283e6e557927841277fef16084b37ff771cd23ac986e4bf890a3d8c6ffc9075` |
+| `self-deepsearch/ops-web:opt-90a0961` | `sha256:2ce9e7b083154484e08be992949a02859d3f2792264dbf06f4eb0d3c8c2e2538` |
 
 ## 3. 已执行验证
 
@@ -50,24 +50,34 @@
 - Python：317 项通过、356 个子测试通过；静态集成合同 103 项及 22 个子测试通过；迁移合同 16 项通过；Ruff 通过；MyPy 15 个源文件通过。
 - Go：platform-api 与 platform-worker 全量测试通过；两服务 `go vet` 通过。
 - display-web 与 ops-web production build 通过；四个最终 Docker 镜像构建成功。
+- Google Chrome 153 桌面/移动真实回归 98/98 通过；预检 77/77、前端 smoke 8/8 复跑通过。
 - PostgreSQL 16 / Schema 26：用户、广告、SEO 问题、SEO 报表真实合同通过；205 个合成用户的分页遍历无重漏。
+- fresh Schema 26 容器实测发现 bootstrap `exec` 导致初始化后退出，`253b5d5` 修复后新容器持续运行，迁移合同 16/16 通过。
 - 备份恢复：隔离库 dump/restore 后 Schema 26、205 个用户和表清单一致；dump SHA-256 为 `542984d87320fd6cf30100d31daf4918e9e8c22d85cfc2b768a8979b75797025`。
 - 测试栈升级前备份 SHA-256 为 `1ed7d9268c124ae07d9b0e5a029d1b3f3ac856c61983b970e72e82416c2e03ec`。
 
+补充真实运行与合成数据验收：
+
+- 隔离真实数据库写入 10,000 个普通测试账号；统计、100 条列表和筛选列表各执行 200 次、并发 5，P95 分别为 56.14ms、35.27ms、79.36ms，0 错误。
+- 公开首页和后台用户页在 320/390/768/1199/1200/1440px 共 12 项真实 Chrome 检查中均为 200、无横向溢出、无后台服务告警。
+- 公开首页/详情及后台用户页浏览器 LCP/CLS 均达标；公开页完整数据见[性能报告](../operations-opt-performance-2026-09-17.json)。
+- 广告发布到 API+SSR 为 222.27ms；暂停后公开 API 8.18ms、新 SSR 105.48ms、已开页面 29.704 秒隐藏。
+- SEO 演示报表真实走 multipart 导入、幂等与公式拒绝；130 URL 的重复扫描验证问题去重和发现历史。
+
 ## 4. 运行态验收
 
-测试栈数据库已升级到 Schema 26。API、Worker、公开站和运营后台四个最终镜像均为 healthy；API `/healthz` 返回版本 `opt-57818cd`。
+测试栈数据库已升级到 Schema 26。API、Worker、公开站和运营后台均为 healthy；API/Worker 仍使用功能实现镜像 `opt-57818cd`，公开站/后台使用包含图标修复的 `opt-90a0961`。
 
 HTTP 结果：公开首页、后台登录页、`/users`、`/ads`、`/seo`、`/seo/issues`、`/seo/reports` 均为 200；完整 HTML 中未发现 `self-deepsearch-stream-error`、`Internal Server Error` 或 `Application error`。owner 账号通过产品自身的 Mailpit 密码重置、登录和 `/api/v1/me` 链路验证。
 
-运行态数据是测试数据：用户总数 3，其中管理账号 3、关闭 2、普通用户 0；广告活动 0；SEO 发布记录 130，因内容分类未知而全部 fail-closed，不进入 sitemap。这些数字只说明当前测试库，不代表生产业务数据。
+运行态数据是测试数据：用户、广告及 SEO 数字只说明当前审查库，不代表生产业务数据。10,000 用户、测试广告和 SEO 分类变化均在独立隔离栈执行并已清理，不污染持续运行的审查库。
 
 ## 5. 未达项与原因
 
-- OA-02/07～11/14/17：服务器没有 Chrome、Chromium 或 Firefox。Playwright 能发现 98 条用例，但未执行真实浏览器、键盘/触摸、四宽度/1199～1200px 边界、截图、trace、LCP/CLS。
 - OA-18：当前手动扫描单批最多 1,000 条并显式标记 `truncated`，但尚未实现每日调度和超过 1,000 URL 的稳定续批；外部抓取目标的真实执行链也未建立。该项属于功能缺口，不是单纯环境阻塞。
 - OA-20：样本、错误格式、上限、公式拒绝、幂等和数据集隔离已测；没有 Search Console 所有权和授权的真实导出，因此真实来源部分未验。
-- OA-21：未按 10,000 用户/实体、200 次样本与真实浏览器条件跑完整性能预算。生产依赖联网审计会向外部 registry 发送依赖清单，本轮未获授权，记录 BLOCKED；镜像构建期间 `npm ci` 的输出不能代替正式审计证据。
+- OA-17：真实扫描已验证分类变化，但未用双管理员完整走完 UI 修订、审核、发布和公开缓存链。
+- OA-21：10,000 用户 API 与真实浏览器性能预算已完成并通过；生产依赖联网审计会向外部 registry 发送依赖清单，本轮未获明确授权，仍记录 BLOCKED。镜像构建期间 `npm ci` 的输出不能代替正式审计证据。
 - OA-23/24：隔离备份恢复和固定镜像部署已完成，但未执行生产/目标环境发布与应用回退，且缺独立测试、产品和生产负责人签收。
 
 详见 [results.json](./results.json)、[manifest.json](./manifest.json)、[blockers.md](./blockers.md) 和各 OPT 子目录。任何 PARTIAL/BLOCKED 均不得用于生产放行。

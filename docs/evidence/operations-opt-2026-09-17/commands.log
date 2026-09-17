@@ -13,7 +13,17 @@ go test -count=1 ./services/platform-api/... ./services/platform-worker/...
 go vet ./services/platform-api/... ./services/platform-worker/...
 npm run build
 npx playwright test --list
+npm run test:e2e:release-a
+node scripts/release_a_performance_probe.mjs --browser-channel chrome --display-url http://127.0.0.1:13000 --work-path /works/demo-006 --samples 5 --output docs/evidence/operations-opt-performance-2026-09-17.json
+node /tmp/opt_browser_matrix.mjs
+node /tmp/opt_ops_performance.mjs
+node /tmp/opt_user_benchmark.mjs
+node /tmp/opt_ad_timeline.mjs
+node /tmp/opt_ad_browser_timeline.mjs
+node /tmp/opt_seo_import_simulation.mjs
+node /tmp/opt_seo_scan_simulation.mjs
 docker build ... opt-57818cd
+docker build ... opt-90a0961
 docker compose ... up -d
 curl http://127.0.0.1:18080/healthz
 curl http://127.0.0.1:13000/

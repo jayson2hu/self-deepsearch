@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-17T14:45:00+08:00",
+  "browser": "Google Chrome 153.0.8010.47",
+  "data_boundary": "All database records, advertisements and Search Console-shaped rows are synthetic test data. Product code paths, PostgreSQL, API, SSR and browser execution are real unless a result explicitly says mock upstream.",
+  "real_stack": {
+    "fresh_database": {
+      "schema": 26,
+      "container_remained_running": true,
+      "defect_fixed_in": "253b5d5"
+    },
+    "user_api_10000": {
+      "synthetic_ordinary_users": 10000,
+      "total_accounts": 10003,
+      "samples_per_endpoint": 200,
+      "concurrency": 5,
+      "errors": 0,
+      "milliseconds": {
+        "summary": {"p50": 26.29, "p95": 56.14, "max": 167.89},
+        "list_limit_100": {"p50": 18.08, "p95": 35.27, "max": 42.84},
+        "filtered_list": {"p50": 44.98, "p95": 79.36, "max": 112.25}
+      },
+      "budget_p95_ms": 500,
+      "passed": true
+    },
+    "responsive_matrix": {
+      "surfaces": ["display_home", "ops_users"],
+      "widths": [320, 390, 768, 1199, 1200, 1440],
+      "checks": 12,
+      "http_200": 12,
+      "horizontal_overflow": 0,
+      "ops_service_warnings": 0,
+      "unexpected_failed_responses": 0,
+      "expected_anonymous_401": ["/api/v1/me", "/api/v1/me/hidden-works"],
+      "passed": true
+    },
+    "ops_users_browser_performance": {
+      "samples_per_viewport_after_warmup": 5,
+      "desktop": {"lcp_median_ms": 336, "cls_max": 0, "ttfb_median_ms": 50.1, "load_median_ms": 387.6},
+      "mobile": {"lcp_median_ms": 292, "cls_max": 0, "ttfb_median_ms": 43.2, "load_median_ms": 386.7},
+      "passed": true
+    },
+    "advertising": {
+      "publish_to_public_api_and_new_ssr_ms": 222.27,
+      "pause_to_public_api_hidden_ms": 8.18,
+      "pause_to_new_ssr_hidden_ms": 105.48,
+      "pause_to_already_open_page_hidden_ms": 29703.52,
+      "open_page_budget_ms": 60000,
+      "passed": true
+    },
+    "seo_scan": {
+      "published_entities": 130,
+      "eligible_scan_issues": 0,
+      "unknown_classification_scan_issues": 130,
+      "repeat_scan_issue_rows": 130,
+      "repeat_scan_event_rows": 260,
+      "deduplication_and_rediscovery_history_passed": true
+    },
+    "seo_report_import": {
+      "dataset_kind": "demo",
+      "valid_rows": 2,
+      "identical_file_reused_import_id": true,
+      "formula_file_status": 400,
+      "formula_file_error": "INVALID_SEO_REPORT_ROWS",
+      "passed": true
+    },
+    "site_icons": {
+      "display_status": 200,
+      "ops_status": 200,
+      "fixed_in": "90a0961",
+      "passed": true
+    }
+  },
+  "real_browser_with_mock_upstream": {
+    "suite": "npm run test:e2e:release-a",
+    "desktop_and_mobile_tests": 98,
+    "passed": 98,
+    "failed": 0,
+    "commit": "7964fad"
+  },
+  "external_or_production_not_simulated_as_real": [
+    "An authorized Google Search Console export for the production property",
+    "Production dependency audit against the external npm registry without explicit authorization",
+    "Production deployment and application rollback",
+    "Independent test, product owner and production release sign-off"
+  ]
+}
