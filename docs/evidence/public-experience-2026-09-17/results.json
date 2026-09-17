@@ -1,0 +1,30 @@
+{
+  "before": {
+    "last30Days": 15,
+    "total": 15
+  },
+  "afterPagination": {
+    "last30Days": 15,
+    "total": 15
+  },
+  "afterDetail": {
+    "last30Days": 16,
+    "total": 16
+  },
+  "desktopAds": {
+    "infeed": true,
+    "rail": true,
+    "infeedCount": 1,
+    "railCount": 1
+  },
+  "mobileAds": {
+    "infeed": true,
+    "rail": false
+  },
+  "darkAfterReload": {
+    "theme": "dark",
+    "canvas": "#101418"
+  },
+  "overflow": 0,
+  "statsText": "近 30 天 15累计 15 次详情浏览"
+}
