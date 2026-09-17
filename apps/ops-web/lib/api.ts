@@ -9,6 +9,7 @@ import type {
   InvitationListResponse,
   OperationsSystemHealth,
   OperationsUserListResponse,
+  OperationsUserSummary,
   ReviewTaskListResponse,
   SessionResponse,
   TakedownListResponse,
@@ -57,9 +58,14 @@ export async function getOperationsDashboard(includeSystemHealth: boolean): Prom
   };
 }
 
-export async function getOperationsUsers(): Promise<OperationsUserListResponse | null> {
-  const response = await privateRequest("/admin/v1/users");
+export async function getOperationsUsers(query = ""): Promise<OperationsUserListResponse | null> {
+  const response = await privateRequest(`/admin/v1/users${query ? `?${query}` : ""}`);
   return response?.ok ? ((await response.json()) as OperationsUserListResponse) : null;
+}
+
+export async function getOperationsUserSummary(): Promise<OperationsUserSummary | null> {
+  const response = await privateRequest("/admin/v1/users/summary");
+  return response?.ok ? ((await response.json()) as OperationsUserSummary) : null;
 }
 
 export async function getAuditLogs(requestID: string): Promise<AuditLogListResponse | null> {
