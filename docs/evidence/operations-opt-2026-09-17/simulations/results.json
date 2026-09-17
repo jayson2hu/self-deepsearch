@@ -1,9 +1,20 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-17T14:45:00+08:00",
+  "generated_at": "2026-09-17T15:13:09+08:00",
   "browser": "Google Chrome 153.0.8010.47",
   "data_boundary": "All database records, advertisements and Search Console-shaped rows are synthetic test data. Product code paths, PostgreSQL, API, SSR and browser execution are real unless a result explicitly says mock upstream.",
   "real_stack": {
+    "review_environment_after_acceptance": {
+      "accounts_total": 7,
+      "management_accounts": 7,
+      "ordinary_accounts": 0,
+      "public_registrations": 0,
+      "advertising_campaigns": 0,
+      "seo_publications": 130,
+      "seo_indexable": 2,
+      "seo_excluded": 128,
+      "synthetic_test_data_only": true
+    },
     "fresh_database": {
       "schema": 26,
       "container_remained_running": true,
