@@ -171,7 +171,9 @@ class MigrationContractTests(unittest.TestCase):
         script = (BOOTSTRAP_DIR / "003_create_runtime_logins.sh").read_text(encoding="utf-8")
         self.assertIn("host=/var/run/postgresql", script)
         self.assertNotIn("@127.0.0.1:5432", script)
-        self.assertIn("exec sh /database-tools/provision_runtime_logins.sh", script)
+        self.assertIn("sh /database-tools/provision_runtime_logins.sh", script)
+        self.assertNotIn("exec sh /database-tools/provision_runtime_logins.sh", script)
+        self.assertIn("sourced by the official postgres entrypoint", script)
 
         database_root = MIGRATION_DIR.parent
         seed = database_root / "seeds" / "development.sql"
