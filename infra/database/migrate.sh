@@ -19,7 +19,7 @@ else
 fi
 case "$current_version" in *[!0-9]*|'') echo "current schema version is invalid" >&2; exit 1;; esac
 
-temporary="$(mktemp "${TMPDIR:-/tmp}/self-deepsearch-migrate.XXXXXX.sql")"
+temporary="$(mktemp "${TMPDIR:-/tmp}/self-deepsearch-migrate.XXXXXX")"
 trap 'rm -f "$temporary"' EXIT HUP INT TERM
 chmod 600 "$temporary"
 

@@ -215,6 +215,11 @@ class MigrationContractTests(unittest.TestCase):
             down,
         )
 
+    def test_migration_runner_uses_busybox_compatible_mktemp_template(self) -> None:
+        runner = (MIGRATION_DIR.parent.parent / "infra" / "database" / "migrate.sh").read_text(encoding="utf-8")
+        self.assertIn('mktemp "${TMPDIR:-/tmp}/self-deepsearch-migrate.XXXXXX"', runner)
+        self.assertNotIn("XXXXXX.sql", runner)
+
     def test_role_teardown_revokes_schema_privileges(self) -> None:
         down = sections(MIGRATION_DIR / "00002_collector_catalog.sql")[1]
         self.assertEqual(down.count("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA"), 3)
