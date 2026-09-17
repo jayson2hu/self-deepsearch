@@ -26,6 +26,7 @@ node /tmp/opt_seo_ui_flow.mjs
 node /tmp/opt_seo_publish_finish.mjs
 docker run ... self-deepsearch/display-web:opt-90a0961 (temporary production/HTTPS SEO gate probe)
 node /tmp/lock_seo_reviewers.mjs
+psql: clear active test-only login rate-limit counters after automation, then verify owner login
 docker build ... opt-57818cd
 docker build ... opt-90a0961
 docker compose ... up -d

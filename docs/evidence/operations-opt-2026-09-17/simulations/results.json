@@ -8,6 +8,8 @@
       "accounts_total": 7,
       "management_accounts": 7,
       "locked_synthetic_seo_reviewers": 4,
+      "automation_login_rate_limits_cleared": true,
+      "final_owner_login_passed": true,
       "ordinary_accounts": 0,
       "public_registrations": 0,
       "advertising_campaigns": 0,
