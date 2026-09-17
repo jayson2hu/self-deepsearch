@@ -71,7 +71,9 @@
 
 HTTP 结果：公开首页、后台登录页、`/users`、`/ads`、`/seo`、`/seo/issues`、`/seo/reports` 均为 200；完整 HTML 中未发现 `self-deepsearch-stream-error`、`Internal Server Error` 或 `Application error`。owner 账号通过产品自身的 Mailpit 密码重置、登录和 `/api/v1/me` 链路验证。
 
-运行态数据是测试数据：最终快照共有账号 7（均为管理测试账号，普通账号 0，公开注册 0）、广告活动 0、SEO 发布记录 130（技术可索引 2、排除 128）。其中 4 个 `seo-reviewer-*` 来自双管理员 SEO 验收，结束后均已锁定并撤销旧会话，仅保留审计关系；这些数字不代表生产业务数据。10,000 用户和测试广告在独立隔离栈执行后已清理。
+运行态数据是测试数据：最终快照共有账号 7（均为管理测试账号，普通账号 0，公开注册 0）、SEO 发布记录 130（技术可索引 2、排除 128）。其中 4 个 `seo-reviewer-*` 来自双管理员 SEO 验收，结束后均已锁定并撤销旧会话，仅保留审计关系；这些数字不代表生产业务数据。10,000 用户和原广告生命周期验收数据在独立隔离栈执行后已清理。
+
+2026-09-17 16:45（Asia/Shanghai）按产品审查要求，在持续审查环境新增并发布 1 条首页模拟横幅广告，广告位为 `home.after_latest`，状态为 `live`，桌面和手机均适用。素材明确写明“合成素材、非真实投放”，无落地页、无第三方脚本；公开广告 API、服务端 HTML、桌面 1440px 与手机 390px 的真实 Chrome 渲染均通过。当前运行态广告活动因此为 1 条，而不是上述冻结验收时的 0 条；截图见[桌面](./simulations/review-live-ad-desktop.png)与[手机](./simulations/review-live-ad-mobile.png)。
 
 ## 5. 未达项与原因
 
