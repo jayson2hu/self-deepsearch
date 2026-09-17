@@ -193,12 +193,57 @@ type EntityMerge struct {
 }
 
 type User struct {
-	ID            string
-	Email         string
-	Role          string
-	AccountStatus string
-	CreatedAt     time.Time
-	LastLoginAt   *time.Time
+	ID                 string
+	Email              string
+	Role               string
+	AccountStatus      string
+	CreatedAt          time.Time
+	LastLoginAt        *time.Time
+	EmailVerifiedAt    *time.Time
+	RegistrationOrigin string
+	IsTest             bool
+	RegisteredAt       *time.Time
+}
+
+type UserListQuery struct {
+	Query          string
+	Role           string
+	Status         string
+	CreatedFrom    *time.Time
+	CreatedTo      *time.Time
+	SnapshotAt     time.Time
+	AfterCreatedAt *time.Time
+	AfterID        string
+	Limit          int
+}
+
+type UserPage struct {
+	Items   []User
+	Total   int64
+	HasMore bool
+}
+
+type UserSummaryMetrics struct {
+	ObservedAt                   time.Time
+	Environment                  string
+	DefinitionVersion            string
+	AccountTotal                 int64
+	OrdinaryTotal                int64
+	ActiveOrdinary               int64
+	VerifiedOrdinary             int64
+	ManagementTotal              int64
+	ClosedTotal                  int64
+	PublicRegistrations          int64
+	PublicRegistrationsToday     int64
+	PublicRegistrationsSevenDays int64
+	UnknownOrigin                int64
+	CoverageStartedAt            *time.Time
+}
+
+type UserManagementRepository interface {
+	ListUsersPage(context.Context, UserListQuery) (UserPage, error)
+	UserSummary(context.Context, time.Time, string) (UserSummaryMetrics, error)
+	GetUser(context.Context, string) (User, error)
 }
 
 type EditorialRecommendation struct {

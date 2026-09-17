@@ -46,6 +46,7 @@ type IdentityService interface {
 type Options struct {
 	Service                  string
 	Version                  string
+	Environment              string
 	Database                 DatabaseChecker
 	Catalog                  catalog.Repository
 	Account                  account.Repository
@@ -74,6 +75,7 @@ type Options struct {
 type Server struct {
 	service              string
 	version              string
+	environment          string
 	database             DatabaseChecker
 	catalog              catalog.Repository
 	account              account.Repository
@@ -112,6 +114,7 @@ func New(options Options) http.Handler {
 	server := &Server{
 		service:              defaultString(options.Service, "platform-api"),
 		version:              defaultString(options.Version, "dev"),
+		environment:          defaultString(options.Environment, "development"),
 		database:             options.Database,
 		catalog:              options.Catalog,
 		account:              options.Account,
@@ -294,6 +297,8 @@ func (s *Server) routes() http.Handler {
 	router.Post("/admin/v1/takedowns", s.adminCreateTakedown)
 	router.Post("/admin/v1/takedowns/{takedownID}/complete", s.adminCompleteTakedown)
 	router.Get("/admin/v1/users", s.adminListUsers)
+	router.Get("/admin/v1/users/summary", s.adminUserSummary)
+	router.Get("/admin/v1/users/{userID}", s.adminGetUser)
 	router.Post("/admin/v1/users/{userID}/role", s.adminChangeUserRole)
 	router.Post("/admin/v1/users/{userID}/status", s.adminChangeUserStatus)
 	router.Get("/admin/v1/invitations", s.adminListInvitations)

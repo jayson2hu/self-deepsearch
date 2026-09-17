@@ -35,11 +35,18 @@ ORDER BY created_at LIMIT 1 FOR UPDATE`).Scan(&existingOwnerEmail)
 	}
 	var userID string
 	err = tx.QueryRow(ctx, `
-INSERT INTO platform.users (normalized_email, email_verified_at, password_hash, role, account_status)
-VALUES ($1, $2, $3, 'owner', 'active')
+INSERT INTO platform.users (
+    normalized_email, email_verified_at, password_hash, role, account_status,
+    registration_origin
+)
+VALUES ($1, $2, $3, 'owner', 'active', 'bootstrap')
 ON CONFLICT (normalized_email) WHERE account_status <> 'closed' DO UPDATE
 SET email_verified_at = EXCLUDED.email_verified_at, password_hash = EXCLUDED.password_hash,
-    role = 'owner', account_status = 'active', closed_at = NULL
+    role = 'owner', account_status = 'active', closed_at = NULL,
+    registration_origin = CASE
+      WHEN platform.users.registration_origin = 'unknown' THEN 'bootstrap'
+      ELSE platform.users.registration_origin
+    END
 RETURNING user_id::text`, email, now, passwordHash).Scan(&userID)
 	if err != nil {
 		return "", fmt.Errorf("upsert bootstrap owner: %w", err)

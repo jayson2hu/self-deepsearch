@@ -681,10 +681,34 @@ export type OperationsUser = {
   account_status: "pending" | "active" | "locked" | "suspended" | "closed";
   created_at: string;
   last_login_at: string | null;
+  email_verified_at: string | null;
+  registration_origin: "public_signup" | "invitation" | "bootstrap" | "fixture" | "unknown";
+  is_test: boolean;
+  registered_at: string | null;
 };
 
 export type OperationsUserListResponse = {
   items: Array<OperationsUser>;
+  total: number;
+  next_cursor: string | null;
+  observed_at: string;
+};
+
+export type OperationsUserSummary = {
+  observed_at: string;
+  environment: string;
+  definition_version: string;
+  account_total: number;
+  ordinary_total: number;
+  active_ordinary: number;
+  verified_ordinary: number;
+  management_total: number;
+  closed_total: number;
+  public_registrations: number;
+  public_registrations_today: number;
+  public_registrations_seven_days: number;
+  unknown_origin: number;
+  coverage_started_at: string | null;
 };
 
 export type EditorialRecommendation = {

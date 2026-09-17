@@ -44,6 +44,32 @@ type fakeOperations struct {
 	auditLogs      []operations.AuditLog
 }
 
+type fakeUserManagement struct {
+	*fakeOperations
+	query   operations.UserListQuery
+	summary operations.UserSummaryMetrics
+}
+
+func (repository *fakeUserManagement) ListUsersPage(_ context.Context, query operations.UserListQuery) (operations.UserPage, error) {
+	repository.query = query
+	verified := time.Date(2026, 9, 17, 0, 0, 0, 0, time.UTC)
+	return operations.UserPage{Items: []operations.User{{
+		ID: "10000000-0000-4000-8000-000000000001", Email: "person@example.test", Role: "user",
+		AccountStatus: "active", CreatedAt: verified, EmailVerifiedAt: &verified,
+		RegistrationOrigin: "public_signup", RegisteredAt: &verified,
+	}}, Total: 1}, repository.operationErr
+}
+
+func (repository *fakeUserManagement) UserSummary(_ context.Context, now time.Time, environment string) (operations.UserSummaryMetrics, error) {
+	result := repository.summary
+	result.ObservedAt, result.Environment, result.DefinitionVersion = now, environment, "users-v1"
+	return result, repository.operationErr
+}
+
+func (repository *fakeUserManagement) GetUser(_ context.Context, userID string) (operations.User, error) {
+	return operations.User{ID: userID, Email: "person@example.test", Role: "user", AccountStatus: "active", CreatedAt: time.Now(), RegistrationOrigin: "unknown"}, repository.operationErr
+}
+
 func (repository *fakeOperations) ListReviewTasks(context.Context, string, int) ([]operations.ReviewTask, error) {
 	return repository.tasks, repository.operationErr
 }
@@ -302,6 +328,47 @@ func TestOnlyOwnerCanChangeRoles(t *testing.T) {
 		"/admin/v1/users/10000000-0000-4000-8000-000000000001/role", `{"role":"editor"}`))
 	if ownerResponse.Code != http.StatusOK || repository.roleValue != "editor" || repository.roleActor == "" {
 		t.Fatalf("expected owner role update, got %d: %s", ownerResponse.Code, ownerResponse.Body.String())
+	}
+}
+
+func TestUserManagementListBindsFiltersAndReportsDefinition(t *testing.T) {
+	repository := &fakeUserManagement{fakeOperations: &fakeOperations{}, summary: operations.UserSummaryMetrics{AccountTotal: 3, UnknownOrigin: 2}}
+	handler := New(Options{
+		Environment: "test",
+		Identity:    &fakeIdentityService{user: identity.User{ID: "90000000-0000-4000-8000-000000000001", Email: "operator@example.test", Role: "admin"}},
+		Operations:  repository,
+		Now:         func() time.Time { return time.Date(2026, 9, 17, 1, 2, 3, 0, time.UTC) },
+	})
+
+	list := httptest.NewRecorder()
+	handler.ServeHTTP(list, authenticatedAdminRequest(http.MethodGet, "/admin/v1/users?q=person&role=user&status=active&limit=25", ""))
+	if list.Code != http.StatusOK || repository.query.Query != "person" || repository.query.Role != "user" || repository.query.Status != "active" || repository.query.Limit != 25 {
+		t.Fatalf("unexpected user list response %d: %s", list.Code, list.Body.String())
+	}
+	if !strings.Contains(list.Body.String(), `"registration_origin":"public_signup"`) || !strings.Contains(list.Body.String(), `"total":1`) {
+		t.Fatalf("user list omitted management facts: %s", list.Body.String())
+	}
+
+	summary := httptest.NewRecorder()
+	handler.ServeHTTP(summary, authenticatedAdminRequest(http.MethodGet, "/admin/v1/users/summary", ""))
+	if summary.Code != http.StatusOK || !strings.Contains(summary.Body.String(), `"environment":"test"`) || !strings.Contains(summary.Body.String(), `"account_total":3`) {
+		t.Fatalf("unexpected user summary response %d: %s", summary.Code, summary.Body.String())
+	}
+}
+
+func TestUserManagementRejectsInvalidFiltersAndEditorAccess(t *testing.T) {
+	repository := &fakeUserManagement{fakeOperations: &fakeOperations{}}
+	admin := adminHandler("admin", repository)
+	bad := httptest.NewRecorder()
+	admin.ServeHTTP(bad, authenticatedAdminRequest(http.MethodGet, "/admin/v1/users?role=superuser", ""))
+	if bad.Code != http.StatusBadRequest || !repository.query.SnapshotAt.IsZero() {
+		t.Fatalf("invalid filter reached repository: %d %s", bad.Code, bad.Body.String())
+	}
+
+	editor := httptest.NewRecorder()
+	adminHandler("editor", repository).ServeHTTP(editor, authenticatedAdminRequest(http.MethodGet, "/admin/v1/users/summary", ""))
+	if editor.Code != http.StatusForbidden {
+		t.Fatalf("expected editor forbidden, got %d", editor.Code)
 	}
 }
 

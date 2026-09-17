@@ -55,7 +55,7 @@ func newInvitationContractHarness(t *testing.T) *invitationContractHarness {
 		store.Close()
 		t.Fatalf("read invitation contract schema version: %v", err)
 	}
-	if schemaVersion != 22 {
+	if schemaVersion != 23 {
 		store.Close()
 		t.Fatal("invitation contract requires migrated schema 22")
 	}

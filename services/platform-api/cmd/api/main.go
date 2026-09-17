@@ -83,6 +83,7 @@ func main() {
 		Handler: httpapi.New(httpapi.Options{
 			Service:                  "platform-api",
 			Version:                  configuration.BuildVersion,
+			Environment:              configuration.AppEnv,
 			Database:                 store,
 			Catalog:                  store,
 			Account:                  store,

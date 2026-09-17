@@ -44,8 +44,8 @@ BEGIN
     SELECT schema_version INTO current_schema_version
     FROM platform.system_metadata
     WHERE singleton;
-    IF current_schema_version IS DISTINCT FROM 22 THEN
-        RAISE EXCEPTION 'Release A fixtures require schema version 22, got %', current_schema_version;
+    IF current_schema_version IS DISTINCT FROM 23 THEN
+        RAISE EXCEPTION 'Release A fixtures require schema version 23, got %', current_schema_version;
     END IF;
 
     IF EXISTS (
@@ -102,10 +102,11 @@ INSERT INTO collector.sources (
 ) ON CONFLICT (source_id) DO NOTHING;
 
 INSERT INTO platform.users (
-    user_id, normalized_email, email_verified_at, password_hash, role, account_status, closed_at
+    user_id, normalized_email, email_verified_at, password_hash, role, account_status, closed_at,
+    registration_origin, is_test
 ) VALUES
-    ('90000000-0000-4000-8000-000000000001', 'owner@example.invalid', now(), '$fixture$not-a-login-password-hash', 'owner', 'closed', now()),
-    ('90000000-0000-4000-8000-000000000002', 'reviewer@example.invalid', now(), '$fixture$not-a-login-password-hash', 'admin', 'closed', now())
+    ('90000000-0000-4000-8000-000000000001', 'owner@example.invalid', now(), '$fixture$not-a-login-password-hash', 'owner', 'closed', now(), 'fixture', true),
+    ('90000000-0000-4000-8000-000000000002', 'reviewer@example.invalid', now(), '$fixture$not-a-login-password-hash', 'admin', 'closed', now(), 'fixture', true)
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO platform.studios (

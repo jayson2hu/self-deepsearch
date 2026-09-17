@@ -282,8 +282,11 @@ func (store *Store) AcceptInvitation(ctx context.Context, request identity.Invit
 
 	var user identity.User
 	err = tx.QueryRow(ctx, `
-INSERT INTO platform.users (normalized_email, email_verified_at, password_hash, role, account_status)
-VALUES ($1, $2, $3, $4, 'active')
+INSERT INTO platform.users (
+    normalized_email, email_verified_at, password_hash, role, account_status,
+    registration_origin, registered_at
+)
+VALUES ($1, $2, $3, $4, 'active', 'invitation', $2)
 RETURNING user_id::text, normalized_email, password_hash, role, account_status, email_verified_at`,
 		request.Email, request.Now, request.PasswordHash, role).Scan(
 		&user.ID, &user.Email, &user.PasswordHash, &user.Role, &user.AccountStatus, &user.EmailVerifiedAt)

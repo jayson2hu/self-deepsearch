@@ -61,7 +61,7 @@ func TestPostgresMediaUploadQueueContract(t *testing.T) {
 	var version, existing int
 	if err = admin.QueryRow(ctx, `SELECT schema_version,(SELECT count(*) FROM platform.users)+(SELECT count(*) FROM platform.works)+
  (SELECT count(*) FROM platform.media_assets)+(SELECT count(*) FROM platform.outbox_events)+(SELECT count(*) FROM platform.media_upload_control_state)+
- (SELECT count(*) FROM audit.media_upload_commands) FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 22 || existing != 0 {
+ (SELECT count(*) FROM audit.media_upload_commands) FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 23 || existing != 0 {
 		t.Fatal("schema 21 and empty disposable inventory required")
 	}
 	var restricted bool

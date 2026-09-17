@@ -1112,8 +1112,10 @@ WHERE user_id = $1::uuid AND account_status = 'active'`, actorID).Scan(&actorRol
 	err = tx.QueryRow(ctx, `
 UPDATE platform.users SET role = $2
 WHERE user_id = $1::uuid AND account_status <> 'closed'
-RETURNING user_id::text, normalized_email, role, account_status, created_at, last_login_at`, userID, role).Scan(
-		&item.ID, &item.Email, &item.Role, &item.AccountStatus, &item.CreatedAt, &item.LastLoginAt)
+RETURNING user_id::text, normalized_email, role, account_status, created_at, last_login_at,
+          email_verified_at, registration_origin, is_test, registered_at`, userID, role).Scan(
+		&item.ID, &item.Email, &item.Role, &item.AccountStatus, &item.CreatedAt, &item.LastLoginAt,
+		&item.EmailVerifiedAt, &item.RegistrationOrigin, &item.IsTest, &item.RegisteredAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return operations.User{}, operations.ErrNotFound
 	}
@@ -1152,9 +1154,11 @@ func (store *Store) ChangeUserStatus(ctx context.Context, userID, status, actorI
 	var item operations.User
 	var previousStatus string
 	if err := tx.QueryRow(ctx, `
-SELECT user_id::text, normalized_email, role, account_status, created_at, last_login_at
+SELECT user_id::text, normalized_email, role, account_status, created_at, last_login_at,
+       email_verified_at, registration_origin, is_test, registered_at
 FROM platform.users WHERE user_id = $1::uuid AND account_status <> 'closed' FOR UPDATE`, userID).Scan(
 		&item.ID, &item.Email, &item.Role, &previousStatus, &item.CreatedAt, &item.LastLoginAt,
+		&item.EmailVerifiedAt, &item.RegistrationOrigin, &item.IsTest, &item.RegisteredAt,
 	); errors.Is(err, pgx.ErrNoRows) {
 		return operations.User{}, operations.ErrNotFound
 	} else if err != nil {
@@ -1170,8 +1174,10 @@ FROM platform.users WHERE user_id = $1::uuid AND account_status <> 'closed' FOR 
 	if err := tx.QueryRow(ctx, `
 UPDATE platform.users SET account_status = $2
 WHERE user_id = $1::uuid
-RETURNING user_id::text, normalized_email, role, account_status, created_at, last_login_at`, userID, status).Scan(
+RETURNING user_id::text, normalized_email, role, account_status, created_at, last_login_at,
+          email_verified_at, registration_origin, is_test, registered_at`, userID, status).Scan(
 		&item.ID, &item.Email, &item.Role, &item.AccountStatus, &item.CreatedAt, &item.LastLoginAt,
+		&item.EmailVerifiedAt, &item.RegistrationOrigin, &item.IsTest, &item.RegisteredAt,
 	); err != nil {
 		return operations.User{}, err
 	}

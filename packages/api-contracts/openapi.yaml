@@ -1220,12 +1220,49 @@ paths:
       operationId: adminListUsers
       description: Requires admin or owner.
       security: [{ sessionCookie: [] }]
+      parameters:
+        - { in: query, name: q, schema: { type: string, maxLength: 320 } }
+        - { in: query, name: role, schema: { enum: [owner, admin, editor, user] } }
+        - { in: query, name: status, schema: { enum: [pending, active, locked, suspended, closed] } }
+        - { in: query, name: created_from, schema: { type: string, format: date-time } }
+        - { in: query, name: created_to, schema: { type: string, format: date-time } }
+        - { in: query, name: cursor, schema: { type: string, maxLength: 1024 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
       responses:
         "200":
           description: User accounts
           content:
             application/json:
               schema: { $ref: "#/components/schemas/OperationsUserListResponse" }
+        "400": { description: Invalid filter or query-bound cursor }
+  /admin/v1/users/summary:
+    get:
+      operationId: adminGetUserSummary
+      description: Returns current-account and recorded-registration metrics with their environment and definition version. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: User account summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsUserSummary" }
+  /admin/v1/users/{user_id}:
+    parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: adminGetUser
+      description: Returns the minimum account-management profile. Requires admin or owner.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: User account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OperationsUser" }
+        "404": { description: User not found }
   /admin/v1/users/{user_id}/role:
     parameters:
       - in: path
@@ -2581,7 +2618,7 @@ components:
         items: { type: array, items: { $ref: "#/components/schemas/ContentRevision" } }
     OperationsUser:
       type: object
-      required: [id, email, role, account_status, created_at, last_login_at]
+      required: [id, email, role, account_status, created_at, last_login_at, email_verified_at, registration_origin, is_test, registered_at]
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
@@ -2589,11 +2626,36 @@ components:
         account_status: { enum: [pending, active, locked, suspended, closed] }
         created_at: { type: string, format: date-time }
         last_login_at: { type: [string, "null"], format: date-time }
+        email_verified_at: { type: [string, "null"], format: date-time }
+        registration_origin: { enum: [public_signup, invitation, bootstrap, fixture, unknown] }
+        is_test: { type: boolean }
+        registered_at: { type: [string, "null"], format: date-time }
     OperationsUserListResponse:
       type: object
-      required: [items]
+      required: [items, total, next_cursor, observed_at]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/OperationsUser" } }
+        total: { type: integer, minimum: 0 }
+        next_cursor: { type: [string, "null"] }
+        observed_at: { type: string, format: date-time }
+    OperationsUserSummary:
+      type: object
+      required: [observed_at, environment, definition_version, account_total, ordinary_total, active_ordinary, verified_ordinary, management_total, closed_total, public_registrations, public_registrations_today, public_registrations_seven_days, unknown_origin, coverage_started_at]
+      properties:
+        observed_at: { type: string, format: date-time }
+        environment: { type: string }
+        definition_version: { type: string }
+        account_total: { type: integer, minimum: 0 }
+        ordinary_total: { type: integer, minimum: 0 }
+        active_ordinary: { type: integer, minimum: 0 }
+        verified_ordinary: { type: integer, minimum: 0 }
+        management_total: { type: integer, minimum: 0 }
+        closed_total: { type: integer, minimum: 0 }
+        public_registrations: { type: integer, minimum: 0 }
+        public_registrations_today: { type: integer, minimum: 0 }
+        public_registrations_seven_days: { type: integer, minimum: 0 }
+        unknown_origin: { type: integer, minimum: 0 }
+        coverage_started_at: { type: [string, "null"], format: date-time }
     EditorialRecommendation:
       type: object
       required: [id, work_id, work_code, work_title, work_href, position, starts_at, ends_at, reason, status, created_by, created_at, updated_at]
