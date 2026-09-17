@@ -6,8 +6,8 @@
   "branch": "master",
   "scope": ["OPT-00", "OPT-01", "OPT-02", "OPT-03", "OPT-04", "OPT-05", "OPT-06", "OPT-07", "OPT-08"],
   "acceptance_summary": {
-    "pass": 18,
-    "partial": 5,
+    "pass": 19,
+    "partial": 4,
     "blocked": 1,
     "fail": 0,
     "not_run": 0

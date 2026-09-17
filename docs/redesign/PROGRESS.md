@@ -8,7 +8,7 @@
 
 依据用户“先写文档，再开始开发”的要求，新增[开发执行书](./OPERATIONS_OPTIMIZATION_PLAN.md)，将审查候选拆成 OPT-00～08 与 OA-01～24。本表是 OPT 唯一动态状态源；与下方原 RD 进度分开计算。
 
-当前：已提交实现 9/9，已验收 0/9；OA-01～24 为 PASS 18、PARTIAL 5、BLOCKED 1、FAIL 0、NOT_RUN 0。固定实现 SHA 为 `90a09612ea6ce1ca5f5784a2d83c35e337bc018d`；当前结论是“开发自测和当前服务器可执行验收完成、待独立/产品验收”，不是生产放行。
+当前：已提交实现 9/9，已验收 0/9；OA-01～24 为 PASS 19、PARTIAL 4、BLOCKED 1、FAIL 0、NOT_RUN 0。固定实现 SHA 为 `90a09612ea6ce1ca5f5784a2d83c35e337bc018d`；当前结论是“开发自测和当前服务器可执行验收完成、待独立/产品验收”，不是生产放行。
 
 | ID | 工作包 | 状态 | 执行人 / 排期 | 实现 SHA / 证据 | 下一步 |
 | --- | --- | --- | --- | --- | --- |
@@ -17,14 +17,14 @@
 | OPT-02 | 用户管理界面 | 待验收 | Codex / 2026-09-17 | `795c903`、`7964fad` / [证据](../evidence/operations-opt-2026-09-17/OPT-02/README.md) | 开发自测 OA-07/08 PASS；待独立签收 |
 | OPT-03 | 广告页面治理 | 待验收 | Codex / 2026-09-17 | `ee5b51e` / [证据](../evidence/operations-opt-2026-09-17/OPT-03/README.md) | 六档视觉矩阵与 LCP/CLS 已通过；待独立签收 |
 | OPT-04 | 广告后台与投放 | 待验收 | Codex / 2026-09-17 | `f054616` / [证据](../evidence/operations-opt-2026-09-17/OPT-04/README.md) | 已开页面 29.704 秒停投通过；待独立签收 |
-| OPT-05 | SEO 清单与总览 | 待验收 | Codex / 2026-09-17 | `c60773b` / [证据](../evidence/operations-opt-2026-09-17/OPT-05/README.md) | 补双管理员 UI 修订→审核→发布完整链 |
+| OPT-05 | SEO 清单与总览 | 待验收 | Codex / 2026-09-17 | `c60773b` / [证据](../evidence/operations-opt-2026-09-17/OPT-05/README.md) | 双管理员 UI 与正式门槛索引输出已通过；待独立签收 |
 | OPT-06 | SEO 扫描与问题闭环 | 进行中 | Codex / 未排期 | `78d0bc7` / [证据](../evidence/operations-opt-2026-09-17/OPT-06/README.md) | 补每日调度、超过 1,000 URL 的稳定续批和外部目标抓取执行链 |
 | OPT-07 | 搜索报表与性能 | 待验收 | Codex / 2026-09-17 | `8f01b3c` / [证据](../evidence/operations-opt-2026-09-17/OPT-07/README.md) | 10k/API/浏览器性能已通过；待授权真实 Search Console 导出和 npm audit |
 | OPT-08 | 集成验收与交付 | 待验收 | Codex / 2026-09-17 | `6075181`、`57818cd`、`253b5d5`、`7964fad`、`90a0961` / [聚合证据](../evidence/operations-opt-2026-09-17/README.md) | 独立测试、产品签收；生产权限具备后再做目标发布/回退演练 |
 
-2026-09-17 开发与自测记录：OPT-00～08 已按包提交。新增 Schema v23～26、用户统计与稳定分页、用户后台、页面级广告治理、广告版本/发布/暂停后台、SEO 资格清单、问题闭环和报表导入；同步 CI、监控、数据模型及 Alpine 迁移脚本。固定快照完成静态/单元/合同/构建、真实 PostgreSQL、备份恢复及四镜像验证。补充 Google Chrome 153 全量 E2E 98/98、六档宽度矩阵、10,000 用户 API 性能、公开页/用户后台 LCP/CLS、广告已开页面 60 秒内停投和 SEO 合成数据真实链路。fresh PostgreSQL 初始化退出与两个站点 favicon 404 已分别由 `253b5d5`、`90a0961` 修复。当前 OA 为 PASS 18、PARTIAL 5、BLOCKED 1；完整结果见[聚合验收记录](../evidence/operations-opt-2026-09-17/README.md)。
+2026-09-17 开发与自测记录：OPT-00～08 已按包提交。新增 Schema v23～26、用户统计与稳定分页、用户后台、页面级广告治理、广告版本/发布/暂停后台、SEO 资格清单、问题闭环和报表导入；同步 CI、监控、数据模型及 Alpine 迁移脚本。固定快照完成静态/单元/合同/构建、真实 PostgreSQL、备份恢复及四镜像验证。补充 Google Chrome 153 全量 E2E 98/98、六档宽度矩阵、10,000 用户 API 性能、公开页/用户后台 LCP/CLS、广告已开页面 60 秒内停投、双管理员 SEO UI 闭环和正式门槛索引输出。fresh PostgreSQL 初始化退出与两个站点 favicon 404 已分别由 `253b5d5`、`90a0961` 修复。当前 OA 为 PASS 19、PARTIAL 4、BLOCKED 1；完整结果见[聚合验收记录](../evidence/operations-opt-2026-09-17/README.md)。
 
-未达项不计通过：未提供 Search Console 所有权与真实导出；联网生产依赖审计因会向外部 registry 发送依赖清单而未获明确授权；OPT-05 尚缺双管理员 UI 修订闭环；OPT-06 尚缺每日调度和超过 1,000 URL 的稳定续批。未执行生产迁移、生产广告启用、搜索引擎提交、推送远端或负责人代签。
+未达项不计通过：未提供 Search Console 所有权与真实导出；联网生产依赖审计因会向外部 registry 发送依赖清单而未获明确授权；OPT-06 尚缺每日调度和超过 1,000 URL 的稳定续批。未执行生产迁移、生产广告启用、搜索引擎提交、推送远端或负责人代签。
 
 ## 1. 当前结论
 

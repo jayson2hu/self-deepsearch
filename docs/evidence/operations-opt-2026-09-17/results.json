@@ -18,7 +18,7 @@
     {"id":"OA-14","status":"PASS","actual":"真实发布到 API+SSR 为 222.27ms；暂停后公开 API 8.18ms、新 SSR 105.48ms、已开页面 29.704s 隐藏，低于 60 秒门槛。","evidence":["OPT-04/README.md","simulations/README.md"]},
     {"id":"OA-15","status":"PASS","actual":"发布/暂停仅 owner+近期验证，来源互斥和回退保留暂停/审计合同通过。","evidence":["OPT-04/README.md"]},
     {"id":"OA-16","status":"PASS","actual":"资格清单复用公开策略，unknown fail-closed，HTML/sitemap/后台合同一致。","evidence":["OPT-05/README.md"]},
-    {"id":"OA-17","status":"PARTIAL","actual":"修订入口、排除原因与缓存读取已实现；真实扫描验证分类变化会改变问题结果，但尚未用双管理员完整走完 UI 修订、审核、发布链。","evidence":["OPT-05/README.md","simulations/README.md","blockers.md"]},
+    {"id":"OA-17","status":"PASS","actual":"owner 提交两条 SEO 分类修订，不同合成管理员经 Mailpit 邀请后分别审核，owner UI 发布；可索引 0→2，正式门槛临时前台输出 index/follow 且 sitemap 含两条 URL。","evidence":["OPT-05/README.md","simulations/README.md"]},
     {"id":"OA-18","status":"PARTIAL","actual":"单活动扫描、1,000 上限、truncated、问题去重已实现；每日调度和稳定续批未实现。","evidence":["OPT-06/README.md","blockers.md"]},
     {"id":"OA-19","status":"PASS","actual":"分派、复测、仅成功关闭、失败回处理中及再次出现重开历史由真实 PG 合同覆盖。","evidence":["OPT-06/README.md"]},
     {"id":"OA-20","status":"PARTIAL","actual":"演示 CSV 真实走 multipart 导入，2 行成功且重复导入复用 ID，公式文件以 400 拒绝；无授权真实 Search Console 导出。","evidence":["OPT-07/README.md","simulations/README.md","blockers.md"]},

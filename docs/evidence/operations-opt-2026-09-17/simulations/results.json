@@ -56,6 +56,18 @@
       "repeat_scan_event_rows": 260,
       "deduplication_and_rediscovery_history_passed": true
     },
+    "seo_ui_workflow": {
+      "synthetic_admin_invitations_delivered_by_mailpit": true,
+      "revisions_submitted_in_owner_ui": 2,
+      "revisions_approved_by_distinct_admins_in_ui": 2,
+      "revisions_published_by_owner_in_ui": 2,
+      "indexable_before": 0,
+      "indexable_after": 2,
+      "production_gate_probe_origin": "https://seo-review.example.test",
+      "public_meta_robots": "index, follow",
+      "sitemap_contains": ["/works/test-001", "/works/test-002"],
+      "passed": true
+    },
     "seo_report_import": {
       "dataset_kind": "demo",
       "valid_rows": 2,
