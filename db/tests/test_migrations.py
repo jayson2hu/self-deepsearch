@@ -129,6 +129,12 @@ class MigrationContractTests(unittest.TestCase):
         self.assertIn("rendition IN ('w320', 'w640', 'w960') AND storage_scope = 'public'", up)
         self.assertIn("DROP COLUMN storage_scope", down)
 
+    def test_native_ad_placement_is_explicitly_migrated(self) -> None:
+        up, down = sections(MIGRATION_DIR / "00027_native_ad_placement.sql")
+        self.assertIn("placement IN ('banner', 'rail', 'infeed', 'native')", up)
+        self.assertIn("placement = 'native'", down)
+        self.assertIn("cannot remove native ad placement", down)
+
     def test_media_reconciliation_results_are_audited(self) -> None:
         up, down = sections(MIGRATION_DIR / "00010_media_reconciliation_audit.sql")
         self.assertIn("CREATE TABLE audit.media_reconciliation_runs", up)
@@ -184,8 +190,8 @@ class MigrationContractTests(unittest.TestCase):
         self.assertIn("release_a_fixture' = '1'", seed_source)
         self.assertIn("SET LOCAL lock_timeout = '5s'", seed_source)
         self.assertIn("IN SHARE ROW EXCLUSIVE MODE", seed_source)
-        self.assertIn("current_schema_version IS DISTINCT FROM 26", seed_source)
-        self.assertIn("fixtures require schema version 26", seed_source)
+        self.assertIn("current_schema_version IS DISTINCT FROM 27", seed_source)
+        self.assertIn("fixtures require schema version 27", seed_source)
         self.assertIn("empty or fixture-only catalog database", seed_source)
         self.assertIn("account_status <> 'closed'", seed_source)
         self.assertIn("'owner', 'closed', now()", seed_source)

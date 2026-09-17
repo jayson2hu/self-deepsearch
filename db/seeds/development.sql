@@ -44,8 +44,8 @@ BEGIN
     SELECT schema_version INTO current_schema_version
     FROM platform.system_metadata
     WHERE singleton;
-    IF current_schema_version IS DISTINCT FROM 26 THEN
-        RAISE EXCEPTION 'Release A fixtures require schema version 26, got %', current_schema_version;
+    IF current_schema_version IS DISTINCT FROM 27 THEN
+        RAISE EXCEPTION 'Release A fixtures require schema version 27, got %', current_schema_version;
     END IF;
 
     IF EXISTS (

@@ -52,7 +52,7 @@ func TestPostgresIdentityLifecycleContract(t *testing.T) {
 	}
 	defer store.Close()
 	var version int
-	if err := store.pool.QueryRow(ctx, `SELECT schema_version FROM platform.system_metadata WHERE singleton`).Scan(&version); err != nil || version != 26 {
+	if err := store.pool.QueryRow(ctx, `SELECT schema_version FROM platform.system_metadata WHERE singleton`).Scan(&version); err != nil || version != 27 {
 		t.Fatal("identity contract requires migrated schema 26")
 	}
 	var restricted bool
