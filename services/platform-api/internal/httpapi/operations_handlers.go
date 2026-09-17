@@ -924,7 +924,7 @@ func (s *Server) publicAd(w http.ResponseWriter, r *http.Request) {
 	}
 	slot := strings.TrimSpace(r.URL.Query().Get("slot"))
 	placement := strings.TrimSpace(r.URL.Query().Get("placement"))
-	if !adSlotCodePattern.MatchString(slot) || !oneOf(placement, "banner", "rail", "infeed") {
+	if !adSlotCodePattern.MatchString(slot) || !oneOf(placement, "banner", "rail", "infeed", "native") {
 		writeError(w, r, http.StatusBadRequest, "INVALID_AD_SLOT", "广告位不符合要求")
 		return
 	}
@@ -1070,11 +1070,11 @@ func validateAdCampaignRequest(w http.ResponseWriter, r *http.Request, request a
 	request.ImageURL, request.ImageAlt = strings.TrimSpace(request.ImageURL), strings.TrimSpace(request.ImageAlt)
 	startsAt, startsErr := time.Parse(time.RFC3339, request.StartsAt)
 	endsAt, endsErr := time.Parse(time.RFC3339, request.EndsAt)
-	expectedSize := map[string][2]int{"banner": {960, 90}, "rail": {160, 600}, "infeed": {640, 120}}[request.Placement]
+	expectedSize := map[string][2]int{"banner": {960, 90}, "rail": {160, 600}, "infeed": {640, 120}, "native": {640, 400}}[request.Placement]
 	validText := len(request.Name) >= 1 && len(request.Name) <= 120 && len(request.Advertiser) >= 1 && len(request.Advertiser) <= 120 &&
 		len(request.Title) >= 1 && len(request.Title) <= 120 && len(request.Sponsor) >= 1 && len(request.Sponsor) <= 120 && len(request.ImageAlt) <= 160
 	if !validText || !adSlotCodePattern.MatchString(request.SlotCode) || !strings.HasPrefix(request.SlotCode, request.PageScope+".") ||
-		!oneOf(request.Placement, "banner", "rail", "infeed") || !oneOf(request.PageScope, "home", "work", "performer", "studio", "latest", "recent", "popular") ||
+		!oneOf(request.Placement, "banner", "rail", "infeed", "native") || !oneOf(request.PageScope, "home", "work", "performer", "studio", "latest", "recent", "popular") ||
 		!oneOf(request.DeviceScope, "all", "desktop", "mobile") || request.Width != expectedSize[0] || request.Height != expectedSize[1] ||
 		request.Priority < -1000 || request.Priority > 1000 || startsErr != nil || endsErr != nil || !endsAt.After(startsAt) ||
 		!validAdURL(request.ImageURL, true) || (request.TargetURL != nil && !validAdURL(strings.TrimSpace(*request.TargetURL), false)) {

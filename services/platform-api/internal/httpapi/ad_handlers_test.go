@@ -78,6 +78,13 @@ func TestAdminAdCreateValidatesPlacementDimensionsAndRole(t *testing.T) {
 		t.Fatalf("unexpected create response %d %s", response.Code, response.Body.String())
 	}
 
+	native := `{"name":"首页推荐原生广告","advertiser":"示例广告主","slot_code":"home.recommendation_card","placement":"native","page_scope":"home","device_scope":"all","title":"合规原生素材","sponsor":"示例广告主","image_url":"/ads/example.webp","image_alt":"","target_url":null,"width":640,"height":400,"priority":1,"starts_at":"2026-09-17T00:00:00Z","ends_at":"2026-09-18T00:00:00Z"}`
+	response = httptest.NewRecorder()
+	adminHandler("admin", repository).ServeHTTP(response, authenticatedAdminRequest(http.MethodPost, "/admin/v1/ads", native))
+	if response.Code != http.StatusCreated || repository.created.Placement != "native" || repository.created.Width != 640 || repository.created.Height != 400 {
+		t.Fatalf("unexpected native create response %d %s", response.Code, response.Body.String())
+	}
+
 	invalid := strings.Replace(valid, `"width":960`, `"width":959`, 1)
 	response = httptest.NewRecorder()
 	adminHandler("admin", repository).ServeHTTP(response, authenticatedAdminRequest(http.MethodPost, "/admin/v1/ads", invalid))

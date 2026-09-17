@@ -91,7 +91,7 @@ paths:
       description: Returns at most one currently effective reviewed creative for an exact stable slot. An empty creative is a successful no-fill response.
       parameters:
         - { in: query, name: slot, required: true, schema: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" } }
-        - { in: query, name: placement, required: true, schema: { enum: [banner, rail, infeed] } }
+        - { in: query, name: placement, required: true, schema: { enum: [banner, rail, infeed, native] } }
       responses:
         "200":
           description: Effective creative or no fill
@@ -2863,7 +2863,7 @@ components:
       required: [slot, placement, device_scope, title, sponsor, image_url, image_alt, target_url, width, height, starts_at, ends_at]
       properties:
         slot: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" }
-        placement: { enum: [banner, rail, infeed] }
+        placement: { enum: [banner, rail, infeed, native] }
         device_scope: { enum: [all, desktop, mobile] }
         title: { type: string, minLength: 1, maxLength: 120 }
         sponsor: { type: string, minLength: 1, maxLength: 120 }
@@ -2891,7 +2891,7 @@ components:
         name: { type: string, minLength: 1, maxLength: 120 }
         advertiser: { type: string, minLength: 1, maxLength: 120 }
         slot_code: { type: string, pattern: "^[a-z][a-z0-9_.]{2,79}$" }
-        placement: { enum: [banner, rail, infeed] }
+        placement: { enum: [banner, rail, infeed, native] }
         page_scope: { enum: [home, work, performer, studio, latest, recent, popular] }
         device_scope: { enum: [all, desktop, mobile] }
         title: { type: string, minLength: 1, maxLength: 120 }

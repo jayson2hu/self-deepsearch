@@ -6,7 +6,7 @@ import { FormEvent, useState } from "react";
 import { formatDateTime } from "../lib/date-time";
 import { adminFetch } from "../lib/reauth-client";
 
-type Placement = "banner" | "rail" | "infeed";
+type Placement = "banner" | "rail" | "infeed" | "native";
 type Draft = {
   id: string | null;
   expected_version: number;
@@ -28,7 +28,7 @@ type Draft = {
   ends_at: string;
 };
 
-const sizes: Record<Placement, [number, number]> = { banner: [960, 90], rail: [160, 600], infeed: [640, 120] };
+const sizes: Record<Placement, [number, number]> = { banner: [960, 90], rail: [160, 600], infeed: [640, 120], native: [640, 400] };
 
 function emptyDraft(): Draft {
   const start = new Date();
@@ -120,7 +120,7 @@ export function AdManager({ initialItems, operatorRole }: { initialItems: AdCamp
           {(["home", "work", "performer", "studio", "latest", "recent", "popular"] as const).map((value) => <option key={value} value={value}>{value}</option>)}
         </select></label>
         <label><span>稳定广告位代码</span><input pattern="[a-z][a-z0-9_.]{2,79}" required value={draft.slot_code} onChange={(event) => setDraft({ ...draft, slot_code: event.target.value })} /></label>
-        <label><span>形态</span><select value={draft.placement} onChange={(event) => changePlacement(event.target.value as Placement)}><option value="banner">横幅 960×90</option><option value="rail">侧栏 160×600</option><option value="infeed">信息流 640×120</option></select></label>
+        <label><span>形态</span><select value={draft.placement} onChange={(event) => changePlacement(event.target.value as Placement)}><option value="banner">横幅 960×90</option><option value="rail">侧栏 160×600</option><option value="infeed">信息流 640×120</option><option value="native">原生作品卡 640×400</option></select></label>
         <label><span>设备</span><select value={draft.device_scope} onChange={(event) => setDraft({ ...draft, device_scope: event.target.value as Draft["device_scope"] })}><option value="all">全部</option><option value="desktop">桌面</option><option value="mobile">移动</option></select></label>
         <label><span>展示标题</span><input maxLength={120} required value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
         <label><span>赞助方署名</span><input maxLength={120} required value={draft.sponsor} onChange={(event) => setDraft({ ...draft, sponsor: event.target.value })} /></label>

@@ -719,7 +719,7 @@ export type OperationsUserSummary = {
 
 export type PublicAdCreative = {
   slot: string;
-  placement: "banner" | "rail" | "infeed";
+  placement: "banner" | "rail" | "infeed" | "native";
   device_scope: "all" | "desktop" | "mobile";
   title: string;
   sponsor: string;
@@ -740,7 +740,7 @@ export type AdCampaignRequest = {
   name: string;
   advertiser: string;
   slot_code: string;
-  placement: "banner" | "rail" | "infeed";
+  placement: "banner" | "rail" | "infeed" | "native";
   page_scope: "home" | "work" | "performer" | "studio" | "latest" | "recent" | "popular";
   device_scope: "all" | "desktop" | "mobile";
   title: string;
@@ -759,7 +759,7 @@ export type AdCampaign = {
   name: string;
   advertiser: string;
   slot_code: string;
-  placement: "banner" | "rail" | "infeed";
+  placement: "banner" | "rail" | "infeed" | "native";
   page_scope: "home" | "work" | "performer" | "studio" | "latest" | "recent" | "popular";
   device_scope: "all" | "desktop" | "mobile";
   title: string;

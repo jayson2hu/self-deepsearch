@@ -1,4 +1,4 @@
-export type AdPlacement = "banner" | "rail" | "infeed" | "footer";
+export type AdPlacement = "banner" | "rail" | "infeed" | "native" | "footer";
 
 export type AdCreative = {
   slot: string;
@@ -23,6 +23,7 @@ const dimensions: Record<AdPlacement, { width: number; height: number }> = {
   banner: { width: 960, height: 90 },
   rail: { width: 160, height: 600 },
   infeed: { width: 640, height: 120 },
+  native: { width: 640, height: 400 },
   footer: { width: 960, height: 90 },
 };
 const safeText = /^[^<>\u0000-\u001f\u007f]{1,120}$/;

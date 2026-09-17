@@ -180,6 +180,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .ad-slot--banner > a, .ad-slot--banner > div, .ad-slot--infeed > a, .ad-slot--infeed > div, .ad-slot--footer > a, .ad-slot--footer > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 .ad-slot--banner img, .ad-slot--infeed img, .ad-slot--footer img { width: 100%; max-height: 120px; }
 .ad-slot--banner strong, .ad-slot--infeed strong { margin: 0; }
+.ad-slot--native { min-width: 0; height: 100%; border-radius: 6px; }
+.ad-slot--native > a, .ad-slot--native > div { height: 100%; display: flex; flex-direction: column; }
+.ad-slot--native img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: 1px solid var(--line); }
+.ad-slot--native .ad-slot__copy { flex: 1; padding: 12px; }
+.ad-slot--native strong { margin-top: 5px; font-size: 15px; line-height: 1.35; }
+.ad-slot--native small { margin-top: 7px; font-size: 11px; }
 .ad-slot--footer { border-color: #555b61; background: #292d31; }
 .ad-slot--footer strong { margin: 0; color: white; }
 .ad-slot--footer small { color: #aeb5ba; }
