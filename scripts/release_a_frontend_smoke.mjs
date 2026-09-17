@@ -1069,11 +1069,31 @@ export async function startMockUpstream(port, { accountMode = "unavailable", log
       if (url.pathname === `/admin/v1/entities/${MOCK_OPERATION_ENTITY_ID}/revisions` && request.method === "GET") {
         return writeMockJSON(response, { items: operationsState.work ? [mockOperationRevision(operationsState)] : [] });
       }
+      if (url.pathname === "/admin/v1/users/summary" && request.method === "GET") {
+        const managementTotal = invitationState.invitation?.status === "accepted" ? 5 : 4;
+        return writeMockJSON(response, {
+          observed_at: "2026-09-17T00:00:00Z",
+          environment: "test",
+          definition_version: "users-v1",
+          account_total: managementTotal + 1,
+          ordinary_total: 1,
+          active_ordinary: userManagementState.status === "active" ? 1 : 0,
+          verified_ordinary: 1,
+          management_total: managementTotal,
+          closed_total: 0,
+          public_registrations: 1,
+          public_registrations_today: 0,
+          public_registrations_seven_days: 1,
+          unknown_origin: managementTotal,
+          coverage_started_at: "2026-09-01T00:00:00Z",
+        });
+      }
       if (url.pathname === "/admin/v1/users" && request.method === "GET") {
         const managedUser = mockOperationsUser({ ...MOCK_USER, role: userManagementState.role }, userManagementState.status);
         const users = [mockOperationsUser(MOCK_OWNER), mockOperationsUser(MOCK_OPERATOR), mockOperationsUser(MOCK_REVIEWER), mockOperationsUser(MOCK_EDITOR), managedUser];
         if (invitationState.invitation?.status === "accepted") users.push(MOCK_INVITED_ADMIN);
-        return writeMockJSON(response, { items: users.map((user) => "account_status" in user ? user : mockOperationsUser(user)) });
+        const items = users.map((user) => "account_status" in user ? user : mockOperationsUser(user));
+        return writeMockJSON(response, { items, total: items.length, next_cursor: null, observed_at: "2026-09-17T00:00:00Z" });
       }
       if (url.pathname === `/admin/v1/users/${MOCK_USER.id}/role` && request.method === "POST") {
         if (session !== "browser-owner") {
@@ -1304,6 +1324,10 @@ function mockOperationsUser(user, accountStatus = "active") {
     account_status: accountStatus,
     created_at: "2026-09-01T00:00:00Z",
     last_login_at: "2026-09-09T12:00:00Z",
+    email_verified_at: "2026-09-01T00:00:00Z",
+    registration_origin: user.role === "user" ? "public_signup" : "unknown",
+    is_test: true,
+    registered_at: user.role === "user" ? "2026-09-01T00:00:00Z" : null,
   };
 }
 

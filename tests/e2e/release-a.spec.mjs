@@ -124,7 +124,7 @@ test("三类详情展示真实公开更新时间并链接已发布厂牌", async
   await expect(page.getByText("资料更新：2026-09-16", { exact: true })).toBeVisible();
 });
 
-test("人物与厂牌关联作品使用可直达分页链接并准确恢复失效游标", async ({ page }) => {
+test("人物关联作品使用可直达分页链接，厂牌非法游标由代理拒绝", async ({ page }) => {
   await page.goto(`${displayURL}/performers/test-jsonld-00000001`);
   await expect(page.getByRole("heading", { name: "关联作品" })).toBeVisible();
   await expect(page.getByText("TEST-JSONLD", { exact: true })).toBeVisible();
@@ -136,8 +136,8 @@ test("人物与厂牌关联作品使用可直达分页链接并准确恢复失�
   await expect(page.getByText("已到最后一页", { exact: true })).toBeVisible();
 
   await page.goto(`${displayURL}/studios/test-jsonld-00000001?cursor=broken`);
-  await expect(page.getByText("分页地址已失效", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "返回第一页" })).toHaveAttribute("href", "/studios/test-jsonld-00000001");
+  await expect(page.getByRole("heading", { name: "分页参数无效" })).toBeVisible();
+  await expect(page.getByText("请返回目录首页重新浏览。", { exact: true })).toBeVisible();
 });
 
 test("游客登录后返回原资料，确认前不写收藏关系", async ({ page }) => {
@@ -300,7 +300,7 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   await expect(rails.last()).toBeHidden();
   await expect(page.locator(".footer-ad")).toBeHidden();
 
-  await page.getByLabel("搜索番号、标题、人物或厂牌").fill("TEST-001");
+  await page.getByLabel("搜索番号、标题、人物或厂牌", { exact: true }).fill("TEST-001");
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page).toHaveURL(/\/search\?q=TEST-001$/);
   await expect(page.getByRole("link", { name: "查看 TEST-001" })).toBeVisible();
@@ -308,7 +308,7 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
   await expect(page.getByRole("heading", { name: "示例作品资料：春日档案" })).toBeVisible();
 
   await page.goto(displayURL);
-  await page.getByLabel("搜索番号、标题、人物或厂牌").fill("TEST-JSONLD");
+  await page.getByLabel("搜索番号、标题、人物或厂牌", { exact: true }).fill("TEST-JSONLD");
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page).toHaveURL(/\/search\?q=TEST-JSONLD$/);
   await expect(page.getByRole("heading", { name: "“TEST-JSONLD” 的结果" })).toBeVisible();
@@ -316,7 +316,9 @@ test("匿名用户可以按番号搜索并安全查看作品详情", async ({ pa
 
   await expect(page).toHaveURL(/\/works\/test-jsonld-00000001$/);
   await expect(page.getByRole("heading", { name: "安全结构化数据 </script><script>alert(1)</script>" })).toBeVisible();
-  const jsonLD = await page.locator('script[type="application/ld+json"]').evaluate((node) => JSON.parse(node.textContent ?? "{}"));
+  const jsonLD = (await page.locator('script[type="application/ld+json"]').allTextContents())
+    .map((value) => JSON.parse(value)).find((value) => value["@type"] === "CreativeWork");
+  expect(jsonLD).toBeTruthy();
   expect(jsonLD["@type"]).toBe("CreativeWork");
   expect(jsonLD.identifier).toBe("TEST-JSONLD");
   expect(jsonLD.mainEntityOfPage).toBe(`${displayURL}/works/test-jsonld-00000001`);
@@ -559,11 +561,11 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await expect(page.getByRole("link", { name: "查看我的反馈状态" })).toHaveAttribute("href", "/account/feedback");
 
   await page.getByRole("button", { name: "不再推荐" }).click();
-  await expect(page.getByRole("status")).toContainText("已减少这部作品的推荐，仍可搜索找到");
+  await expect(page.getByRole("status").filter({ hasText: "已减少这部作品的推荐，仍可搜索找到" })).toBeVisible();
   await expect(page.getByRole("button", { name: "恢复推荐" })).toBeVisible();
 
   await page.goto(`${displayURL}/search?q=TEST-JSONLD`);
-  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" }).first()).toBeVisible();
 
   await page.goto(displayURL);
   const latestRecommendation = page.locator("section").filter({ has: page.getByRole("heading", { name: "最新发行" }) });
@@ -588,7 +590,7 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await expect(page.getByRole("heading", { name: "关注人物的已发布作品" })).toBeVisible();
   await expect(page.getByText("最多展示按发行日期排序的 12 条作品", { exact: false })).toBeVisible();
   await expect(page.getByText("卡片日期是作品发行日期", { exact: false })).toBeVisible();
-  await expect(page.getByText("当前接口不公开本站收录时间", { exact: false })).toBeVisible();
+  await expect(page.getByText("接口不公开本站收录时间", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
   const followedWorks = await page.evaluate(async () => {
     const response = await fetch("/api/v1/me/followed-works", { credentials: "same-origin", cache: "no-store" });
@@ -615,7 +617,7 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
   await page.goto(`${displayURL}/account/history`);
   await expect(page.getByRole("heading", { name: "浏览历史" })).toBeVisible();
   await expect(page.getByText("清除后这些记录不再向你展示，但不会物理删除底层记录", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看 TEST-JSONLD" }).first()).toBeVisible();
   await page.getByRole("button", { name: "清除可见历史" }).click();
   await expect(page.getByText("暂无可见浏览历史")).toBeVisible();
 
@@ -628,8 +630,9 @@ test("注册用户可以收藏关注、管理推荐偏好、查看历史并提�
 
 test("说明页匿名可读并从注册和页脚可达", async ({ page }) => {
   await page.goto(`${displayURL}/register`);
-  await expect(page.getByRole("link", { name: "数据与隐私说明" })).toHaveAttribute("href", "/privacy");
-  await page.getByRole("link", { name: "数据与隐私说明" }).click();
+  const privacyLink = page.getByRole("main").getByRole("link", { name: "数据与隐私说明" });
+  await expect(privacyLink).toHaveAttribute("href", "/privacy");
+  await privacyLink.click();
   await expect(page).toHaveURL(`${displayURL}/privacy`);
   await expect(page.getByRole("heading", { name: "数据与隐私说明" })).toBeVisible();
   await expect(page.getByText("关闭账号不等于全量物理删除", { exact: false })).toBeVisible();
@@ -638,7 +641,7 @@ test("说明页匿名可读并从注册和页脚可达", async ({ page }) => {
   await page.getByRole("link", { name: "关于幕鉴" }).click();
   await expect(page).toHaveURL(`${displayURL}/about`);
   await expect(page.getByRole("heading", { name: "关于幕鉴" })).toBeVisible();
-  await expect(page.getByText("rights@example.test")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "rights@example.test" })).toBeVisible();
 });
 
 test("三类详情的可见面包屑与 BreadcrumbList 一致", async ({ page }) => {
@@ -693,7 +696,7 @@ test("主图替换需要独立确认，成功后准确展示异步删除与母�
   await openMediaForm(page);
   await loadMediaFile(page);
   await expect(page.getByText("当前资产：", { exact: false })).toBeVisible();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await expect(page.getByRole("button", { name: "确认替换主图" })).toBeDisabled();
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -713,14 +716,14 @@ test("无主图可首次登记，共享旧图替换不宣称删除", async ({ pa
   await openMediaForm(page, { primary: false });
   await loadMediaFile(page);
   await expect(page.getByText("当前没有主图，将登记为第一张主图。", { exact: false })).toBeVisible();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "核对并发布图片" }).click();
   await expect(page.getByText("图片资产已发布", { exact: false })).toBeVisible();
   mediaControl.shared = true;
   mediaControl.primary.asset_id = "22000000-0000-4000-8000-000000000002";
   await loadMediaFile(page);
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
   await expect(page.getByText("旧图仍有其他公开关联，旧资产及其对象已保留，未安排删除。")).toBeVisible();
 });
@@ -729,7 +732,7 @@ test("主图冲突保留清单，刷新后必须重新确认，提交失败不�
   await openMediaForm(page, { mode: "conflict" });
   await loadMediaFile(page);
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
   await expect(page.getByText("不会自动覆盖。", { exact: false })).toBeVisible();
   await expect(page.getByRole("heading", { name: "清单核对" })).toBeVisible();
@@ -738,7 +741,7 @@ test("主图冲突保留清单，刷新后必须重新确认，提交失败不�
   await expect(page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则")).not.toBeChecked();
   await expect(page.getByRole("button", { name: "确认替换主图" })).toBeDisabled();
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
   await expect(page.getByText("提交暂时无法确认 清单仍保留。")).toBeVisible();
   await expect(page.getByText("主图已切换", { exact: false })).toHaveCount(0);
@@ -748,12 +751,12 @@ test("主图读取失败禁止提交，不完整成功响应保留清单并阻�
   await openMediaForm(page, { mode: "read-failure" });
   await loadMediaFile(page);
   await expect(page.getByText("当前主图暂时无法读取")).toBeVisible();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await expect(page.getByRole("button", { name: "核对并发布图片" })).toBeDisabled();
   mediaControl.mode = "uncertain";
   await page.getByRole("button", { name: "刷新当前主图" }).click();
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
-  await page.getByLabel("已核对来源、展示权利、实体关联和北京副本").check();
+  await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
   await expect(page.getByText("提交结果未能确认", { exact: false })).toBeVisible();
   await expect(page.getByText("主图已切换", { exact: false })).toHaveCount(0);
@@ -930,7 +933,7 @@ test("owner 邀请管理员并由受邀邮箱验证码建立后台账号", async
   await page.goto(`${opsURL}/users`);
   await expect(page.getByRole("heading", { name: "用户与权限" })).toBeVisible();
 
-  await page.getByLabel("邮箱").fill("invited-admin@example.test");
+  await page.getByLabel("邮箱", { exact: true }).fill("invited-admin@example.test");
   await page.locator('select[name="role"]').selectOption("admin");
   await page.getByLabel("邀请理由").fill("邀请新的资料审核管理员");
   const reauthHandler = async (dialog) => dialog.accept("Release-A-owner-pass");
@@ -958,7 +961,7 @@ test("owner 邀请管理员并由受邀邮箱验证码建立后台账号", async
   await expect(page.locator('select[name="role"] option[value="editor"]')).toHaveCount(0);
   await expect(page.locator('select[name="role"] option[value="user"]')).toHaveCount(1);
 
-  await page.getByLabel("邮箱").fill("invited-user@example.test");
+  await page.getByLabel("邮箱", { exact: true }).fill("invited-user@example.test");
   await page.locator('select[name="role"]').selectOption("user");
   await page.getByLabel("邀请理由").fill("验证管理员只能邀请普通用户并可撤销");
   const adminReauthHandler = async (dialog) => dialog.accept("Release-A-invited-pass");
@@ -999,7 +1002,7 @@ test("owner 修改普通用户角色，admin 只能管理普通用户状态", as
 
   const managedRow = page.getByRole("row").filter({ hasText: "browser-user@example.test" });
   const roleSelect = managedRow.getByLabel("修改 browser-user@example.test 的角色");
-  await expect(page.getByText("修改角色会使该账号在所有设备上的旧登录会话失效，需重新登录后使用新权限。", { exact: true })).toBeVisible();
+  await expect(page.getByText("修改角色会使该账号在所有设备上的旧登录会话失效。", { exact: true })).toBeVisible();
   const roleRoute = "**/admin/v1/users/*/role";
   await page.route(roleRoute, (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "OPERATIONS_UNAVAILABLE", message: "运营服务暂时不可用" } }) }));
   await roleSelect.selectOption("editor");

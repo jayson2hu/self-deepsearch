@@ -96,7 +96,7 @@ test("media stop suppresses runtime HTML and browser image requests, then recove
     await stopped.page.goto(`${origin}/works/${catalog.slug}`);
     await expect(stopped.page.getByRole("heading", { name: catalog.before, exact: true })).toBeVisible();
     await expect(stopped.page.getByRole("img", { name: "TEST-CACHE 作品图" })).toHaveAttribute("src", "/default-work.svg");
-    await expect(stopped.page.getByRole("link", { name: "登录后收藏、隐藏或纠错" })).toBeVisible();
+    await expect(stopped.page.getByRole("link", { name: "登录后设置推荐偏好或纠错" })).toBeVisible();
     expect(stopped.remote).toEqual([]);
     await stopped.page.screenshot({ path: info.outputPath("media-delivery-stopped.png"), fullPage: true });
     await stopped.page.context().close();
