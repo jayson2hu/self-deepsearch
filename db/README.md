@@ -10,7 +10,7 @@ MVP 的唯一 PostgreSQL 位于日本。业务对象不得创建在 `public` Sch
 
 `bootstrap/` 只用于第一次创建本地开发容器，并且每个迁移都在独立事务中执行；生产升级使用 `migrations/`。当前 `/readyz` 使用 SQL Ping，应用查询由 `pgx` 执行，数据库角色和核心领域表已进入迁移。
 
-本地容器首次创建后会执行 `seeds/development.sql`，写入仅供 Release A 联调的 30 个人物、100 部作品及审核、发布、搜索和来源记录。种子不访问网络、不包含外部图片、不代表真实人物或作品，也不会在生产迁移中执行。文件必须通过 psql 显式设置 `release_a_fixture=1` 才能运行，并要求当前 Schema v21；其他值会被拒绝，两个固定审计账号处于关闭状态且不可登录。
+本地容器首次创建后会执行 `seeds/development.sql`，写入仅供 Release A 联调的 30 个人物、100 部作品及审核、发布、搜索和来源记录。种子不访问网络、不包含外部图片、不代表真实人物或作品，也不会在生产迁移中执行。文件必须通过 psql 显式设置 `release_a_fixture=1` 才能运行，并要求当前 Schema v26；其他值会被拒绝，两个固定审计账号处于关闭状态且不可登录。
 
 全新日本测试库需要同一目录时，使用 `infra/database/load_release_a_fixtures.sh` 或 Japan Compose 的 `database-fixtures` tools 服务。外层必须同时设置 `ALLOW_SYNTHETIC_FIXTURES=true`、`CONFIRM_SYNTHETIC_FIXTURES=release-a-test-only`，内层 SQL 还会拒绝存在非 fixture 用户或目录数据的数据库。加载器忽略用户 `psqlrc`，并在单事务中短时锁住会写入的 13 张表；应在常驻服务启动前执行。加载完成或创建真实 owner 后立即恢复关闭状态；生产迁移永远不会自动调用该工具。
 

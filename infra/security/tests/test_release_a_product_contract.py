@@ -67,7 +67,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
     def test_invitation_sql_contract_uses_safe_repeatable_restricted_fixtures(self) -> None:
         contract = (ROOT / "services" / "platform-api" / "internal" / "database" / "invitation_store_test.go").read_text(encoding="utf-8")
         self.assertIn("validIdentityContractURL(databaseURL)", contract)
-        self.assertIn("schemaVersion != 22", contract)
+        self.assertIn("schemaVersion != 26", contract)
         self.assertIn("NOT rolsuper AND NOT rolbypassrls", contract)
         self.assertIn("identity.NewSessionToken()", contract)
         self.assertNotIn("DELETE FROM", contract)
@@ -90,7 +90,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
             if method.lower() in {"get", "post", "put", "patch", "delete"}
         }
 
-        self.assertEqual(len(router_operations), 91)
+        self.assertEqual(len(router_operations), 107)
         self.assertSetEqual(router_operations, openapi_operations)
 
         def resolve_local_reference(value: dict) -> dict:
@@ -123,9 +123,9 @@ class ReleaseAProductContractTests(unittest.TestCase):
                     f"{method.upper()} {path} path parameters do not match",
                 )
 
-        self.assertEqual(len(operation_ids), 91)
+        self.assertEqual(len(operation_ids), 107)
         self.assertNotIn(None, operation_ids)
-        self.assertEqual(len(set(operation_ids)), 91)
+        self.assertEqual(len(set(operation_ids)), 107)
 
     def test_openapi_recent_auth_contract_matches_go_high_risk_policy(self) -> None:
         spec = yaml.safe_load((ROOT / "packages" / "api-contracts" / "openapi.yaml").read_text(encoding="utf-8"))
@@ -158,6 +158,9 @@ class ReleaseAProductContractTests(unittest.TestCase):
             ("POST", "/admin/v1/media/usage/reviews"),
             ("POST", "/admin/v1/media/upload-control/commands"),
             ("POST", "/admin/v1/takedowns/{takedown_id}/complete"),
+            ("POST", "/admin/v1/ads/{campaign_id}/publish"),
+            ("POST", "/admin/v1/ads/{campaign_id}/pause"),
+            ("POST", "/admin/v1/seo/reports/import"),
         }
         self.assertSetEqual(recent_auth_operations, expected)
 
@@ -322,7 +325,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("status IN ('active', 'paused', 'removed')", migration)
 
         alerts = (ROOT / "infra" / "monitoring" / "alerts.yml").read_text(encoding="utf-8")
-        self.assertIn("self_deepsearch_schema_version != 22", alerts)
+        self.assertIn("self_deepsearch_schema_version != 26", alerts)
         self.assertNotIn("self_deepsearch_schema_version != 10", alerts)
 
     def test_hidden_work_contract_is_private_and_complete(self) -> None:
@@ -589,7 +592,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
                 "RIGHTS_CONTACT_EMAIL", "SITE_URL", "TURNSTILE_BYPASS", "TURNSTILE_SITE_KEY", "MEDIA_DELIVERY_MODE",
                 "MEDIA_DELIVERY_DYNAMIC_MODE", "DISPLAY_ADS_ENABLED", "DISPLAY_AD_SLOTS_JSON",
                 "DISPLAY_AD_ASSET_HOSTS", "DISPLAY_AD_TARGET_HOSTS", "SEO_INDEXING_ENABLED",
-                "SEO_CONTENT_POLICY_READY",
+                "SEO_CONTENT_POLICY_READY", "DISPLAY_AD_SOURCE",
             },
         )
         self.assertEqual(set(japan_services["ops-web"]["environment"]), {"APP_ENV", "PLATFORM_API_URL"})

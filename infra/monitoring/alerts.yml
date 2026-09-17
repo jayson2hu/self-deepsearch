@@ -204,7 +204,7 @@ groups:
           summary: "No verified backup has been recorded"
 
       - alert: PlatformSchemaVersionMismatch
-        expr: self_deepsearch_schema_version != 22
+        expr: self_deepsearch_schema_version != 26
         for: 5m
         labels: { severity: critical }
         annotations:

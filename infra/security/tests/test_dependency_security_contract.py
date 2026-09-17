@@ -360,7 +360,7 @@ class DependencySecurityContractTests(unittest.TestCase):
         self.assertEqual(step["env"]["MEDIA_RECONCILE_CONTRACT_ADMIN_DATABASE_URL"], step["env"]["WORKER_CONTRACT_ADMIN_DATABASE_URL"])
         self.assertNotIn("continue-on-error", step)
         contract = (ROOT / "services/platform-worker/internal/mediareconcile/postgres_contract_test.go").read_text(encoding="utf-8")
-        for marker in ("validReconcileContractURL", "NOT rolsuper AND NOT rolbypassrls", "waiting == 2", "version != 22", "winners != 1 || notDue != 1"):
+        for marker in ("validReconcileContractURL", "NOT rolsuper AND NOT rolbypassrls", "waiting == 2", "version != 26", "winners != 1 || notDue != 1"):
             self.assertIn(marker, contract)
         http_contract = (ROOT / "services/platform-worker/internal/mediareconcile/python_contract_test.go").read_text(encoding="utf-8")
         self.assertIn("MEDIA_CONTRACT_PYTHON", http_contract)

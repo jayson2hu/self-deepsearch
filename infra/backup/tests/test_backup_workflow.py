@@ -272,7 +272,7 @@ class BackupWorkflowTests(unittest.TestCase):
             result = self.run_script("verify_restore.sh", env)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("schema_version=22", result.stdout)
+            self.assertIn("schema_version=26", result.stdout)
             self.assertIn("status=verified", result.stdout)
             sql = sql_log.read_text(encoding="utf-8")
             self.assertIn("backup_status = 'verified'", sql)
@@ -297,7 +297,7 @@ done
 case " $* " in *" --quiet "*) quiet=1;; esac
 case "$*" in
   *"count(*) FROM pg_class"*) printf '%s\n' '0'; exit 0 ;;
-  *"SELECT schema_version"*) printf '%s\n' '22'; exit 0 ;;
+  *"SELECT schema_version"*) printf '%s\n' '26'; exit 0 ;;
   *"SELECT string_agg"*) printf '%s\n' 'audit,collector,platform'; exit 0 ;;
 esac
 input="$(cat)"

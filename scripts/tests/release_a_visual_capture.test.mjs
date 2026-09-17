@@ -105,7 +105,7 @@ test("mobile user management uses labeled cards instead of narrow fixed table co
   const component = await fs.readFile(new URL("../../apps/ops-web/components/user-manager.tsx", import.meta.url), "utf8");
   const styles = await fs.readFile(new URL("../../apps/ops-web/app/globals.css", import.meta.url), "utf8");
   assert.match(component, /className="table-wrap user-table"/);
-  for (const label of ["邮箱", "状态", "当前角色", "创建时间"]) {
+  for (const label of ["邮箱 / ID", "状态", "角色", "创建时间"]) {
     assert.match(component, new RegExp(`data-label="${label}"`));
   }
   assert.match(styles, /\.user-table tbody \{ display: grid;/);

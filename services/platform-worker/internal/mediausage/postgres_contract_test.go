@@ -79,7 +79,7 @@ func TestPostgresMediaUsageStateContract(t *testing.T) {
  (SELECT count(*) FROM platform.media_assets)+(SELECT count(*) FROM platform.outbox_events)+
  (SELECT count(*) FROM platform.media_usage_state)+(SELECT count(*) FROM audit.media_usage_runs)
  FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 26 || existing != 0 {
-		t.Fatal("schema 21 and empty disposable worker/usage inventory required")
+		t.Fatal("schema 26 and empty disposable worker/usage inventory required")
 	}
 	var restricted bool
 	if err := pool.QueryRow(ctx, `SELECT current_user='platform_worker_login' AND NOT rolsuper AND NOT rolbypassrls AND pg_has_role(current_user,'platform_worker','member') FROM pg_roles WHERE rolname=current_user`).Scan(&restricted); err != nil || !restricted {

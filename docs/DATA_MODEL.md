@@ -1,9 +1,11 @@
 # Release A 数据模型与表清单
 
-更新时间：2026-09-11（Asia/Shanghai）  
-权威来源：`db/migrations/00001` 至 `00021`；当前 Schema 版本为 21。
+更新时间：2026-09-17（Asia/Shanghai）
+权威来源：`db/migrations/00001` 至 `00026`；当前 Schema 版本为 26。
 
-迁移 21 新增 `platform.media_upload_control_state` 与 `audit.media_upload_commands`：管理员五分钟上传暂停/恢复请求、不可变身份与原因、单一执行租约及签名回执。当前总计 62 张表、5 个公开视图。API 仅提交；日本 Worker 记录派发再调用北京执行端，结果未知不能当作已应用，远端状态不可回退。迁移文件已开发，实际 PostgreSQL 执行仍待验收。
+迁移 23～26 增加用户注册口径、广告版本治理、SEO 扫描/问题闭环与官方报表导入；迁移 22 增加内容分级、SEO 质量与媒体外部预览策略。当前总计 69 张表、5 个公开视图。
+
+迁移 21 新增 `platform.media_upload_control_state` 与 `audit.media_upload_commands`：管理员五分钟上传暂停/恢复请求、不可变身份与原因、单一执行租约及签名回执。API 仅提交；日本 Worker 记录派发再调用北京执行端，结果未知不能当作已应用，远端状态不可回退。
 
 迁移 20 新增 `audit.media_usage_reviews`：管理员复核/账期切换请求及不可变前后快照；`platform.media_usage_state.last_review_id` 绑定实际变更回执。复核本身不恢复上传。
 
@@ -75,7 +77,7 @@ erDiagram
 | `collector.conflict_reviews` | 字段冲突、候选值、人工裁决与关闭状态 |
 | `collector.media_staging` | 受控图片候选、来源、权利、下载与审核状态 |
 
-## 4. `platform` 表（40）
+## 4. `platform` 表（47）
 
 ### 4.1 资料与关系
 
@@ -96,7 +98,7 @@ erDiagram
 
 | 表 | 用途 |
 | --- | --- |
-| `platform.users` | 用户邮箱、密码哈希、角色、验证和账号状态 |
+| `platform.users` | 用户邮箱、密码哈希、角色、验证、账号状态、可信注册来源/时间与测试标识 |
 | `platform.sessions` | 哈希 session、有效期、撤销时间和原因 |
 | `platform.email_challenges` | 注册、重置和关闭账号验证码哈希及尝试次数 |
 | `platform.security_rate_limits` | 邮箱/IP/用户维度的安全限流桶 |
@@ -137,7 +139,19 @@ erDiagram
 | `platform.media_usage_state` | 单账户观察调度、明确账期/策略身份、高水位与不可自动清除的复核/停用建议；日本 Worker 写、API 只读、公开角色无权限 |
 | `platform.media_upload_control_state` | 北京控制目标摘要、最近可信回执、观察时间/错误、单一执行租约；日本 Worker 写、API 只读，不保存控制密钥 |
 
-`platform.entity_media` 的 Release A 应用合同为：作品 `cover` 主图使用位置 0，作品 `gallery` 使用互不重复的位置 1-3，人物 `avatar` 主图使用位置 0。精选图要求已有 published 主图且最多三张；父资料行锁串行化 API 登记。公开查询会再次过滤不符合该组合的历史行，并在缺少有效主图时返回空图片，由公开站使用默认图。当前 Schema 仍为 v21，真实 PostgreSQL 槽位并发合同尚待执行。
+`platform.entity_media` 的 Release A 应用合同为：作品 `cover` 主图使用位置 0，作品 `gallery` 使用互不重复的位置 1-3，人物 `avatar` 主图使用位置 0。精选图要求已有 published 主图且最多三张；父资料行锁串行化 API 登记。公开查询会再次过滤不符合该组合的历史行，并在缺少有效主图时返回空图片，由公开站使用默认图。当前 Schema 为 v26。
+
+### 4.5 运营与 SEO 治理
+
+| 表 | 用途 |
+| --- | --- |
+| `platform.ad_campaigns` | 广告活动主记录、当前发布版本、暂停状态与乐观锁 |
+| `platform.ad_campaign_versions` | 不可变广告版本、稳定槽位、素材/目标、设备与生效区间 |
+| `platform.seo_scan_runs` | 有界 SEO 扫描批次、覆盖计数、截断与失败证据 |
+| `platform.seo_issues` | URL+规则去重的 SEO 问题、优先级、分派、复测和关闭状态 |
+| `platform.seo_issue_events` | SEO 问题发现、再发、状态变更与复测历史 |
+| `platform.seo_report_imports` | Search Console 官方导出的来源、期间、完整性、真实/演示标识与幂等哈希 |
+| `platform.seo_report_rows` | 已校验报表的维度和指标 JSON，按导入记录隔离 |
 
 ## 5. `audit` 表（12）
 

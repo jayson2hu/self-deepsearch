@@ -96,7 +96,7 @@ func TestPostgresReconciliationScheduleContract(t *testing.T) {
 	if err := admin.QueryRow(ctx, `SELECT schema_version,
  (SELECT count(*) FROM platform.users) + (SELECT count(*) FROM platform.works) + (SELECT count(*) FROM platform.media_assets) + (SELECT count(*) FROM platform.outbox_events)
 FROM platform.system_metadata WHERE singleton`).Scan(&version, &userData); err != nil || version != 26 || userData != 0 {
-		t.Fatal("schema 21 and empty dedicated worker database required")
+		t.Fatal("schema 26 and empty dedicated worker database required")
 	}
 	var now time.Time
 	if err := pool.QueryRow(ctx, `SELECT coalesce(max(started_at),now()) + interval '25 hours' FROM audit.media_reconciliation_runs`).Scan(&now); err != nil {
