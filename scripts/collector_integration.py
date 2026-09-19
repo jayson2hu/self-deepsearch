@@ -202,9 +202,24 @@ CURRENT = f"""WITH current_people AS (
  LEFT JOIN collector.media_staging m ON m.source_record_id=p.source_record_id AND m.content_hash='sha256:'||(p.payload->'avatar'->>'sha256')) """
 
 
+def performer_search_predicate(query):
+    """Stored public names and string aliases only; literal, case-insensitive match.
+
+    Missing/null/malformed alias fields are not searched as serialized JSON.
+    This never manufactures aliases or changes the source payload.
+    """
+    term = literal(query.strip())
+    return f"""(position(lower({term}) in lower(concat_ws(' ',payload->>'name',
+        payload->>'name_original',payload->>'romanized_name',external_id)))>0
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(payload->'aliases')='array' THEN payload->'aliases' ELSE '[]'::jsonb END
+        ) AS alias(value) WHERE jsonb_typeof(alias.value)='string'
+          AND position(lower({term}) in lower(alias.value #>> '{{}}'))>0))"""
+
+
 def read_people(query='', page=1, avatar='all', performer_id=None):
     require(1 <= page <= 10000 and len(query) <= 200 and avatar in ('all', 'yes', 'no'), 'invalid pagination/filter')
-    conditions = ["position(lower(" + literal(query) + ") in lower((payload->>'name')||' '||external_id))>0"]
+    conditions = [performer_search_predicate(query)]
     if avatar != 'all':
         conditions.append("(payload ? 'avatar')=" + ('true' if avatar == 'yes' else 'false'))
     if performer_id is not None:

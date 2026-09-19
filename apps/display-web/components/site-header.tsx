@@ -24,7 +24,7 @@ export function SiteHeader() {
           </Link>
           <form className="header-search" action="/search" role="search">
             <label className="sr-only" htmlFor="header-query">页头搜索番号、标题、人物或厂牌</label>
-            <input id="header-query" name="q" placeholder="搜索番号或名称" />
+            <input id="header-query" name="q" placeholder="番号、标题或人物艺名" />
             <button type="submit" aria-label="搜索"><Search size={18} /></button>
           </form>
           <ThemeToggle />

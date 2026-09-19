@@ -50,6 +50,17 @@ class IntegrationTests(unittest.TestCase):
             with self.subTest(options=options), self.assertRaises(ValueError):
                 subject.read_people(**options)
 
+    def test_stage_name_query_uses_stored_aliases_and_literal_input(self):
+        with patch.object(subject, 'postgres', return_value={}) as query:
+            subject.read_people(query="  星_%'  ")
+        sql = query.call_args.args[0]
+        self.assertIn(subject.literal("星_%'"), sql)
+        self.assertIn("jsonb_typeof(payload->'aliases')='array'", sql)
+        self.assertIn("jsonb_typeof(alias.value)='string'", sql)
+        self.assertIn("payload->>'name_original'", sql)
+        self.assertIn("payload->>'romanized_name'", sql)
+        self.assertNotIn("星_%'", sql)
+
     def test_missing_cookie_does_not_call_auth(self):
         with patch.object(subject, 'build_opener') as opener:
             self.assertFalse(subject.operator_allowed(''))

@@ -54,9 +54,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const emptyResultLabel = `没有找到相关已发布${typeLabel}资料`;
 
   const scopeCopy = activeType === "work"
-    ? "按番号、标题查询作品；人物名称、人物别名或厂牌名称会返回关联作品。"
+    ? "按番号、标题查询作品；人物艺名、已收录别名或厂牌名称会返回关联作品。查找人物资料请切换到“人物”。"
     : activeType === "performer"
-      ? "只返回人物资料；可按规范名称、原文名、罗马字名或人物别名查询。"
+      ? "只返回已发布人物资料；支持公开艺名、已收录的曾用名/别名、原文名及罗马字名，也可输入部分名称。未收录的别名不会自动猜测。"
       : "只返回厂牌资料；同名厂牌保持为不同资料，不会自动合并。";
 
   return (
@@ -66,9 +66,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <p className="eyebrow">作品资料查询</p>
           <h1>资料搜索</h1>
           <form className="primary-search" action="/search" method="get" role="search">
-            <label className="sr-only" htmlFor="result-query">输入作品番号、标题、人物或厂牌</label>
+            <label className="sr-only" htmlFor="result-query">输入作品番号、标题、人物艺名或厂牌</label>
             <Search size={22} aria-hidden="true" />
-            <input id="result-query" name="q" defaultValue={query} placeholder="例如 TEST-001" autoComplete="off" />
+            <input id="result-query" name="q" defaultValue={query} placeholder={activeType === "performer" ? "输入艺名、曾用名或别名" : activeType === "studio" ? "输入厂牌名称" : "输入番号、标题或人物艺名"} autoComplete="off" />
             {validType && activeType !== "work" ? <input type="hidden" name="type" value={activeType} /> : null}
             <button type="submit">查询</button>
           </form>

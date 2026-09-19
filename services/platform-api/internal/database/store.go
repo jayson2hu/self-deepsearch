@@ -410,14 +410,13 @@ SELECT performer.*,
 FROM platform.public_published_performers AS performer
 JOIN platform.public_search_documents AS document
   ON document.entity_type = 'performer' AND document.entity_id = performer.performer_id
-WHERE lower(performer.display_name) = lower($1)
-   OR lower(coalesce(performer.name_original, '')) = lower($1)
-   OR lower(coalesce(performer.romanized_name, '')) = lower($1)
+WHERE position(lower($1) in lower(performer.display_name)) > 0
+   OR position(lower($1) in lower(coalesce(performer.name_original, ''))) > 0
+   OR position(lower($1) in lower(coalesce(performer.romanized_name, ''))) > 0
    OR EXISTS (
       SELECT 1 FROM platform.performer_aliases alias
       WHERE alias.performer_id = performer.performer_id
-        AND (lower(alias.raw_value) = lower($1)
-          OR left(lower(alias.raw_value), length(lower($1))) = lower($1))
+        AND position(lower($1) in lower(alias.raw_value)) > 0
    )
    OR document.search_vector @@ plainto_tsquery('simple'::regconfig, $1)
    OR position(lower($1) in lower(document.search_text)) > 0
