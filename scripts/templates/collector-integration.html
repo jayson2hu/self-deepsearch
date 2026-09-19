@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>幕鉴 · 真实数据联调预览</title><link rel="stylesheet" href="/preview.css"><script defer src="/preview.js"></script></head>
+<body><header><span>幕鉴 / COLLECTOR INTEGRATION</span><h1>真实数据联调预览</h1><p>采集归档 → 网站 PostgreSQL 暂存 → 本页实时查询</p></header>
+<main><aside>内部验收 · 待确认资料，不是已发布人物。头像为本地 125 × 125 原图；无头像保留缺省状态。此页不会记录公开浏览历史，也不会自动发布。</aside>
+<section id="counts" aria-label="数据统计"></section>
+<form id="search-form"><label for="query">姓名 / 来源 ID</label><input id="query" maxlength="200" placeholder="支持中文、日文、拉丁字母"><label for="avatar">头像</label><select id="avatar"><option value="all">全部</option><option value="yes">有头像</option><option value="no">无头像</option></select><button type="submit">查询</button></form>
+<p id="result" role="status" aria-live="polite"></p><p id="error" role="alert" hidden></p><section id="cards" aria-label="人物列表"></section>
+<nav aria-label="分页"><button id="previous">上一页</button><span id="page"></span><button id="next">下一页</button></nav>
+<dialog id="detail"><button id="close" autofocus>关闭详情</button><h2></h2><div id="detail-body"></div></dialog>
+<footer>来源：jable_reference · 数据版本 95cac10 · needs_review / staging · 仅测试环境</footer></main></body></html>
