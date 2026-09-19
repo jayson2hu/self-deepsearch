@@ -1,0 +1,106 @@
+{
+  "checked_at": "2026-09-19T02:33:37.032Z",
+  "phase": "before",
+  "status": "passed",
+  "queries": [
+    {
+      "surface": "staging",
+      "query": "三上",
+      "total": 4,
+      "names": [
+        "三上咲",
+        "三上悠亜",
+        "三上江里",
+        "三上里穂"
+      ]
+    },
+    {
+      "surface": "staging",
+      "query": "三上悠亜",
+      "total": 1,
+      "names": [
+        "三上悠亜"
+      ]
+    },
+    {
+      "surface": "staging",
+      "query": "三上悠亚",
+      "total": 0,
+      "names": []
+    },
+    {
+      "surface": "staging",
+      "query": "橋本",
+      "total": 12,
+      "names": [
+        "橋本ありな",
+        "橋本かな",
+        "橋本ちなつ",
+        "橋本ゆあ",
+        "橋本ゆい",
+        "橋本りこ",
+        "橋本れいか",
+        "橋本優佳",
+        "橋本怜奈",
+        "橋本美帆",
+        "橋本菜々",
+        "橋本葵"
+      ]
+    },
+    {
+      "surface": "staging",
+      "query": "桥本",
+      "total": 0,
+      "names": []
+    },
+    {
+      "surface": "staging",
+      "query": "深田",
+      "total": 5,
+      "names": [
+        "深田えいみ",
+        "深田みお",
+        "深田ゆめ",
+        "深田ナナ",
+        "深田結梨"
+      ]
+    },
+    {
+      "surface": "staging",
+      "query": "深田咏美",
+      "total": 0,
+      "names": []
+    },
+    {
+      "surface": "staging",
+      "query": "明日花",
+      "total": 1,
+      "names": [
+        "明日花キララ"
+      ]
+    },
+    {
+      "surface": "public-works",
+      "query": "城市",
+      "returned": 1
+    },
+    {
+      "surface": "public-performers",
+      "query": "测试人物",
+      "returned": 24
+    },
+    {
+      "surface": "public-studios",
+      "query": "测试厂牌",
+      "returned": 0
+    }
+  ],
+  "checks": {
+    "actual_browser_chinese_input": true,
+    "public_chinese_queries_return_http_200": true
+  },
+  "limitations": [
+    "Exact stored Chinese/Han substrings work; simplified/traditional/Japanese variant folding and translated-name aliases are not currently provided.",
+    "Real imported performers are staging-only and intentionally absent from public search."
+  ]
+}

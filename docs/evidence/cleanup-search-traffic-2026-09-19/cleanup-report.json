@@ -1,0 +1,48 @@
+{
+  "checked_at": "2026-09-19T02:37:23.749034+00:00",
+  "status": "passed",
+  "before": {
+    "fixture_works": 100,
+    "fixture_performers": 30,
+    "fixture_studios": 1,
+    "mock_ads": 21,
+    "test_users": 7,
+    "real_records": 4196,
+    "real_normalized": 4196,
+    "real_media": 130,
+    "owner_active": 1,
+    "audit_rows": 67,
+    "login_audit_rows": 54
+  },
+  "deleted": {
+    "ad_versions": 21,
+    "ad_campaigns": 21,
+    "review_tasks": 4,
+    "immutable_field_provenance_retained": 677,
+    "synthetic_content_pv": 31,
+    "view_history": 5,
+    "immutable_revision_snapshots_retained": 133,
+    "works": 100,
+    "performers": 30,
+    "studios": 1,
+    "users_hard_deleted": 3,
+    "audit_user_tombstones_retained": 4
+  },
+  "after": {
+    "fixture_works": 0,
+    "fixture_performers": 0,
+    "fixture_studios": 0,
+    "mock_ads": 0,
+    "test_users": 4,
+    "real_records": 4196,
+    "real_normalized": 4196,
+    "real_media": 130,
+    "owner_active": 1,
+    "audit_rows": 67,
+    "login_audit_rows": 54
+  },
+  "backup_relative_path": ".cache/cleanup-generated-2026-09-19/before-20260919T023722Z.dump",
+  "backup_bytes": 1706140,
+  "backup_sha256": "c3c312113fd6653a060657334dadc329791319ad3e9c9a26dddb123795a4b22a",
+  "retained_reason": "Append-only field provenance and its revision snapshots/source remain as historical evidence; referenced test users are closed anonymized tombstones. No audit trigger was disabled."
+}
