@@ -1,0 +1,9 @@
+{
+  "manifest_sha256": "ddc94eaf953efe1bfbb42cbd550d09b7e97de0c3a1d01253e9246cc100fa109d",
+  "files_verified": 804,
+  "performers": 4196,
+  "avatars": 130,
+  "without_avatar": 4066,
+  "sqlite_integrity": "ok",
+  "source_data_commit": "95cac10a4579a4fd20f15575c2e77a351bb1284b"
+}

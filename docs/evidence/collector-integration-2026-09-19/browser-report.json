@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-19T01:51:31.359Z",
+  "checks": {
+    "anonymous_and_forged_cookie_denied": true,
+    "real_operator_browser_login": true,
+    "postgres_counts_and_server_pagination": true,
+    "pagination_no_overlap": true,
+    "all_4196_records_match_source_export": true,
+    "all_local_avatars_decoded": 130,
+    "ten_with_and_ten_without_avatar_details": {
+      "with_avatar": 10,
+      "without_avatar": 10
+    },
+    "search_han": true,
+    "search_japanese": true,
+    "search_latin": true,
+    "empty_invalid_injection_and_missing_media_cases": true,
+    "empty_state_and_mobile_no_overflow": true,
+    "preview_no_external_requests_or_runtime_errors": true,
+    "existing_public_pages_no_server_error_and_staging_not_searchable": true
+  },
+  "failures": []
+}

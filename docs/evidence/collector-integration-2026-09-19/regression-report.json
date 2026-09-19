@@ -1,0 +1,107 @@
+{
+  "checked_at": "2026-09-19T01:51:38.493770+00:00",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "adapter-unit",
+      "exit_code": 0,
+      "status": "passed",
+      "python_tests": 10
+    },
+    {
+      "name": "collector-default",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 8,
+      "python_tests": 37
+    },
+    {
+      "name": "collector-capture",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 3
+    },
+    {
+      "name": "display_security_policy",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 3
+    },
+    {
+      "name": "release_a_frontend_smoke",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 15
+    },
+    {
+      "name": "work_csv_errors",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 2
+    },
+    {
+      "name": "media_policy",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 3
+    },
+    {
+      "name": "media_upload_client",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 7
+    },
+    {
+      "name": "media_edge_gateway",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 8
+    },
+    {
+      "name": "ops_security_policy",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 3
+    },
+    {
+      "name": "redesign_handoff",
+      "exit_code": 0,
+      "status": "passed",
+      "assertion_tests": 4
+    },
+    {
+      "name": "markdown-links",
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "name": "collector-archive-audit",
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "name": "collector-export",
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "name": "fresh_export_matches_archive",
+      "status": "passed"
+    },
+    {
+      "name": "collector-showcase-build",
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "name": "collector-showcase-browser",
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "name": "archive-still-unchanged",
+      "exit_code": 0,
+      "status": "passed"
+    }
+  ]
+}

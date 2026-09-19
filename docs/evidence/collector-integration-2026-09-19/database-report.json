@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-09-19T01:47:17.430230+00:00",
+  "status": "passed",
+  "checks": {
+    "complete_source_payload_and_relations": {
+      "normalized_count": 4196,
+      "orphan_media": 0,
+      "unmapped_media": 0,
+      "unsafe_media": 0
+    },
+    "failed_transaction_leaves_no_record": {
+      "probe_records": 0
+    },
+    "replay_preserves_manual_review_state": {
+      "preserved": "reviewing",
+      "new_people": 0,
+      "new_media": 0,
+      "publications": 0
+    }
+  }
+}

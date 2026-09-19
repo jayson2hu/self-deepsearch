@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-19T01:54:22.654Z",
+  "checks": {
+    "real_registered_user_denied_all_preview_surfaces": true,
+    "test_session_logged_out": true
+  },
+  "synthetic_account_created": 1,
+  "synthetic_email": "integration-denied-1789782862654@example.test"
+}

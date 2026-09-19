@@ -1,0 +1,21 @@
+{
+  "manifest_sha256": "ddc94eaf953efe1bfbb42cbd550d09b7e97de0c3a1d01253e9246cc100fa109d",
+  "files_verified": 804,
+  "performers": 4196,
+  "avatars": 130,
+  "without_avatar": 4066,
+  "sqlite_integrity": "ok",
+  "source_data_commit": "95cac10a4579a4fd20f15575c2e77a351bb1284b",
+  "collector_head": "129dba2d72ccdfeef1da89416e2bbab0ae2556c6",
+  "source_records": 4196,
+  "normalized_records": 4196,
+  "media_staging": 130,
+  "inserted_people": 0,
+  "inserted_media": 0,
+  "publications_delta": 0,
+  "platform_performers_delta": 0,
+  "checked_at": "2026-09-19T01:41:29.811680+00:00",
+  "mode": "test-staging-only",
+  "batch_id": "ed5d47fe-a003-5653-9178-a94a616b842d",
+  "source_id": "6e3efba4-6939-5e47-8bfd-16c07ddc68fc"
+}

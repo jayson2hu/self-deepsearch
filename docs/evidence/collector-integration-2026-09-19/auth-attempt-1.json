@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "checked_at": "2026-09-19T01:53:22.899Z",
+  "checks": {},
+  "synthetic_account_created": 0,
+  "error": "Expected values to be strictly equal:\n\n400 !== 202\n"
+}

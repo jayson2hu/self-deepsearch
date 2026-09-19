@@ -1,0 +1,26 @@
+{
+  "status": "failed",
+  "checked_at": "2026-09-19T01:49:08.431Z",
+  "checks": {
+    "anonymous_and_forged_cookie_denied": true,
+    "real_operator_browser_login": true,
+    "postgres_counts_and_server_pagination": true,
+    "pagination_no_overlap": true,
+    "all_4196_records_match_source_export": true,
+    "all_local_avatars_decoded": 130,
+    "ten_with_and_ten_without_avatar_details": {
+      "with_avatar": 10,
+      "without_avatar": 10
+    },
+    "search_han": true,
+    "search_japanese": true,
+    "search_latin": true,
+    "empty_invalid_injection_and_missing_media_cases": true,
+    "empty_state_and_mobile_no_overflow": true,
+    "preview_no_external_requests_or_runtime_errors": true
+  },
+  "failures": [
+    "locator.waitFor: Error: strict mode violation: locator('main') resolved to 2 elements:\n    1) <main>…</main> aka getByText('作品资料查询资料搜索正在查询作品资料…正在保留当前查询条件并读取已发布作品。')\n    2) <main>…</main> aka getByText('作品资料查询资料搜索输入作品番号、标题、人物或厂牌查询仅返回已发布人物资料“integration-no-match-000')\n\nCall log:\n\u001b[2m  - waiting for locator('main') to be visible\u001b[22m\n"
+  ],
+  "failed_stage": "public_site_smoke"
+}

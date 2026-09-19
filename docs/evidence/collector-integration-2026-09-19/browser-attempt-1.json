@@ -1,0 +1,24 @@
+{
+  "status": "failed",
+  "checked_at": "2026-09-19T01:46:21.410Z",
+  "checks": {
+    "anonymous_and_forged_cookie_denied": true,
+    "real_operator_browser_login": true,
+    "postgres_counts_and_server_pagination": true,
+    "pagination_no_overlap": true,
+    "all_4196_records_match_source_export": true,
+    "all_local_avatars_decoded": 130,
+    "ten_with_and_ten_without_avatar_details": {
+      "with_avatar": 10,
+      "without_avatar": 10
+    },
+    "search_han": true,
+    "search_japanese": true,
+    "search_latin": true,
+    "empty_invalid_injection_and_missing_media_cases": true
+  },
+  "failures": [
+    "expect(locator).toHaveCount(expected) failed\n\nLocator:  locator('.placeholder')\nExpected: 24\nReceived: 25\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" locator('.placeholder') with timeout 5000ms\n  - waiting for locator('.placeholder')\n    3 × locator resolved to 1 element\n      - unexpected value \"1\"\n    11 × locator resolved to 25 elements\n       - unexpected value \"25\"\n"
+  ],
+  "failed_stage": "multilingual_search"
+}
