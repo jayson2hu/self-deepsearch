@@ -56,7 +56,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const scopeCopy = activeType === "work"
     ? "按番号、标题查询作品；人物艺名、已收录别名或厂牌名称会返回关联作品。查找人物资料请切换到“人物”。"
     : activeType === "performer"
-      ? "只返回已发布人物资料；支持公开艺名、已收录的曾用名/别名、原文名及罗马字名，也可输入部分名称。未收录的别名不会自动猜测。"
+      ? "只返回已发布人物资料；支持艺名、已收录别名、原文名及罗马字名，可输入部分名称；兼容繁简/日文字形和全半角。未收录的译名不会自动猜测，同名人物不会自动合并。"
       : "只返回厂牌资料；同名厂牌保持为不同资料，不会自动合并。";
 
   return (

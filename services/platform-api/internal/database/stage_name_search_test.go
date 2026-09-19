@@ -32,6 +32,8 @@ func TestStageNameSearchPostgres(t *testing.T) {
 	reviewer := h.insertUser(t, h.newEmail("reviewer"), "admin", "active")
 	first := insertEntitySearchPerformer(t, h, reviewer, "合约公开艺名甲", "契約原文乙", "Stage Contract Alpha", []string{"曾用艺名紫苑合约", "Shared Stage Contract"}, "published")
 	second := insertEntitySearchPerformer(t, h, reviewer, "蓝海若叶", "", "", []string{"Shared Stage Contract"}, "published")
+	variant := insertEntitySearchPerformer(t, h, reviewer, "橋本悠亜", "", "", []string{"舊藝名琉璃"}, "published")
+	direct := insertEntitySearchPerformer(t, h, reviewer, "桥本悠亚", "", "", nil, "published")
 	insertEntitySearchPerformer(t, h, reviewer, "合约隐藏人物", "", "", []string{"隐藏艺名不应可见"}, "hidden")
 	insertEntitySearchPerformer(t, h, reviewer, "合约下架人物", "", "", []string{"下架艺名不应可见"}, "takedown")
 	// Deliberately stale alias text: partial alias lookup must use the actual
@@ -83,4 +85,27 @@ func TestStageNameSearchPostgres(t *testing.T) {
 		t.Fatalf("shared stage name must keep separate entities: %v", seen)
 	}
 	t.Log("same alias preserves two identities; pagination has no duplicate; hidden/takedown excluded")
+	for _, query := range []string{"桥本悠亚", "橋本悠亞", "橋本悠亜"} {
+		rows, err := store.SearchPerformers(ctx, query, nil, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := map[string]bool{}
+		for _, row := range rows {
+			found[row.ID] = true
+		}
+		if !found[variant] || !found[direct] {
+			t.Fatalf("variant query %q missed identity: %v", query, found)
+		}
+		if query == "桥本悠亚" && rows[0].ID != direct {
+			t.Fatal("original exact match must outrank folded recall")
+		}
+	}
+	for _, query := range []string{"旧艺名琉璃", "舊藝名琉璃"} {
+		rows, err := store.SearchPerformers(ctx, query, nil, 100)
+		if err != nil || len(rows) != 1 || rows[0].ID != variant {
+			t.Fatalf("variant alias failed: %q %v %v", query, rows, err)
+		}
+	}
+	t.Log("simplified/traditional/Japanese variants match in both directions; original exact match remains first")
 }

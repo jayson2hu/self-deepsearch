@@ -61,6 +61,11 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn("payload->>'romanized_name'", sql)
         self.assertNotIn("星_%'", sql)
 
+    def test_search_character_equivalence_does_not_translate_identities(self):
+        for a,b in [('橋本','桥本'),('三上悠亜','三上悠亚'),('ＡＩＫＡ','aika'),('ｱｲｶ','アイカ')]:
+            self.assertEqual(subject.fold_search_text(a),subject.fold_search_text(b))
+        self.assertNotEqual(subject.fold_search_text('深田えいみ'),subject.fold_search_text('深田咏美'))
+
     def test_missing_cookie_does_not_call_auth(self):
         with patch.object(subject, 'build_opener') as opener:
             self.assertFalse(subject.operator_allowed(''))

@@ -12,6 +12,7 @@ import (
 
 	"self-deepsearch/services/platform-api/internal/catalog"
 	"self-deepsearch/services/platform-api/internal/observability"
+	"self-deepsearch/services/platform-api/internal/searchtext"
 )
 
 type Store struct {
@@ -385,6 +386,7 @@ LIMIT $4`
 
 func (store *Store) SearchPerformers(ctx context.Context, queryText string, after *catalog.SearchCursor, limit int) ([]catalog.PerformerSearchResult, error) {
 	hasAfter, rank, name, id := searchCursorArgs(after)
+	variantSource, variantTarget := searchtext.TableFor(queryText)
 	rows, err := store.pool.Query(ctx, `WITH ranked AS (
 SELECT performer.*,
     CASE
@@ -421,6 +423,13 @@ WHERE position(lower($1) in lower(performer.display_name)) > 0
    OR document.search_vector @@ plainto_tsquery('simple'::regconfig, $1)
    OR position(lower($1) in lower(document.search_text)) > 0
    OR similarity(document.search_text, $1) >= 0.30
+   OR position($7 in lower(translate(normalize(concat_ws(' ',performer.display_name,
+        performer.name_original,performer.romanized_name),NFKC),$8,$9))) > 0
+   OR EXISTS (
+      SELECT 1 FROM platform.performer_aliases alias
+      WHERE alias.performer_id=performer.performer_id
+        AND position($7 in lower(translate(normalize(alias.raw_value,NFKC),$8,$9))) > 0
+   )
 )
 SELECT `+performerSummaryColumns+`, performer.search_rank, performer.search_name
 FROM ranked performer
@@ -428,7 +437,7 @@ FROM ranked performer
 WHERE NOT $2::boolean OR (performer.search_rank, performer.search_name, performer.performer_id) >
   ($3::integer, $4::text COLLATE "C", $5::uuid)
 ORDER BY performer.search_rank, performer.search_name, performer.performer_id
-LIMIT $6`, queryText, hasAfter, rank, name, id, limit)
+LIMIT $6`, queryText, hasAfter, rank, name, id, limit, searchtext.Fold(queryText), variantSource, variantTarget)
 	if err != nil {
 		return nil, fmt.Errorf("search performers: %w", err)
 	}

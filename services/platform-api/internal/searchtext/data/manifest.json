@@ -1,0 +1,22 @@
+{
+  "version": "opencc-1.1.9-character-equivalence-v1",
+  "mode": "first single-character candidate, transitive equivalence; NOT phrase translation",
+  "upstream": [
+    {
+      "file": "TSCharacters.txt",
+      "url": "https://raw.githubusercontent.com/BYVoid/OpenCC/ver.1.1.9/data/dictionary/TSCharacters.txt",
+      "sha256": "6b5a0a799bea2bb22c001f635eaa3fc2904310f0c08addbff275477a80ecf09a"
+    },
+    {
+      "file": "JPVariants.txt",
+      "url": "https://raw.githubusercontent.com/BYVoid/OpenCC/ver.1.1.9/data/dictionary/JPVariants.txt",
+      "sha256": "db09543db11ffd42a2556070f3d0a8e2c0168726463bd5f8d530f3e54a5afab8"
+    },
+    {
+      "file": "LICENSE",
+      "url": "https://raw.githubusercontent.com/BYVoid/OpenCC/ver.1.1.9/LICENSE",
+      "sha256": "b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308"
+    }
+  ],
+  "mapped_characters": 4336
+}

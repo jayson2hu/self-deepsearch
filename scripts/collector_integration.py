@@ -12,6 +12,8 @@ import re
 import sqlite3
 import subprocess
 import uuid
+import unicodedata
+from functools import lru_cache
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
@@ -202,19 +204,40 @@ CURRENT = f"""WITH current_people AS (
  LEFT JOIN collector.media_staging m ON m.source_record_id=p.source_record_id AND m.content_hash='sha256:'||(p.payload->'avatar'->>'sha256')) """
 
 
+@lru_cache(maxsize=1)
+def search_variant_table():
+    table = json.loads((ROOT / 'services/platform-api/internal/searchtext/data/variants.json').read_text(encoding='utf-8'))
+    require(len(table['source']) == len(table['target']) > 0, 'invalid search variant table')
+    return table
+
+
+def fold_search_text(value):
+    table = search_variant_table()
+    return unicodedata.normalize('NFKC', value).lower().translate(str.maketrans(table['source'], table['target']))
+
+
+def folded_search_sql(expression, query):
+    table = search_variant_table()
+    wanted = set(fold_search_text(query))
+    pairs = [(a,b) for a,b in zip(table['source'],table['target']) if b in wanted]
+    source,target = ''.join(a for a,b in pairs),''.join(b for a,b in pairs)
+    return f"lower(translate(normalize({expression},NFKC),{literal(source)},{literal(target)}))"
+
+
 def performer_search_predicate(query):
     """Stored public names and string aliases only; literal, case-insensitive match.
 
     Missing/null/malformed alias fields are not searched as serialized JSON.
     This never manufactures aliases or changes the source payload.
     """
-    term = literal(query.strip())
-    return f"""(position(lower({term}) in lower(concat_ws(' ',payload->>'name',
-        payload->>'name_original',payload->>'romanized_name',external_id)))>0
+    term = literal(fold_search_text(query.strip()))
+    names = folded_search_sql("concat_ws(' ',payload->>'name',payload->>'name_original',payload->>'romanized_name',external_id)",query)
+    alias = folded_search_sql("alias.value #>> '{}'",query)
+    return f"""(position({term} in {names})>0
         OR EXISTS(SELECT 1 FROM jsonb_array_elements(
           CASE WHEN jsonb_typeof(payload->'aliases')='array' THEN payload->'aliases' ELSE '[]'::jsonb END
         ) AS alias(value) WHERE jsonb_typeof(alias.value)='string'
-          AND position(lower({term}) in lower(alias.value #>> '{{}}'))>0))"""
+          AND position({term} in {alias})>0))"""
 
 
 def read_people(query='', page=1, avatar='all', performer_id=None):

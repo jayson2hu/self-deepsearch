@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-09-19T07:24:26.922366+00:00",
+  "status": "passed",
+  "cases": [
+    {
+      "query": "三上悠亜",
+      "hits": 1,
+      "elapsed_ms": 180
+    },
+    {
+      "query": "三上悠亞",
+      "hits": 1,
+      "elapsed_ms": 291
+    },
+    {
+      "query": "三上悠亚",
+      "hits": 1,
+      "elapsed_ms": 265
+    },
+    {
+      "query": "橋本",
+      "hits": 12,
+      "elapsed_ms": 258
+    },
+    {
+      "query": "桥本",
+      "hits": 12,
+      "elapsed_ms": 278
+    },
+    {
+      "query": "AIKA",
+      "hits": 5,
+      "elapsed_ms": 423
+    },
+    {
+      "query": "aika",
+      "hits": 5,
+      "elapsed_ms": 122
+    },
+    {
+      "query": "ＡＩＫＡ",
+      "hits": 5,
+      "elapsed_ms": 124
+    }
+  ],
+  "counts": {
+    "performers": 4196,
+    "avatars": 130,
+    "without_avatar": 4066
+  }
+}
