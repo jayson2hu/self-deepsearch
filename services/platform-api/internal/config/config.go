@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,8 @@ import (
 var DefaultBuildVersion = "dev"
 
 type Config struct {
+	SEODailyScanEnabled       bool
+	SEODailyScanActorID       string
 	Addr                      string
 	BuildVersion              string
 	DatabaseURL               string
@@ -39,6 +42,8 @@ type Config struct {
 
 func FromEnv() Config {
 	return Config{
+		SEODailyScanEnabled:       envOr("SEO_DAILY_SCAN_ENABLED", "false") == "true",
+		SEODailyScanActorID:       strings.TrimSpace(os.Getenv("SEO_DAILY_SCAN_ACTOR_ID")),
 		Addr:                      envOr("API_ADDR", ":8080"),
 		BuildVersion:              envOr("BUILD_VERSION", DefaultBuildVersion),
 		DatabaseURL:               os.Getenv("DATABASE_URL"),
@@ -62,6 +67,13 @@ func FromEnv() Config {
 		MediaEdgePolicyMode:       envOr("MEDIA_EDGE_POLICY_MODE", "off"),
 		MediaEdgePolicyToken:      os.Getenv("MEDIA_EDGE_POLICY_TOKEN"),
 	}
+}
+
+func (configuration Config) ValidateSEOSchedule() error {
+	if configuration.SEODailyScanEnabled && (configuration.DatabaseURL == "" || !regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`).MatchString(configuration.SEODailyScanActorID)) {
+		return fmt.Errorf("SEO daily scan requires a database and explicit admin/owner actor UUID")
+	}
+	return nil
 }
 
 // ValidateProduction rejects a configuration that would start an apparently

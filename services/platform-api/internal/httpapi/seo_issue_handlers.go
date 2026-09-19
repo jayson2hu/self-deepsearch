@@ -12,16 +12,20 @@ import (
 )
 
 type seoScanResponse struct {
-	ID           string  `json:"id"`
-	Source       string  `json:"source"`
-	Status       string  `json:"status"`
-	ScannedCount int     `json:"scanned_count"`
-	IssueCount   int     `json:"issue_count"`
-	SkippedCount int     `json:"skipped_count"`
-	Truncated    bool    `json:"truncated"`
-	ErrorSummary *string `json:"error_summary"`
-	StartedAt    string  `json:"started_at"`
-	CompletedAt  *string `json:"completed_at"`
+	CycleID           string  `json:"cycle_id,omitempty"`
+	BatchCount        int     `json:"batch_count,omitempty"`
+	TotalScannedCount *int    `json:"total_scanned_count,omitempty"`
+	TotalIssueCount   *int    `json:"total_issue_count,omitempty"`
+	ID                string  `json:"id"`
+	Source            string  `json:"source"`
+	Status            string  `json:"status"`
+	ScannedCount      int     `json:"scanned_count"`
+	IssueCount        int     `json:"issue_count"`
+	SkippedCount      int     `json:"skipped_count"`
+	Truncated         bool    `json:"truncated"`
+	ErrorSummary      *string `json:"error_summary"`
+	StartedAt         string  `json:"started_at"`
+	CompletedAt       *string `json:"completed_at"`
 }
 
 type seoIssueResponse struct {
@@ -156,9 +160,16 @@ func (s *Server) requireSEOIssues(w http.ResponseWriter, r *http.Request) (ident
 }
 
 func seoScanItem(item operations.SEOScan) seoScanResponse {
-	return seoScanResponse{ID: item.ID, Source: item.Source, Status: item.Status, ScannedCount: item.ScannedCount,
+	result := seoScanResponse{ID: item.ID, Source: item.Source, Status: item.Status, ScannedCount: item.ScannedCount,
 		IssueCount: item.IssueCount, SkippedCount: item.SkippedCount, Truncated: item.Truncated,
 		ErrorSummary: item.ErrorSummary, StartedAt: item.StartedAt.UTC().Format(time.RFC3339), CompletedAt: formatRFC3339(item.CompletedAt)}
+	if item.BatchCount > 0 {
+		result.CycleID = item.CycleID
+		result.BatchCount = item.BatchCount
+		result.TotalScannedCount = &item.TotalScannedCount
+		result.TotalIssueCount = &item.TotalIssueCount
+	}
+	return result
 }
 
 func seoIssueItem(item operations.SEOIssue) seoIssueResponse {

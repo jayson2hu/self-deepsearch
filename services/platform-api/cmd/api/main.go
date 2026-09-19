@@ -16,6 +16,7 @@ import (
 	"self-deepsearch/services/platform-api/internal/identity"
 	"self-deepsearch/services/platform-api/internal/logsafe"
 	"self-deepsearch/services/platform-api/internal/security"
+	"self-deepsearch/services/platform-api/internal/seoschedule"
 )
 
 func main() {
@@ -25,6 +26,10 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 	configuration := config.FromEnv()
+	if err := configuration.ValidateSEOSchedule(); err != nil {
+		logger.Error("seo_schedule_config_invalid")
+		os.Exit(1)
+	}
 	if configuration.AppEnv == "production" {
 		if err := configuration.ValidateProduction(); err != nil {
 			logger.Error("production_config_invalid", "error_class", logsafe.ErrorClass(err))
@@ -47,6 +52,11 @@ func main() {
 	}
 
 	var identityService *identity.Service
+	if configuration.SEODailyScanEnabled && store != nil {
+		done := make(chan struct{})
+		go func() { defer close(done); seoschedule.Run(ctx, store, configuration.SEODailyScanActorID, logger) }()
+		defer func() { stop(); <-done }()
+	}
 	if store != nil && configuration.AuthHMACSecret != "" && configuration.SMTPURL != "" {
 		emailSender, err := identity.NewSMTPSender(configuration.SMTPURL)
 		if err != nil {

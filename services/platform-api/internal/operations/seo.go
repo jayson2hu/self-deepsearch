@@ -55,16 +55,20 @@ type SEOInventoryRepository interface {
 }
 
 type SEOScan struct {
-	ID           string
-	Source       string
-	Status       string
-	ScannedCount int
-	IssueCount   int
-	SkippedCount int
-	Truncated    bool
-	ErrorSummary *string
-	StartedAt    time.Time
-	CompletedAt  *time.Time
+	CycleID           string
+	BatchCount        int
+	TotalScannedCount int
+	TotalIssueCount   int
+	ID                string
+	Source            string
+	Status            string
+	ScannedCount      int
+	IssueCount        int
+	SkippedCount      int
+	Truncated         bool
+	ErrorSummary      *string
+	StartedAt         time.Time
+	CompletedAt       *time.Time
 }
 
 type SEOIssue struct {

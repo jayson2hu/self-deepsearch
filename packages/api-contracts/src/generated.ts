@@ -853,6 +853,10 @@ export type SEOPageListResponse = {
 };
 
 export type SEOScan = {
+  cycle_id?: string;
+  batch_count?: number;
+  total_scanned_count?: number;
+  total_issue_count?: number;
   id: string;
   source: "manual" | "scheduled";
   status: "running" | "completed" | "failed";

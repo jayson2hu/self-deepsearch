@@ -32,7 +32,7 @@ export function SEOIssueManager({ initialIssues, initialScans, operator }: {
       setScans((current) => [scan, ...current].slice(0, 20));
       const refreshed = await fetch("/admin/v1/seo/issues?status=all", { credentials: "include", cache: "no-store" });
       if (refreshed.ok) setIssues(((await refreshed.json()) as { items: SEOIssue[] }).items);
-      setMessage(`扫描完成：${scan.scanned_count} 个目标，发现或更新 ${scan.issue_count} 个问题${scan.truncated ? "；本批达到 1,000 条上限" : ""}。`);
+      setMessage(`扫描完成：共 ${scan.batch_count ?? 1} 批，${scan.total_scanned_count ?? scan.scanned_count} 个目标，发现或更新 ${scan.total_issue_count ?? scan.issue_count} 个问题${scan.truncated ? "；历史批次有截断，请重新扫描" : ""}。`);
     } catch {
       setMessage("无法连接运营服务");
     } finally {
@@ -72,7 +72,7 @@ export function SEOIssueManager({ initialIssues, initialScans, operator }: {
 
   const visible = filter === "all" ? issues : issues.filter((issue) => issue.status === filter);
   return <div className="seo-issue-manager">
-    <div className="seo-scan-bar"><div><strong>最近扫描</strong><p>{scans[0] ? `${formatDateTime(scans[0].started_at)} · ${scans[0].status} · 扫描 ${scans[0].scanned_count} · 问题 ${scans[0].issue_count}` : "尚未执行扫描"}</p></div><button className="primary" disabled={busy} type="button" onClick={runScan}><RefreshCw size={16} />{busy ? "处理中" : "立即扫描"}</button></div>
+    <div className="seo-scan-bar"><div><strong>最近扫描批次</strong><p>{scans[0] ? `${formatDateTime(scans[0].started_at)} · ${scans[0].source === "scheduled" ? "每日调度" : "手动"} · ${scans[0].status} · 本批 ${scans[0].scanned_count} · 问题 ${scans[0].issue_count}` : "尚未执行扫描"}</p></div><button className="primary" disabled={busy} type="button" onClick={runScan}><RefreshCw size={16} />{busy ? "处理中" : "立即扫描"}</button></div>
     {message ? <p aria-live="polite" className={message.includes("失败") || message.includes("无法") || message.includes("未通过") ? "form-error" : "form-success"}>{message}</p> : null}
     <div className="seo-issue-filter"><label>状态<select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}><option value="all">全部</option><option value="open">待处理</option><option value="in_progress">处理中</option><option value="retest">待复测</option><option value="closed">已关闭</option></select></label><span>当前 {visible.length} 条</span></div>
     <div className="table-wrap"><table className="seo-issue-table"><thead><tr><th>优先级/规则</th><th>页面</th><th>证据</th><th>负责人</th><th>发现时间</th><th>状态与操作</th></tr></thead><tbody>

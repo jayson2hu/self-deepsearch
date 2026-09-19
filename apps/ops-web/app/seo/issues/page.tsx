@@ -10,7 +10,7 @@ export default async function SEOIssuesPage() {
   const [issues, scans] = await Promise.all([getSEOIssues(), getSEOScans()]);
   return <AdminShell active="SEO 中心" user={operator}><main className="main-content">
     <div className="page-heading"><div><p>问题去重、分派、修复、复测与关闭均保留历史</p><h1>SEO 优化问题</h1></div></div>
-    <section className="review-section dashboard-section"><div className="section-heading"><div><h2>扫描与问题闭环</h2><p>扫描目标仅来自内部正式清单，单批最多 1,000 条；关闭前重新核验当前资格。</p></div></div>
+    <section className="review-section dashboard-section"><div className="section-heading"><div><h2>扫描与问题闭环</h2><p>仅巡检内部正式清单，每批最多 1,000 条并自动续扫全部目标；任一批失败则整轮回滚，可重试。每日自动巡检需部署配置启用；关闭问题前重新核验当前资格。此处不抓取外网、不向搜索引擎提交。</p></div></div>
       {issues && scans ? <SEOIssueManager initialIssues={issues.items} initialScans={scans.items} operator={operator} /> : <div className="service-warning">无法读取扫描或问题数据；不会将失败显示为无问题。</div>}
     </section>
   </main></AdminShell>;

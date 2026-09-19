@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,74 +12,9 @@ import (
 )
 
 func (store *Store) RunSEOScan(ctx context.Context, actorID, requestID string, now time.Time) (operations.SEOScan, error) {
-	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return operations.SEOScan{}, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	var scan operations.SEOScan
-	err = tx.QueryRow(ctx, `
-INSERT INTO platform.seo_scan_runs (scan_source,status,requested_by,started_at)
-VALUES ('manual','running',$1::uuid,$2)
-RETURNING scan_id::text,scan_source,status,scanned_count,issue_count,skipped_count,truncated,error_summary,started_at,completed_at`, actorID, now).
-		Scan(&scan.ID, &scan.Source, &scan.Status, &scan.ScannedCount, &scan.IssueCount, &scan.SkippedCount,
-			&scan.Truncated, &scan.ErrorSummary, &scan.StartedAt, &scan.CompletedAt)
-	if err != nil {
-		return operations.SEOScan{}, mapConstraintError(err)
-	}
-	rows, err := tx.Query(ctx, seoInventoryCTE+`
-SELECT entity_type,entity_id::text,'/'||entity_type||'s/'||canonical_slug,coalesce(exclusion_reason,'')
-FROM classified
-WHERE publication_status='published'
-ORDER BY entity_type,entity_id
-LIMIT 1001`)
-	if err != nil {
-		return operations.SEOScan{}, fmt.Errorf("read seo scan targets: %w", err)
-	}
-	type target struct{ entityType, entityID, path, reason string }
-	targets := make([]target, 0, 1001)
-	for rows.Next() {
-		var item target
-		if err := rows.Scan(&item.entityType, &item.entityID, &item.path, &item.reason); err != nil {
-			rows.Close()
-			return operations.SEOScan{}, err
-		}
-		targets = append(targets, item)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return operations.SEOScan{}, err
-	}
-	if len(targets) > 1000 {
-		scan.Truncated = true
-		targets = targets[:1000]
-	}
-	for _, item := range targets {
-		if item.reason == "" {
-			scan.SkippedCount++
-			continue
-		}
-		rule, priority := seoRule(item.reason)
-		if err := upsertSEOIssue(ctx, tx, scan.ID, item.entityType, item.entityID, item.path, rule, priority, item.reason, now); err != nil {
-			return operations.SEOScan{}, err
-		}
-		scan.IssueCount++
-	}
-	scan.ScannedCount = len(targets)
-	completed := now
-	scan.Status, scan.CompletedAt = "completed", &completed
-	if _, err := tx.Exec(ctx, `UPDATE platform.seo_scan_runs SET status='completed',scanned_count=$2,issue_count=$3,
-skipped_count=$4,truncated=$5,completed_at=$6 WHERE scan_id=$1::uuid`, scan.ID, scan.ScannedCount, scan.IssueCount, scan.SkippedCount, scan.Truncated, completed); err != nil {
-		return operations.SEOScan{}, err
-	}
-	if err := insertAudit(ctx, tx, actorID, "seo.scan", "seo_scan", scan.ID, nil,
-		map[string]any{"scanned": scan.ScannedCount, "issues": scan.IssueCount, "truncated": scan.Truncated}, "manual bounded SEO scan", requestID, now); err != nil {
-		return operations.SEOScan{}, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return operations.SEOScan{}, err
-	}
-	return scan, nil
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return store.runSEOScanCycle(ctx, actorID, requestID, now, "manual")
 }
 
 func seoRule(reason string) (string, string) {

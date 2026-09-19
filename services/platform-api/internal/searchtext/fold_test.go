@@ -18,10 +18,22 @@ func TestCharacterEquivalence(t *testing.T) {
 	}
 }
 
-func TestQueryScopedTable(t *testing.T){
- from,to:=TableFor("桥本")
- if len([]rune(from))!=len([]rune(to))||len([]rune(from))>10{t.Fatal("unbounded per-query variant table")}
- found:=false;for i,c:=range []rune(from){if c=='橋'&&[]rune(to)[i]=='桥'{found=true}}
- if !found{t.Fatal("required variant missing")}
- from,to=TableFor("AIKA");if from!=""||to!=""{t.Fatal("Latin query does not need Han variants")}
+func TestQueryScopedTable(t *testing.T) {
+	from, to := TableFor("桥本")
+	if len([]rune(from)) != len([]rune(to)) || len([]rune(from)) > 10 {
+		t.Fatal("unbounded per-query variant table")
+	}
+	found := false
+	for i, c := range []rune(from) {
+		if c == '橋' && []rune(to)[i] == '桥' {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("required variant missing")
+	}
+	from, to = TableFor("AIKA")
+	if from != "" || to != "" {
+		t.Fatal("Latin query does not need Han variants")
+	}
 }

@@ -3031,6 +3031,10 @@ components:
       additionalProperties: false
       required: [id, source, status, scanned_count, issue_count, skipped_count, truncated, error_summary, started_at, completed_at]
       properties:
+        cycle_id: { type: string, format: uuid, description: "Only on completed cycle response; batch audit records share this ID." }
+        batch_count: { type: integer, minimum: 1 }
+        total_scanned_count: { type: integer, minimum: 0 }
+        total_issue_count: { type: integer, minimum: 0 }
         id: { type: string, format: uuid }
         source: { enum: [manual, scheduled] }
         status: { enum: [running, completed, failed] }
