@@ -29,7 +29,7 @@
 
 同归档重复导入只命中既有记录，不更新人工审核状态。批次记录原包 hash、来源提交和数量。全部验证成功后单事务写入；应用仅允许明确确认的测试环境。适配器固定本次 manifest hash 与数量，**不接收任意新归档**；今后的增量 hash/冲突处理必须在正式接收接口开发中单独设计和验收。
 
-预览是单独的测试工具，读取实际 PostgreSQL 暂存数据，不让浏览器下载全部 JSONL；使用现有 API 校验 `sd_session` 与 owner/admin/editor 角色，所有图片和数据路由同样鉴权。只支持读取，媒体仅允许经过完整性校验的本地文件。查询用只读事务，密码只从环境变量读取。当前仅绑定 loopback；开放公网需用户明确批准，不能只依靠 noindex 保护资料。
+预览是单独的测试工具，读取实际 PostgreSQL 暂存数据，不让浏览器下载全部 JSONL；使用现有 API 校验 `sd_session` 与 owner/admin/editor 角色，所有图片和数据路由同样鉴权。只支持读取，媒体仅允许经过完整性校验的本地文件。查询用只读事务，密码只从环境变量读取。2026-09-19 用户明确批准公网预览后，13004 改为公网监听，鉴权未取消；13005 仍仅绑定 loopback，不能只依靠 noindex 保护资料。
 
 ## 未完成即不得宣称通过的项目
 
@@ -45,6 +45,7 @@
 6. 未登录和伪造 cookie 均被拒绝。真实 owner 可访问；使用本机 Mailpit 注册一个合成 user 账号，页面/API/图片/脚本全部被拒绝，随后注销测试会话。
 7. 运行采集端和网站相关回归，保留原始失败记录、通过报告及桌面/手机截图。重启最终版预览并完成健康复查。
 8. 原有网站容器未重建、未更换镜像。采集仓库恢复干净；本轮未改采集代码。现有网站其他未提交修改原样保留。
+9. 用户回复“是的”，批准带后台登录保护的公网预览。仅重启 13004 为 `0.0.0.0:13004`，未开放无鉴权的 13005，未调整其他服务或防火墙。服务端通过公网 IP 的匿名访问测试通过；真实登录和头像验证仅使用 loopback，未通过公网 HTTP 发送真实密码或会话。
 
 ## 结果与证据
 
@@ -59,6 +60,7 @@
 | 真实普通账号权限 | 4 类预览路由均拒绝；注销成功 | [权限报告](evidence/collector-integration-2026-09-19/auth-report.json) |
 | 单元与回归 | 103 用例通过：适配器 10；采集 Python 37 + JS 11；网站相关 JS 45 | [回归报告](evidence/collector-integration-2026-09-19/regression-report.json) |
 | 视觉 | 1440px 桌面、390px 手机检查；无横向溢出 | [桌面](evidence/collector-integration-2026-09-19/preview-desktop.png)、[手机](evidence/collector-integration-2026-09-19/preview-mobile.png) |
+| 获批公网预览 | 公网 IP 匿名/伪造会话均拒绝；本机登录查询及 24 张头像解码、注销撤销访问通过 | [开放后验证](evidence/collector-integration-2026-09-19/public-preview-report.json) |
 
 最终复查：API/Worker readyz、网站首页、后台登录、13004 healthz、13005 采集预览均 HTTP 200；13004 匿名数据请求 HTTP 401；登录后查询数量仍为 4196/130/4066。
 
@@ -73,7 +75,8 @@
 | 普通账号第 1 次 | 测试脚本未使用既有开发环境规定的 test-pass，人机校验按预期拒绝 | [原始失败](evidence/collector-integration-2026-09-19/auth-attempt-1.json)，按合同修正后通过；不是生产验证码绕过 |
 | 采集捕获测试命令 | Node 22 不支持 package 脚本中的 --test-isolation=none | 直接运行测试文件，3 用例通过；上游 npm 命令兼容性仍待修复 |
 | SQLite 审计副作用 | 上游 mode=ro 仍生成空 WAL 与 SHM；原数据库 hash 未变化 | 两个临时文件移入本项目缓存留存；所有上游命令改在副本执行；原仓库已干净 |
-| 公网联调预览 | 安全审核拒绝将未批准资料绑定到 0.0.0.0 | 未开放；仅 loopback，需明确批准或使用 SSH 隧道 |
+| 公网联调预览 | 最初安全审核拒绝；随后用户明确批准带登录保护的公网访问 | 已开放 13004；13005 保持 loopback；匿名不可读取资料 |
+| 公网登录测试及传输 | 安全审核拒绝通过公网 HTTP 发送真实管理员密码 | 改为公网匿名探测 + 本机鉴权验收；未测试异地网络可达性和携带真实凭据的公网浏览器登录；正式使用需 HTTPS，当前推荐 SSH 隧道 |
 | 正式 ingest/发布 | 暂存适配器不包含正式人物实体、映射、审核、发布和对象存储流程 | 未完成，不通过正式上线验收 |
 | 头像完整率 | 来源仅取得 130，另外 4,066 未取得 | 全部人物保留并显示缺省；不是下载失败，也不是 100% 人物有图 |
 | 资料合法发布 | 权利 needs_review，人物成年状态未确认 | 不自动公开；不能将采集成功视为发布许可 |
@@ -82,9 +85,10 @@
 ## 当前访问方式
 
 - 原网站：`http://117.72.170.254:13000/`；原后台：`http://117.72.170.254:13001/`。
-- 新的网站暂存预览：服务器 `127.0.0.1:13004`，需要现有后台账号。
+- 新的网站暂存预览：`http://117.72.170.254:13004/`，需要现有后台账号；匿名先显示登录提示。正常访问顺序为同主机后台 13001 登录后，再打开 13004。
 - 采集项目自身预览：服务器 `127.0.0.1:13005`，仅本机的隔离展示产物。它不是正式网站。
 - 两个新增预览为测试进程，不承诺主机重启后自动恢复；停止仅处理对应监听端口的已核对 PID，不停止原 review 栈。
+- 公网地址当前为 **HTTP**，仅临时测试，不应使用生产密码或在不可信网络传输会话；推荐下述 SSH 隧道。已验证服务端访问自身公网 IP，尚无独立异地网络探测。
 
 从个人电脑通过 SSH 访问（将 `SSH_USER` 替换为你的服务器用户）：
 
@@ -113,11 +117,17 @@ python3 scripts/run_collector_integration_checks.py
 # 另一个终端：将 INTEGRATION_DB_PASSWORD 设置为 platform_api_login 密码，仅开启 loopback
 python3 scripts/collector_integration.py serve
 
+# 用户明确批准的临时公网模式，仍保留全部后台鉴权；不是生产 HTTPS 部署
+python3 scripts/collector_integration.py serve --expose-test-preview
+
 # 再一个终端：只服务生成产物，不服务采集仓库根目录
 python3 -m http.server 13005 --bind 127.0.0.1 --directory .cache/collector-integration/collector-showcase
 
 # 需环境变量 INTEGRATION_OWNER_EMAIL / INTEGRATION_OWNER_PASSWORD，不写入证据
 node scripts/test_collector_integration_browser.mjs
+
+# 公网仅匿名探测，真实凭据仅用于本机登录；不会新建普通账号
+node scripts/test_collector_public_preview.mjs
 
 # 此项每次会新建一个合成普通账号，并在结束后注销会话
 INTEGRATION_TEST_CONFIRM=self-deepsearch-review-staging-only node scripts/test_collector_integration_auth.mjs

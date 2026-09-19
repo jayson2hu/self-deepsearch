@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-19T02:20:01.251Z",
+  "preview": "http://117.72.170.254:13004",
+  "checks": {
+    "anonymous_and_forged_session_denied": true,
+    "loopback_login_and_shared_session": true,
+    "loopback_preview_first_24_avatars_decoded": true,
+    "real_avatar_requires_operator_session": true,
+    "logout_revokes_preview_access": true
+  },
+  "transport": "HTTP test environment only",
+  "authenticated_test_origin": "http://127.0.0.1:13004",
+  "limitation": "Public probes originate on the server; no off-server reachability test or credential-bearing public HTTP request.",
+  "counts": {
+    "performers": 4196,
+    "avatars": 130,
+    "without_avatar": 4066
+  }
+}
