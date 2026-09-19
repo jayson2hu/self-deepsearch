@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-09-19T03:13:47.291Z",
+  "status": "passed",
+  "checks": {
+    "public_stage_name_form_preserves_entity_scope": true,
+    "unpublished_real_staging_not_leaked": true,
+    "real_stage_name_full_partial_and_case_insensitive": true,
+    "missing_alias_not_fabricated": true,
+    "staging_4196_and_public_pv_zero_unchanged": true
+  }
+}

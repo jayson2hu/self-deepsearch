@@ -1,0 +1,76 @@
+{
+  "checked_at": "2026-09-19T03:10:17.581237+00:00",
+  "status": "passed",
+  "cases": [
+    {
+      "query": "艺名甲",
+      "hits": 1,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "曾用艺名紫苑",
+      "hits": 1,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "名紫苑",
+      "hits": 1,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "stage alpha",
+      "hits": 2,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": " Stage Alpha ",
+      "hits": 2,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "%_",
+      "hits": 1,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "不得命中对象值",
+      "hits": 0,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "' OR true --",
+      "hits": 0,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "",
+      "hits": 6,
+      "mode": "read-only VALUES"
+    },
+    {
+      "query": "三上悠亜",
+      "hits": 1,
+      "mode": "real staging"
+    },
+    {
+      "query": "三上",
+      "hits": 4,
+      "mode": "real staging"
+    },
+    {
+      "query": "AIKA",
+      "hits": 5,
+      "mode": "real staging"
+    },
+    {
+      "query": "aika",
+      "hits": 5,
+      "mode": "real staging"
+    }
+  ],
+  "counts": {
+    "performers": 4196,
+    "avatars": 130,
+    "without_avatar": 4066
+  }
+}
