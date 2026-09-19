@@ -1,0 +1,324 @@
+{
+  "checked_at": "2026-09-19T02:58:40.373Z",
+  "status": "passed",
+  "checks": {
+    "anonymous_api_and_page_protected": true,
+    "live_zero_data_and_ranges": true,
+    "mobile_no_document_overflow": true,
+    "public_pages_no_synthetic_content_or_ads": true,
+    "deleted_details_404_and_list_browsing_does_not_count": true,
+    "real_staging_4196_unchanged": true
+  },
+  "reports": [
+    {
+      "range": "7d",
+      "checked_at": "2026-09-19T02:58:43.264844305Z",
+      "timezone": "Asia/Shanghai",
+      "page_views": 0,
+      "today_page_views": 0,
+      "logged_in_user_views": 0,
+      "active_registered_users": 0,
+      "unique_visitors": null,
+      "daily": [
+        {
+          "date": "2026-09-13",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-14",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-15",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-16",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-17",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-18",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-19",
+          "page_views": 0
+        }
+      ],
+      "hot_content": [],
+      "users": []
+    },
+    {
+      "range": "30d",
+      "checked_at": "2026-09-19T02:58:43.40661462Z",
+      "timezone": "Asia/Shanghai",
+      "page_views": 0,
+      "today_page_views": 0,
+      "logged_in_user_views": 0,
+      "active_registered_users": 0,
+      "unique_visitors": null,
+      "daily": [
+        {
+          "date": "2026-08-21",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-22",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-23",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-24",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-25",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-26",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-27",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-28",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-29",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-30",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-31",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-01",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-02",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-03",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-04",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-05",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-06",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-07",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-08",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-09",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-10",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-11",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-12",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-13",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-14",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-15",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-16",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-17",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-18",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-19",
+          "page_views": 0
+        }
+      ],
+      "hot_content": [],
+      "users": []
+    },
+    {
+      "range": "all",
+      "checked_at": "2026-09-19T02:58:43.521845781Z",
+      "timezone": "Asia/Shanghai",
+      "page_views": 0,
+      "today_page_views": 0,
+      "logged_in_user_views": 0,
+      "active_registered_users": 0,
+      "unique_visitors": null,
+      "daily": [
+        {
+          "date": "2026-08-21",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-22",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-23",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-24",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-25",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-26",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-27",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-28",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-29",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-30",
+          "page_views": 0
+        },
+        {
+          "date": "2026-08-31",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-01",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-02",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-03",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-04",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-05",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-06",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-07",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-08",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-09",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-10",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-11",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-12",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-13",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-14",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-15",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-16",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-17",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-18",
+          "page_views": 0
+        },
+        {
+          "date": "2026-09-19",
+          "page_views": 0
+        }
+      ],
+      "hot_content": [],
+      "users": []
+    }
+  ]
+}

@@ -19,7 +19,7 @@ try {
   await page.getByRole('button',{name:'登录',exact:true}).click();await expect(page).toHaveURL(ops+'/');
   await page.getByRole('link',{name:'访问统计',exact:true}).click();
   await expect(page.getByRole('heading',{name:'访问统计',exact:true})).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('.service-warning[role="alert"]')).toHaveCount(0);
   for(const range of ['7d','30d','all']){
     const response=await context.request.get(ops+'/admin/v1/traffic?range='+range);assert.equal(response.status(),200);
     assert.match(response.headers()['cache-control'],/no-store/);

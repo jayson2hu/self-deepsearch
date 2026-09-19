@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-19",
+  "implementation_commit": "b604182",
+  "status": "passed_with_documented_scope_limits",
+  "checks": {
+    "api_go_test_all_packages": "passed",
+    "api_permission_and_failure_contract": "passed",
+    "real_postgres_traffic_contract": "passed",
+    "api_contract_generation": "passed",
+    "ops_typecheck": "passed",
+    "ops_lint": "passed",
+    "ops_production_build": "passed",
+    "browser_desktop_and_mobile": "passed",
+    "public_unauthenticated_traffic_page": 307,
+    "cache_purge_event": "completed"
+  },
+  "isolated_database_results": [
+    {"range":"7d","page_views":32,"today_page_views":29,"registered_views":2,"active_registered_users":1,"daily_rows":7,"hot_rows":3,"unique_visitors":null},
+    {"range":"30d","page_views":52,"today_page_views":29,"registered_views":3,"active_registered_users":1,"daily_rows":30,"hot_rows":3,"unique_visitors":null},
+    {"range":"all","page_views":63,"today_page_views":29,"registered_views":3,"active_registered_users":1,"daily_rows":30,"hot_rows":3,"unique_visitors":null}
+  ],
+  "isolated_detail_reporting": {
+    "list_pagination_pv": 0,
+    "one_each_work_performer_studio_total_pv": 3,
+    "unknown_entity": "rejected",
+    "tied_ranking_order": ["performer","studio","work"],
+    "temporary_database_removed": true
+  },
+  "live_counts_after_acceptance": {
+    "works":0,"performers":0,"ads":0,"view_history":0,"content_metrics":0,
+    "source_records":4196,"normalized_records":4196,"media_staging":130
+  },
+  "services": {
+    "platform_api":"healthy / traffic-b604182",
+    "ops_web":"healthy / traffic-b604182",
+    "display_web":"healthy / ux3-fb7bb70",
+    "worker":"healthy / opt-57818cd"
+  },
+  "limits": [
+    "Anonymous unique visitors are not collected or inferred.",
+    "Nonzero metrics were tested in a disposable clone, not by recreating live synthetic catalog data.",
+    "Chinese script variants and translated aliases remain a diagnosed search gap.",
+    "Immutable historical evidence and four closed anonymized test-account tombstones remain."
+  ]
+}
