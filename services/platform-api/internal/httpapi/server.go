@@ -319,6 +319,7 @@ func (s *Server) routes() http.Handler {
 	router.Post("/admin/v1/invitations", s.adminCreateInvitation)
 	router.Post("/admin/v1/invitations/{invitationID}/revoke", s.adminRevokeInvitation)
 	router.Get("/admin/v1/system/health", s.adminSystemHealth)
+	router.Get("/admin/v1/traffic", s.adminTraffic)
 	router.Get("/admin/v1/audit-logs", s.adminListAuditLogs)
 	router.Post("/admin/v1/media/manifests", s.adminRegisterMediaManifest)
 	router.Get("/admin/v1/media/primary", s.adminGetPrimaryMedia)

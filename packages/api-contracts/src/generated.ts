@@ -700,6 +700,34 @@ export type OperationsUserListResponse = {
   observed_at: string;
 };
 
+export type TrafficReport = {
+  range: "7d" | "30d" | "all";
+  checked_at: string;
+  timezone: "Asia/Shanghai";
+  page_views: number;
+  today_page_views: number;
+  logged_in_user_views: number;
+  active_registered_users: number;
+  unique_visitors: number | null;
+  daily: Array<{
+      date: string;
+      page_views: number;
+    }>;
+  hot_content: Array<{
+      rank: number;
+      entity_type: "work" | "performer" | "studio";
+      id: string;
+      title: string;
+      path: string;
+      page_views: number;
+    }>;
+  users: Array<{
+      id: string;
+      email: string;
+      page_views: number;
+    }>;
+};
+
 export type OperationsUserSummary = {
   observed_at: string;
   environment: string;

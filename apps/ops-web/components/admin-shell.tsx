@@ -1,10 +1,11 @@
 import type { UserSummary } from "@self-deepsearch/api-contracts";
-import { BookOpen, FileCheck2, FileUp, Gauge, Gavel, GitCompareArrows, Image as ImageIcon, Library, LogOut, Megaphone, MessageSquare, PauseCircle, SearchCheck, ScrollText, Settings2, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, BookOpen, FileCheck2, FileUp, Gauge, Gavel, GitCompareArrows, Image as ImageIcon, Library, LogOut, Megaphone, MessageSquare, PauseCircle, SearchCheck, ScrollText, Settings2, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 const navigation: Array<{ href: string; label: string; icon: typeof Gauge; roles?: UserSummary["role"][] }> = [
   { href: "/", label: "运营概览", icon: Gauge },
+  { href: "/traffic", label: "访问统计", icon: BarChart3, roles: ["admin", "owner"] },
   { href: "/works/new", label: "新建作品", icon: BookOpen },
   { href: "/imports", label: "CSV 导入", icon: FileUp },
   { href: "/catalog", label: "资料目录", icon: Library },

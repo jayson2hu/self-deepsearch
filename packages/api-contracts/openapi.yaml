@@ -1358,6 +1358,21 @@ paths:
         "200":
           description: Campaign paused
           content: { application/json: { schema: { $ref: "#/components/schemas/AdCampaign" } } }
+  /admin/v1/traffic:
+    get:
+      operationId: adminGetTraffic
+      description: Admin/owner-only detail-view totals, registered-user history aggregates and current-public-content rankings. Calendar-day ranges use Asia/Shanghai. No anonymous visitor identifier is collected; unique_visitors is null, not zero. Test, management and closed accounts are excluded from registered-user figures. All-time daily charts show only the last 30 days.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { in: query, name: range, schema: { type: string, enum: [7d, 30d, all], default: 30d } }
+      responses:
+        "200":
+          description: Private no-store traffic snapshot
+          content: { application/json: { schema: { $ref: "#/components/schemas/TrafficReport" } } }
+        "400": { description: Invalid range }
+        "401": { description: Login required }
+        "403": { description: Admin or owner required }
+        "503": { description: Statistics unavailable; never substitute fabricated zeroes }
   /admin/v1/seo/summary:
     get:
       operationId: adminGetSeoSummary
@@ -2839,6 +2854,49 @@ components:
         total: { type: integer, minimum: 0 }
         next_cursor: { type: [string, "null"] }
         observed_at: { type: string, format: date-time }
+    TrafficReport:
+      type: object
+      required: [range, checked_at, timezone, page_views, today_page_views, logged_in_user_views, active_registered_users, unique_visitors, daily, hot_content, users]
+      properties:
+        range: { type: string, enum: [7d, 30d, all] }
+        checked_at: { type: string, format: date-time }
+        timezone: { type: string, enum: [Asia/Shanghai] }
+        page_views: { type: integer, minimum: 0 }
+        today_page_views: { type: integer, minimum: 0 }
+        logged_in_user_views: { type: integer, minimum: 0 }
+        active_registered_users: { type: integer, minimum: 0 }
+        unique_visitors: { type: [integer, "null"], description: Not collected for anonymous visitors; currently always null. }
+        daily:
+          type: array
+          items:
+            type: object
+            required: [date, page_views]
+            properties:
+              date: { type: string, format: date }
+              page_views: { type: integer, minimum: 0 }
+        hot_content:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            required: [rank, entity_type, id, title, path, page_views]
+            properties:
+              rank: { type: integer, minimum: 1 }
+              entity_type: { type: string, enum: [work, performer, studio] }
+              id: { type: string, format: uuid }
+              title: { type: string }
+              path: { type: string }
+              page_views: { type: integer, minimum: 1 }
+        users:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [id, email, page_views]
+            properties:
+              id: { type: string, format: uuid }
+              email: { type: string, format: email }
+              page_views: { type: integer, minimum: 1 }
     OperationsUserSummary:
       type: object
       required: [observed_at, environment, definition_version, account_total, ordinary_total, active_ordinary, verified_ordinary, management_total, closed_total, public_registrations, public_registrations_today, public_registrations_seven_days, unknown_origin, coverage_started_at]

@@ -20,6 +20,7 @@ import type {
   SessionResponse,
   TakedownListResponse,
   UserSummary,
+  TrafficReport,
   WorkImportBatchListResponse,
 } from "@self-deepsearch/api-contracts";
 import { cookies } from "next/headers";
@@ -72,6 +73,11 @@ export async function getOperationsUsers(query = ""): Promise<OperationsUserList
 export async function getOperationsUserSummary(): Promise<OperationsUserSummary | null> {
   const response = await privateRequest("/admin/v1/users/summary");
   return response?.ok ? ((await response.json()) as OperationsUserSummary) : null;
+}
+
+export async function getTrafficReport(range: "7d" | "30d" | "all"): Promise<TrafficReport | null> {
+  const response = await privateRequest(`/admin/v1/traffic?range=${range}`);
+  return response?.ok ? ((await response.json()) as TrafficReport) : null;
 }
 
 export async function getAdCampaigns(): Promise<AdCampaignListResponse | null> {
