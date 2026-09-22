@@ -17,6 +17,7 @@ var DefaultBuildVersion = "dev"
 
 type Config struct {
 	CollectorCredentials      collectoringest.Credentials
+	VisitorMetricsEnabled     bool
 	SEODailyScanEnabled       bool
 	SEODailyScanActorID       string
 	Addr                      string
@@ -46,6 +47,7 @@ type Config struct {
 func FromEnv() Config {
 	return Config{
 		CollectorCredentials:      collectoringest.Credentials{SourceID: os.Getenv("COLLECTOR_INGEST_SOURCE_ID"), Token: os.Getenv("COLLECTOR_INGEST_TOKEN")},
+		VisitorMetricsEnabled:     envOr("VISITOR_METRICS_ENABLED", "false") == "true",
 		SEODailyScanEnabled:       envOr("SEO_DAILY_SCAN_ENABLED", "false") == "true",
 		SEODailyScanActorID:       strings.TrimSpace(os.Getenv("SEO_DAILY_SCAN_ACTOR_ID")),
 		Addr:                      envOr("API_ADDR", ":8080"),

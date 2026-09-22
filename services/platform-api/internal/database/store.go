@@ -849,6 +849,10 @@ LIMIT $2`
 }
 
 func (store *Store) RecordPageView(ctx context.Context, contentType, contentID string) error {
+	return store.RecordPageViewWithVisitor(ctx, contentType, contentID, "")
+}
+
+func (store *Store) RecordPageViewWithVisitor(ctx context.Context, contentType, contentID, visitorHash string) error {
 	// Keep the entity type whitelist explicit. Besides preventing SQL identifier
 	// injection, this ensures page views are only accepted for currently public
 	// records in the corresponding publication view.
@@ -878,14 +882,26 @@ DO UPDATE SET page_views = platform.content_metrics_hourly.page_views + 1, updat
 	default:
 		return catalog.ErrNotFound
 	}
-	result, err := store.pool.Exec(ctx, query, contentID)
+	tx, err := store.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	result, err := tx.Exec(ctx, query, contentID)
 	if err != nil {
 		return fmt.Errorf("record page view: %w", err)
 	}
 	if result.RowsAffected() == 0 {
 		return catalog.ErrNotFound
 	}
-	return nil
+	if visitorHash != "" {
+		if _, err = tx.Exec(ctx, `INSERT INTO platform.visitor_metrics_daily(visit_day,visitor_hash,page_views)
+ VALUES((now() AT TIME ZONE 'Asia/Shanghai')::date,$1,1)
+ ON CONFLICT(visit_day,visitor_hash) DO UPDATE SET page_views=platform.visitor_metrics_daily.page_views+1`, visitorHash); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 func (store *Store) queryWorkSummaries(ctx context.Context, query string, args ...any) ([]catalog.WorkSummary, error) {

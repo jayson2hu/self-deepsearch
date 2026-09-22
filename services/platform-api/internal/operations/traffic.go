@@ -26,17 +26,21 @@ type TrafficUser struct {
 }
 
 type TrafficReport struct {
-	Range                 string           `json:"range"`
-	CheckedAt             time.Time        `json:"checked_at"`
-	Timezone              string           `json:"timezone"`
-	PageViews             int64            `json:"page_views"`
-	TodayPageViews        int64            `json:"today_page_views"`
-	LoggedInUserViews     int64            `json:"logged_in_user_views"`
-	ActiveRegisteredUsers int64            `json:"active_registered_users"`
-	UniqueVisitors        *int64           `json:"unique_visitors"`
-	Daily                 []TrafficDay     `json:"daily"`
-	HotContent            []TrafficContent `json:"hot_content"`
-	Users                 []TrafficUser    `json:"users"`
+	VisitorCollectionEnabled bool             `json:"visitor_collection_enabled"`
+	UniqueVisitorToday       int64            `json:"unique_visitor_today"`
+	ConsentedPageViews       int64            `json:"consented_page_views"`
+	UVWindowStart            string           `json:"uv_window_start"`
+	Range                    string           `json:"range"`
+	CheckedAt                time.Time        `json:"checked_at"`
+	Timezone                 string           `json:"timezone"`
+	PageViews                int64            `json:"page_views"`
+	TodayPageViews           int64            `json:"today_page_views"`
+	LoggedInUserViews        int64            `json:"logged_in_user_views"`
+	ActiveRegisteredUsers    int64            `json:"active_registered_users"`
+	UniqueVisitors           *int64           `json:"unique_visitors"`
+	Daily                    []TrafficDay     `json:"daily"`
+	HotContent               []TrafficContent `json:"hot_content"`
+	Users                    []TrafficUser    `json:"users"`
 }
 
 type TrafficRepository interface {

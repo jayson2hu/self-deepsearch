@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { apiMutation } from "../lib/auth-client";
+import {getVisitorToken} from "../lib/visitor-metrics";
 
 type PageViewContentType = "work" | "performer" | "studio";
 
@@ -15,7 +16,8 @@ export function PageViewReporter({ contentType, contentID }: { contentType: Page
     const key = `${contentType}:${contentID}`;
     if (reportedKey.current === key) return;
     reportedKey.current = key;
-    void apiMutation<void>("/api/v1/metrics/page-view", "POST", { content_type: contentType, content_id: contentID }).catch(() => undefined);
+    const visitorToken=getVisitorToken();
+    void apiMutation<void>("/api/v1/metrics/page-view", "POST", { content_type: contentType, content_id: contentID,...(visitorToken?{visitor_token:visitorToken}:{}) }).catch(() => undefined);
   }, [contentID, contentType]);
   return null;
 }

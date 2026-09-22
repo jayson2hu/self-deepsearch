@@ -23,11 +23,11 @@ class DataModelDocumentationTests(unittest.TestCase):
         )
         document = DATA_MODEL.read_text(encoding="utf-8")
 
-        self.assertEqual(69, len(tables))
+        self.assertEqual(70, len(tables))
         self.assertEqual(5, len(views))
         missing = sorted(name for name in tables | views if f"`{name}`" not in document)
         self.assertEqual([], missing)
-        self.assertIn("当前 Schema 版本为 26", document)
+        self.assertIn("当前 Schema 版本为 28", document)
 
 
 if __name__ == "__main__":

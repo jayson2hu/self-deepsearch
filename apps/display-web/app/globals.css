@@ -458,3 +458,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .studio-grid { grid-template-columns: 1fr; }
   .studio-link, .studio-link:nth-child(2n), .studio-link:nth-child(3n) { border-right: 0; }
 }
+/* Optional first-party analytics choice: no modal or forced consent. */
+.visitor-choice {position:fixed;z-index:80;bottom:16px;left:16px;box-sizing:border-box;width:min(480px,calc(100vw - 32px));padding:16px;border:1px solid var(--border,#9ca3af);border-radius:12px;background:var(--surface,#fff);color:var(--ink,#1f2937);box-shadow:0 4px 24px #0002;font-size:13px;line-height:1.6;}
+.visitor-choice p,.visitor-choice-inline p {margin:8px 0;}
+.visitor-choice>div,.visitor-choice-inline>div {display:flex;gap:8px;flex-wrap:wrap;}
+.visitor-choice button,.visitor-choice-inline button {padding:8px 12px;border:1px solid currentColor;border-radius:6px;background:transparent;color:inherit;cursor:pointer;}

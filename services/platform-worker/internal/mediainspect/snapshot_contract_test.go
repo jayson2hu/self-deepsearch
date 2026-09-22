@@ -43,8 +43,8 @@ func TestPostgresInspectionSnapshotContract(t *testing.T) {
 	var version, existing int
 	if err := tx.QueryRow(ctx, `SELECT schema_version,
  (SELECT count(*) FROM platform.users)+(SELECT count(*) FROM platform.works)+(SELECT count(*) FROM platform.media_assets)+(SELECT count(*) FROM platform.outbox_events)
- FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 27 || existing != 0 {
-		t.Fatal("schema 27 and empty dedicated database required")
+ FROM platform.system_metadata WHERE singleton`).Scan(&version, &existing); err != nil || version != 28 || existing != 0 {
+		t.Fatal("schema 28 and empty dedicated database required")
 	}
 	exec := func(sql string, args ...any) {
 		t.Helper()

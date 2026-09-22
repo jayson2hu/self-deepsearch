@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"net/url"
@@ -77,8 +79,9 @@ type reviewFeedbackRequest struct {
 }
 
 type pageViewRequest struct {
-	ContentType string `json:"content_type"`
-	ContentID   string `json:"content_id"`
+	VisitorToken string `json:"visitor_token,omitempty"`
+	ContentType  string `json:"content_type"`
+	ContentID    string `json:"content_id"`
 }
 
 func (s *Server) pageView(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +99,25 @@ func (s *Server) pageView(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
-	if err := s.catalog.RecordPageView(ctx, request.ContentType, request.ContentID); err != nil {
+	if request.VisitorToken != "" && !uuidPattern.MatchString(request.VisitorToken) {
+		writeError(w, r, http.StatusBadRequest, "INVALID_VISITOR", "访客标识不符合要求")
+		return
+	}
+	var recordErr error
+	if s.visitorMetricsEnabled && request.VisitorToken != "" {
+		recorder, ok := s.catalog.(interface {
+			RecordPageViewWithVisitor(context.Context, string, string, string) error
+		})
+		if !ok {
+			writeError(w, r, http.StatusServiceUnavailable, "METRICS_UNAVAILABLE", "统计服务暂时不可用")
+			return
+		}
+		digest := sha256.Sum256([]byte(strings.ToLower(request.VisitorToken)))
+		recordErr = recorder.RecordPageViewWithVisitor(ctx, request.ContentType, request.ContentID, hex.EncodeToString(digest[:]))
+	} else {
+		recordErr = s.catalog.RecordPageView(ctx, request.ContentType, request.ContentID)
+	}
+	if err := recordErr; err != nil {
 		if errors.Is(err, catalog.ErrNotFound) {
 			writeError(w, r, http.StatusNotFound, "CONTENT_NOT_FOUND", "未找到已发布资料")
 		} else {

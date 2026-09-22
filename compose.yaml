@@ -46,6 +46,9 @@ services:
       dockerfile: services/platform-api/Dockerfile
     environment:
       API_ADDR: ":8080"
+      VISITOR_METRICS_ENABLED: ${VISITOR_METRICS_ENABLED:-false}
+      SEO_DAILY_SCAN_ENABLED: ${SEO_DAILY_SCAN_ENABLED:-false}
+      SEO_DAILY_SCAN_ACTOR_ID: ${SEO_DAILY_SCAN_ACTOR_ID:-}
       BUILD_VERSION: ${BUILD_VERSION:-dev}
       DATABASE_URL: postgres://platform_api_login:${PLATFORM_API_DB_PASSWORD:-platform_api_dev_only}@postgres:5432/${POSTGRES_DB:-self_deepsearch}?sslmode=disable
       ALLOWED_ORIGINS: http://127.0.0.1:3000,http://127.0.0.1:3001
@@ -230,6 +233,7 @@ services:
       context: .
       dockerfile: apps/display-web/Dockerfile
     environment:
+      VISITOR_METRICS_ENABLED: ${VISITOR_METRICS_ENABLED:-false}
       PLATFORM_API_URL: http://platform-api:8080
       MEDIA_DELIVERY_MODE: ${MEDIA_DELIVERY_MODE:-normal}
       MEDIA_DELIVERY_DYNAMIC_MODE: ${MEDIA_DELIVERY_DYNAMIC_MODE:-off}

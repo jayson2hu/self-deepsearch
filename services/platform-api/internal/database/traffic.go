@@ -34,6 +34,19 @@ func (store *Store) TrafficReport(ctx context.Context, period string, now time.T
 		return result, fmt.Errorf("begin traffic snapshot: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	uvStart := today.AddDate(0, 0, -29)
+	if period == "7d" {
+		uvStart = start
+	}
+	result.UVWindowStart = uvStart.Format(time.DateOnly)
+	var visitors int64
+	err = tx.QueryRow(ctx, `SELECT count(DISTINCT visitor_hash),coalesce(sum(page_views),0)::bigint,
+ count(DISTINCT visitor_hash) FILTER(WHERE visit_day=$2::date)
+ FROM platform.visitor_metrics_daily WHERE visit_day >= $1::date AND visit_day <= $2::date`, result.UVWindowStart, today.Format(time.DateOnly)).Scan(&visitors, &result.ConsentedPageViews, &result.UniqueVisitorToday)
+	if err != nil {
+		return result, fmt.Errorf("visitor metrics: %w", err)
+	}
+	result.UniqueVisitors = &visitors
 	err = tx.QueryRow(ctx, `SELECT
  coalesce(sum(page_views) FILTER(WHERE $1::timestamptz IS NULL OR hour_bucket >= $1),0)::bigint,
  coalesce(sum(page_views) FILTER(WHERE hour_bucket >= $2),0)::bigint

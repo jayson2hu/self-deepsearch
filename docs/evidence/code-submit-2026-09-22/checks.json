@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-22",
+  "scope": "Local submission checks; isolated build and disposable PostgreSQL; no deployment or push",
+  "passed": [
+    "npm run lint",
+    "npm run typecheck",
+    "npm run build (isolated source snapshot)",
+    "Go API and Worker full unit suites",
+    "29 database static/documentation contracts",
+    "13 collector Python tests",
+    "visitor metrics and collection configuration Node tests",
+    "collector Python ruff and mypy",
+    "OpenAPI generated types check",
+    "collection demo: 21 browser check groups, 10 screenshots",
+    "PostgreSQL visitor metrics and traffic contracts; migration 28 up/down/up; API/Worker privilege boundary"
+  ],
+  "not_run": [
+    "Production deployment",
+    "Live visitor consent browser end-to-end after deployment"
+  ],
+  "database_fixture_note": "Visitor contracts ran as platform_api_login; traffic fixtures require owner privileges to clear protected view_history in a disposable database."
+}

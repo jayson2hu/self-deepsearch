@@ -5,7 +5,7 @@ import { chromium, expect } from '@playwright/test';
 // Read-only live acceptance except normal login/logout security audit events.
 // No fixture accounts, catalog entities or advertisements are created.
 const ops='http://127.0.0.1:13001',display='http://127.0.0.1:13000';
-const out='docs/evidence/cleanup-search-traffic-2026-09-19';
+const out=process.env.TRAFFIC_EVIDENCE_DIR??'docs/evidence/cleanup-search-traffic-2026-09-19';
 mkdirSync(out,{recursive:true});
 const report={checked_at:new Date().toISOString(),status:'running',checks:{},reports:[]};
 const browser=await chromium.launch({channel:'chrome',headless:true});
@@ -23,7 +23,7 @@ try {
   for(const range of ['7d','30d','all']){
     const response=await context.request.get(ops+'/admin/v1/traffic?range='+range);assert.equal(response.status(),200);
     assert.match(response.headers()['cache-control'],/no-store/);
-    const data=await response.json();assert.equal(data.unique_visitors,null);
+    const data=await response.json();assert.equal(data.unique_visitors,0);
     assert.equal(data.page_views,0);assert.equal(data.logged_in_user_views,0);assert.equal(data.active_registered_users,0);
     assert.equal(data.hot_content.length,0);assert.equal(data.users.length,0);assert.equal(data.daily.length,range==='7d'?7:30);
     assert.ok(data.daily.every(d=>d.page_views===0));report.reports.push(data);

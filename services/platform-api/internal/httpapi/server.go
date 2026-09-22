@@ -47,6 +47,7 @@ type IdentityService interface {
 type Options struct {
 	Collector                collectoringest.Repository
 	CollectorCredentials     collectoringest.Credentials
+	VisitorMetricsEnabled    bool
 	Service                  string
 	Version                  string
 	Environment              string
@@ -76,32 +77,33 @@ type Options struct {
 }
 
 type Server struct {
-	collector            collectoringest.Repository
-	collectorCredentials collectoringest.Credentials
-	service              string
-	version              string
-	environment          string
-	database             DatabaseChecker
-	catalog              catalog.Repository
-	account              account.Repository
-	identity             IdentityService
-	operations           operations.Repository
-	humanVerifier        security.HumanVerifier
-	allowedOrigins       []string
-	secureCookies        bool
-	trustProxyHeaders    bool
-	logger               *slog.Logger
-	metricsToken         string
-	emailMetrics         EmailDeliveryMetricsProvider
-	emailDailyLimit      int
-	mediaPublicBaseURL   string
-	mediaDefaultOnly     bool
-	mediaDeliveryDynamic bool
-	mediaEdgePolicy      bool
-	mediaEdgePolicyToken string
-	requireRecentAuth    bool
-	metrics              *requestMetrics
-	now                  func() time.Time
+	collector             collectoringest.Repository
+	collectorCredentials  collectoringest.Credentials
+	visitorMetricsEnabled bool
+	service               string
+	version               string
+	environment           string
+	database              DatabaseChecker
+	catalog               catalog.Repository
+	account               account.Repository
+	identity              IdentityService
+	operations            operations.Repository
+	humanVerifier         security.HumanVerifier
+	allowedOrigins        []string
+	secureCookies         bool
+	trustProxyHeaders     bool
+	logger                *slog.Logger
+	metricsToken          string
+	emailMetrics          EmailDeliveryMetricsProvider
+	emailDailyLimit       int
+	mediaPublicBaseURL    string
+	mediaDefaultOnly      bool
+	mediaDeliveryDynamic  bool
+	mediaEdgePolicy       bool
+	mediaEdgePolicyToken  string
+	requireRecentAuth     bool
+	metrics               *requestMetrics
+	now                   func() time.Time
 }
 
 type contextKey string
@@ -117,31 +119,32 @@ type routePatternState struct {
 
 func New(options Options) http.Handler {
 	server := &Server{
-		collector:            options.Collector,
-		collectorCredentials: options.CollectorCredentials,
-		service:              defaultString(options.Service, "platform-api"),
-		version:              defaultString(options.Version, "dev"),
-		environment:          defaultString(options.Environment, "development"),
-		database:             options.Database,
-		catalog:              options.Catalog,
-		account:              options.Account,
-		identity:             options.Identity,
-		operations:           options.Operations,
-		humanVerifier:        options.HumanVerifier,
-		allowedOrigins:       options.AllowedOrigins,
-		secureCookies:        options.SecureCookies,
-		trustProxyHeaders:    options.TrustProxyHeaders,
-		logger:               options.Logger,
-		metricsToken:         strings.TrimSpace(options.MetricsToken),
-		emailMetrics:         options.EmailMetrics,
-		emailDailyLimit:      options.EmailDailyLimit,
-		mediaPublicBaseURL:   strings.TrimRight(strings.TrimSpace(options.MediaPublicBaseURL), "/"),
-		mediaDefaultOnly:     options.MediaDeliveryMode != "" && options.MediaDeliveryMode != "normal",
-		mediaDeliveryDynamic: options.MediaDeliveryDynamicMode == "enforce",
-		mediaEdgePolicy:      options.MediaEdgePolicyMode == "enforce",
-		mediaEdgePolicyToken: strings.TrimSpace(options.MediaEdgePolicyToken),
-		requireRecentAuth:    options.RequireRecentAuth,
-		now:                  options.Now,
+		collector:             options.Collector,
+		collectorCredentials:  options.CollectorCredentials,
+		visitorMetricsEnabled: options.VisitorMetricsEnabled,
+		service:               defaultString(options.Service, "platform-api"),
+		version:               defaultString(options.Version, "dev"),
+		environment:           defaultString(options.Environment, "development"),
+		database:              options.Database,
+		catalog:               options.Catalog,
+		account:               options.Account,
+		identity:              options.Identity,
+		operations:            options.Operations,
+		humanVerifier:         options.HumanVerifier,
+		allowedOrigins:        options.AllowedOrigins,
+		secureCookies:         options.SecureCookies,
+		trustProxyHeaders:     options.TrustProxyHeaders,
+		logger:                options.Logger,
+		metricsToken:          strings.TrimSpace(options.MetricsToken),
+		emailMetrics:          options.EmailMetrics,
+		emailDailyLimit:       options.EmailDailyLimit,
+		mediaPublicBaseURL:    strings.TrimRight(strings.TrimSpace(options.MediaPublicBaseURL), "/"),
+		mediaDefaultOnly:      options.MediaDeliveryMode != "" && options.MediaDeliveryMode != "normal",
+		mediaDeliveryDynamic:  options.MediaDeliveryDynamicMode == "enforce",
+		mediaEdgePolicy:       options.MediaEdgePolicyMode == "enforce",
+		mediaEdgePolicyToken:  strings.TrimSpace(options.MediaEdgePolicyToken),
+		requireRecentAuth:     options.RequireRecentAuth,
+		now:                   options.Now,
 	}
 	if isTypedNil(server.database) {
 		server.database = nil

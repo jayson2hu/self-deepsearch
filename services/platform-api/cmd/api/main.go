@@ -17,6 +17,7 @@ import (
 	"self-deepsearch/services/platform-api/internal/logsafe"
 	"self-deepsearch/services/platform-api/internal/security"
 	"self-deepsearch/services/platform-api/internal/seoschedule"
+	"self-deepsearch/services/platform-api/internal/visitorretention"
 )
 
 func main() {
@@ -56,6 +57,11 @@ func main() {
 	}
 
 	var identityService *identity.Service
+	if store != nil {
+		done := make(chan struct{})
+		go func() { defer close(done); visitorretention.Run(ctx, store, logger) }()
+		defer func() { stop(); <-done }()
+	}
 	if configuration.SEODailyScanEnabled && store != nil {
 		done := make(chan struct{})
 		go func() { defer close(done); seoschedule.Run(ctx, store, configuration.SEODailyScanActorID, logger) }()
@@ -97,6 +103,7 @@ func main() {
 		Handler: httpapi.New(httpapi.Options{
 			Collector:                store,
 			CollectorCredentials:     configuration.CollectorCredentials,
+			VisitorMetricsEnabled:    configuration.VisitorMetricsEnabled,
 			Service:                  "platform-api",
 			Version:                  configuration.BuildVersion,
 			Environment:              configuration.AppEnv,

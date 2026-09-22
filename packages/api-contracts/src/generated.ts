@@ -457,6 +457,7 @@ export type SessionResponse = {
 };
 
 export type PageViewRequest = {
+  visitor_token?: string;
   content_type: "work" | "performer" | "studio";
   content_id: string;
 };
@@ -779,6 +780,10 @@ export type OperationsUserListResponse = {
 };
 
 export type TrafficReport = {
+  visitor_collection_enabled?: boolean;
+  unique_visitor_today?: number;
+  consented_page_views?: number;
+  uv_window_start?: string;
   range: "7d" | "30d" | "all";
   checked_at: string;
   timezone: "Asia/Shanghai";

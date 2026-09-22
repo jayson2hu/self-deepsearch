@@ -1529,7 +1529,7 @@ paths:
   /admin/v1/traffic:
     get:
       operationId: adminGetTraffic
-      description: Admin/owner-only detail-view totals, registered-user history aggregates and current-public-content rankings. Calendar-day ranges use Asia/Shanghai. No anonymous visitor identifier is collected; unique_visitors is null, not zero. Test, management and closed accounts are excluded from registered-user figures. All-time daily charts show only the last 30 days.
+      description: Admin/owner-only detail-view totals, registered-user history aggregates and published-content rankings. Calendar-day ranges use Asia/Shanghai. Unique visitors count consenting first-party browser identifiers, never people or all visitors; all-time UV covers only the retained last 30 calendar days. Test, management and closed accounts are excluded from registered-user figures. All-time daily charts show only the last 30 days.
       security: [{ sessionCookie: [] }]
       parameters:
         - { in: query, name: range, schema: { type: string, enum: [7d, 30d, all], default: 30d } }
@@ -2814,6 +2814,10 @@ components:
       additionalProperties: false
       required: [content_type, content_id]
       properties:
+        visitor_token:
+          type: string
+          format: uuid
+          description: "Optional first-party random browser ID, sent only with visitor consent; never an IP or device fingerprint."
         content_type:
           enum: [work, performer, studio]
         content_id:
@@ -3217,6 +3221,10 @@ components:
       type: object
       required: [range, checked_at, timezone, page_views, today_page_views, logged_in_user_views, active_registered_users, unique_visitors, daily, hot_content, users]
       properties:
+        visitor_collection_enabled: { type: boolean }
+        unique_visitor_today: { type: integer, minimum: 0 }
+        consented_page_views: { type: integer, minimum: 0 }
+        uv_window_start: { type: string, format: date }
         range: { type: string, enum: [7d, 30d, all] }
         checked_at: { type: string, format: date-time }
         timezone: { type: string, enum: [Asia/Shanghai] }
@@ -3224,7 +3232,7 @@ components:
         today_page_views: { type: integer, minimum: 0 }
         logged_in_user_views: { type: integer, minimum: 0 }
         active_registered_users: { type: integer, minimum: 0 }
-        unique_visitors: { type: [integer, "null"], description: Not collected for anonymous visitors; currently always null. }
+        unique_visitors: { type: [integer, "null"], description: Distinct consented browser identifiers in the range, capped to the retained last 30 calendar days. Not an account or natural-person count. }
         daily:
           type: array
           items:

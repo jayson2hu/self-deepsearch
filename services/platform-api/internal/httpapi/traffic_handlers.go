@@ -31,6 +31,7 @@ func (s *Server) adminTraffic(w http.ResponseWriter, r *http.Request) {
 	if s.writeOperationsError(w, r, err) {
 		return
 	}
+	report.VisitorCollectionEnabled = s.visitorMetricsEnabled
 	w.Header().Set("Cache-Control", "private, no-store")
 	writeJSON(w, http.StatusOK, report)
 }

@@ -103,8 +103,8 @@ FROM pg_roles WHERE rolname=current_user`).Scan(&restricted); err != nil || !res
  (SELECT count(*) FROM platform.users) + (SELECT count(*) FROM platform.works) +
  (SELECT count(*) FROM platform.view_history) + (SELECT count(*) FROM platform.media_assets) +
  (SELECT count(*) FROM platform.outbox_events)
-FROM platform.system_metadata WHERE singleton`).Scan(&version, &userData); err != nil || version != 27 || userData != 0 {
-		t.Fatal("schema 27 and empty dedicated worker database required")
+FROM platform.system_metadata WHERE singleton`).Scan(&version, &userData); err != nil || version != 28 || userData != 0 {
+		t.Fatal("schema 28 and empty dedicated worker database required")
 	}
 	userIDs := []string{fixtureRecords()[0].UserID, fixtureRecords()[1].UserID}
 	defer func() {

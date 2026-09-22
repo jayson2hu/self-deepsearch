@@ -86,7 +86,7 @@ func TestTrafficPostgresContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if report.PageViews != test.pv || report.TodayPageViews != 29 || report.LoggedInUserViews != test.users || report.ActiveRegisteredUsers != 1 || report.UniqueVisitors != nil || len(report.Users) != 1 || len(report.Daily) != test.days {
+		if report.PageViews != test.pv || report.TodayPageViews != 29 || report.LoggedInUserViews != test.users || report.ActiveRegisteredUsers != 1 || report.UniqueVisitors == nil || *report.UniqueVisitors != 0 || len(report.Users) != 1 || len(report.Daily) != test.days {
 			t.Fatalf("%s unexpected report: %+v", test.period, report)
 		}
 		if len(report.HotContent) != 3 || report.HotContent[0].ID != work || report.HotContent[0].Rank != 1 {
@@ -95,7 +95,7 @@ func TestTrafficPostgresContract(t *testing.T) {
 		if report.Daily[len(report.Daily)-1].PageViews != 29 || report.Daily[1].PageViews != 0 {
 			t.Fatal("daily totals/zero fill mismatch")
 		}
-		t.Logf("range=%s PV=%d today=%d registeredViews=%d activeRegistered=%d dailyRows=%d hotRows=%d UV=nil", test.period, report.PageViews, report.TodayPageViews, report.LoggedInUserViews, report.ActiveRegisteredUsers, len(report.Daily), len(report.HotContent))
+		t.Logf("range=%s PV=%d today=%d registeredViews=%d activeRegistered=%d dailyRows=%d hotRows=%d UV=0", test.period, report.PageViews, report.TodayPageViews, report.LoggedInUserViews, report.ActiveRegisteredUsers, len(report.Daily), len(report.HotContent))
 	}
 	exec(`DELETE FROM platform.content_metrics_hourly`)
 	exec(`DELETE FROM platform.view_history`)
