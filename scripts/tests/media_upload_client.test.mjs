@@ -109,15 +109,16 @@ test("only a definite conflict clears confirmation, errors never expose private 
   }
 });
 
-test("shared recent-auth request now inherits the caller deadline", async () => {
+test("recent-auth preserves the mutation body and caller cancellation signal", async () => {
   const controller = new AbortController(), calls = [];
-  const c = load(reauthSource, { window: { prompt: () => "synthetic password" }, fetch: async (path, options) => {
+  const c = load(reauthSource, { window: {}, AbortController, require: () => ({ requestPassword: async () => "synthetic password" }), fetch: async (path, options) => {
     calls.push([path, options]);
     return calls.length === 1 ? json({ error: { code: "REAUTH_REQUIRED" } }, 401) : json({ ok: true });
   } });
   await c.adminFetch("/admin/v1/media/upload-control/commands", { method: "POST", body: "{}", signal: controller.signal });
   assert.equal(calls.length, 3);
   assert.equal(calls[1][0], "/api/v1/auth/reauth");
-  assert.equal(calls[1][1].signal, controller.signal);
+  assert.equal(calls[1][1].signal.aborted, false);
+  assert.equal(calls[2][1].signal, controller.signal);
   assert.equal(calls[2][1].body, calls[0][1].body);
 });

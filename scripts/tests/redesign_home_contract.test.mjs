@@ -8,7 +8,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 test("DEV-02 home makes query and one primary directory the first tasks", async () => {
   const source = await read("apps/display-web/app/page.tsx");
   assert.match(source, /查询番号或名称，确认公开资料/);
-  assert.match(source, /现阶段返回作品结果；输入人物或厂牌名称也可查找关联作品/);
+  assert.match(source, /查询作品、人物与厂牌资料/);
   assert.match(source, /主要目录 · 按实际发行日期/);
   assert.match(source, /继续查找资料/);
   assert.doesNotMatch(source, /近期热门|浏览最多|编辑推荐|最新作品与人物混排/);

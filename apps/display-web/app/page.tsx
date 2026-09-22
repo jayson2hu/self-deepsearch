@@ -1,10 +1,11 @@
-import { ArrowRight, Building2, CalendarDays, History, Search, UsersRound } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, History, RefreshCw, Search, UsersRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "../components/ad-slot";
 import { PersonalizedWorkGrid } from "../components/personalized-work-grid";
 import { getHome } from "../lib/api";
 import { pageRobots } from "../lib/seo-policy";
+import styles from "./search/search.module.css";
 
 // Public configuration and catalog data are runtime-owned. Keeping the home
 // route dynamic prevents build-time loopback URLs or synthetic data from being
@@ -28,13 +29,21 @@ export default async function HomePage() {
             <div>
               <p className="eyebrow">先查询，再浏览</p>
               <h1 id="search-title">查询番号或名称，确认公开资料</h1>
-              <p>现阶段返回作品结果；输入人物或厂牌名称也可查找关联作品。</p>
+              <p>查询作品、人物与厂牌资料；人物搜索支持已收录的艺名和别名。</p>
             </div>
-            <form className="primary-search" action="/search" role="search">
-              <label className="sr-only" htmlFor="primary-query">搜索番号、标题、人物或厂牌</label>
-              <Search size={22} aria-hidden="true" />
-              <input id="primary-query" name="q" placeholder="输入番号或名称" autoComplete="off" />
-              <button type="submit">查询</button>
+            <form className={styles.queryPanel} action="/search" method="get" role="search">
+              <fieldset className={styles.typeChoice}>
+                <legend className="sr-only">搜索类型</legend>
+                <label className={styles.typeOption}><input type="radio" name="type" value="work" defaultChecked /><span>作品</span></label>
+                <label className={styles.typeOption}><input type="radio" name="type" value="performer" /><span>人物</span></label>
+                <label className={styles.typeOption}><input type="radio" name="type" value="studio" /><span>厂牌</span></label>
+              </fieldset>
+              <div className={`primary-search ${styles.queryBar}`}>
+                <label className="sr-only" htmlFor="primary-query">搜索番号、标题、人物或厂牌</label>
+                <Search size={22} aria-hidden="true" />
+                <input id="primary-query" name="q" placeholder="输入番号或名称" autoComplete="off" />
+                <button type="submit">查询</button>
+              </div>
             </form>
           </div>
         </section>
@@ -49,8 +58,14 @@ export default async function HomePage() {
                 </div>
                 <Link href="/latest">查看全部 <ArrowRight size={16} /></Link>
               </div>
-              {degraded && <p className="degraded-note">目录服务暂时不可用，当前不展示作品或人物资料。</p>}
-              <PersonalizedWorkGrid context="recommendation" items={latest} emptyText="暂无可推荐的已发布作品" nativeAd={<AdSlot label="首页推荐原生作品卡广告" placement="native" slot="home.recommendation_card" />} nativeAdPosition={4} />
+              {degraded ? (
+                <div className={`empty-state ${styles.serviceState}`} role="alert">
+                  <RefreshCw size={30} aria-hidden="true" />
+                  <strong>目录暂时无法加载</strong>
+                  <p>资料服务暂时不可用，请稍后重试。</p>
+                  <form action="/" method="get"><button className="button button--quiet" type="submit">重试加载</button></form>
+                </div>
+              ) : <PersonalizedWorkGrid context="recommendation" items={latest} emptyText="暂无可推荐的已发布作品" nativeAd={<AdSlot label="首页推荐原生作品卡广告" placement="native" slot="home.recommendation_card" />} nativeAdPosition={4} />}
             </section>
 
             <AdSlot label="最新内容后广告" placement="banner" slot="home.after_latest" />

@@ -1,5 +1,7 @@
 # 幕鉴资料展示平台
 
+2026-09-22 [前端全面优化计划](./docs/FRONTEND_OPTIMIZATION_PLAN.md)覆盖公开站与运营后台的视觉、任务流程、移动端、无障碍和性能，配套[可交互视觉方向预览](./docs/frontend-optimization/index.html)。首批聚焦搜索表达、采集核对与密码确认；完整进度以计划中的实施记录为准。
+
 `Release A` 是面向 18 岁以上用户的作品与人物公开资料索引测试站。网站只展示可追溯的文字和图片资料，不提供、存储或跳转到视频、音频、磁力、种子、网盘或下载资源。
 
 产品边界见 [PRODUCT_PLAN.md](./PRODUCT_PLAN.md)，服务与部署边界见 [ARCHITECTURE.md](./ARCHITECTURE.md)，实施和验收项见 [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)。自动采集属于 Release B，广告联盟属于 Release C，两者在当前版本均关闭。

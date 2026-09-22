@@ -79,6 +79,21 @@ async function registerBrowserUser(page) {
   await expect(page).toHaveURL(`${displayURL}/`);
 }
 
+async function confirmRecentPassword(page, password) {
+  // Password confirmation is an in-page dialog. Native dialogs remain reserved
+  // for each action's explicit reason or business confirmation below.
+  const confirmation = page.getByRole("dialog", { name: "确认当前账号密码", exact: true });
+  const input = confirmation.getByLabel("当前账号密码", { exact: true });
+  await expect(confirmation).toBeVisible();
+  await expect(input).toHaveAttribute("type", "password");
+  await expect(input).toHaveAttribute("autocomplete", "current-password");
+  await input.fill(password);
+  const response = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/v1/auth/reauth" && response.request().method() === "POST");
+  await confirmation.getByRole("button", { name: "确认密码并继续", exact: true }).click();
+  expect((await response).status()).toBe(200);
+  await expect(confirmation).toHaveCount(0);
+}
+
 test("每次进入详情页各上报一次，快速返回不会被时间窗口吞掉", async ({ page }) => {
   const reports = [];
   page.on("request", (request) => {
@@ -664,7 +679,6 @@ test("三类详情的可见面包屑与 BreadcrumbList 一致", async ({ page })
 async function openMediaForm(page, { primary = true, mode = "success", shared = false, editor = false } = {}) {
   Object.assign(mediaControl, { mode, shared, lastBody: null, primary: primary ? { asset_id: "22000000-0000-4000-8000-000000000002", entity_media_id: "33000000-0000-4000-8000-000000000002", purpose: "cover" } : null });
   await page.request.post(`${apiURL}/__test/reset-operations`);
-  page.on("dialog", (dialog) => dialog.accept(editor ? "Release-A-editor-pass" : "Release-A-operator-pass"));
   await page.goto(`${opsURL}/login`);
   await page.getByLabel("邮箱").fill(editor ? "editor@example.test" : "operator@example.test");
   await page.getByLabel("密码").fill(editor ? "Release-A-editor-pass" : "Release-A-operator-pass");
@@ -706,6 +720,7 @@ test("主图替换需要独立确认，成功后准确展示异步删除与母�
   expect((await mediaTable.locator("tbody tr").first().boundingBox()).height).toBeLessThan(100);
   await page.screenshot({ path: testInfo.outputPath("media-primary-confirm.png"), fullPage: true });
   await page.getByRole("button", { name: "确认替换主图" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByText("主图已切换", { exact: false })).toBeVisible();
   await expect(page.getByText("实际删除尚未确认。", { exact: false })).toBeVisible();
   expect(mediaControl.lastBody).toEqual({ expected_asset_id: "22000000-0000-4000-8000-000000000002", manifest: mediaManifest() });
@@ -718,6 +733,7 @@ test("无主图可首次登记，共享旧图替换不宣称删除", async ({ pa
   await expect(page.getByText("当前没有主图，将登记为第一张主图。", { exact: false })).toBeVisible();
   await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "核对并发布图片" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByText("图片资产已发布", { exact: false })).toBeVisible();
   mediaControl.shared = true;
   mediaControl.primary.asset_id = "22000000-0000-4000-8000-000000000002";
@@ -734,6 +750,7 @@ test("主图冲突保留清单，刷新后必须重新确认，提交失败不�
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
   await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByText("不会自动覆盖。", { exact: false })).toBeVisible();
   await expect(page.getByRole("heading", { name: "清单核对" })).toBeVisible();
   mediaControl.mode = "write-failure";
@@ -758,6 +775,7 @@ test("主图读取失败禁止提交，不完整成功响应保留清单并阻�
   await page.getByLabel("确认替换以上旧主图，并了解旧图保留与删除规则").check();
   await page.getByLabel("已核对来源、站内展示权利、外部预览权限、实体关联和北京副本").check();
   await page.getByRole("button", { name: "确认替换主图" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByText("提交结果未能确认", { exact: false })).toBeVisible();
   await expect(page.getByText("主图已切换", { exact: false })).toHaveCount(0);
   await page.getByRole("button", { name: "刷新当前主图" }).click();
@@ -899,10 +917,10 @@ test("两个运营账号完成人工录入、审核、发布并公开搜索", as
   await expect(page.getByRole("heading", { name: "版本历史" })).toBeVisible();
   await expect(page.getByText("浏览器运营 E2E 合成来源", { exact: true })).toBeVisible();
 
-  const approvalPrompts = ["来源与字段已复核", "Release-A-reviewer-pass"];
-  const approvalHandler = async (dialog) => dialog.accept(approvalPrompts.shift() ?? "");
+  const approvalHandler = async (dialog) => dialog.accept("来源与字段已复核");
   page.on("dialog", approvalHandler);
   await page.getByRole("button", { name: "审核通过" }).click();
+  await confirmRecentPassword(page, "Release-A-reviewer-pass");
   await expect(page.getByText("已有修订等待发布")).toBeVisible();
   page.off("dialog", approvalHandler);
 
@@ -936,11 +954,9 @@ test("owner 邀请管理员并由受邀邮箱验证码建立后台账号", async
   await page.getByLabel("邮箱", { exact: true }).fill("invited-admin@example.test");
   await page.locator('select[name="role"]').selectOption("admin");
   await page.getByLabel("邀请理由").fill("邀请新的资料审核管理员");
-  const reauthHandler = async (dialog) => dialog.accept("Release-A-owner-pass");
-  page.on("dialog", reauthHandler);
   await page.getByRole("button", { name: "发送邀请" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("验证码已发送到对应邮箱");
-  page.off("dialog", reauthHandler);
   await expect(page.getByText("invited-admin@example.test")).toBeVisible();
   await expect(page.getByText("待接受")).toBeVisible();
 
@@ -964,11 +980,9 @@ test("owner 邀请管理员并由受邀邮箱验证码建立后台账号", async
   await page.getByLabel("邮箱", { exact: true }).fill("invited-user@example.test");
   await page.locator('select[name="role"]').selectOption("user");
   await page.getByLabel("邀请理由").fill("验证管理员只能邀请普通用户并可撤销");
-  const adminReauthHandler = async (dialog) => dialog.accept("Release-A-invited-pass");
-  page.on("dialog", adminReauthHandler);
   await page.getByRole("button", { name: "发送邀请" }).click();
+  await confirmRecentPassword(page, "Release-A-invited-pass");
   await expect(page.getByRole("status")).toContainText("验证码已发送到对应邮箱");
-  page.off("dialog", adminReauthHandler);
   await expect(page.getByText("invited-user@example.test")).toBeVisible();
 
   const revokeHandler = async (dialog) => dialog.accept("撤销浏览器测试邀请");
@@ -1010,14 +1024,12 @@ test("owner 修改普通用户角色，admin 只能管理普通用户状态", as
   await expect(roleSelect).toHaveValue("user");
   await expect(page.getByText("角色已更新，该账号的旧登录会话已失效，需要重新登录。", { exact: true })).toHaveCount(0);
   await page.unroute(roleRoute);
-  const ownerReauthHandler = async (dialog) => dialog.accept("Release-A-owner-pass");
-  page.on("dialog", ownerReauthHandler);
   await roleSelect.selectOption("editor");
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(roleSelect).toHaveValue("editor");
   await expect(page.getByText("角色已更新，该账号的旧登录会话已失效，需要重新登录。", { exact: true })).toBeVisible();
   const unchanged = await page.request.post(`${opsURL}/admin/v1/users/40000000-0000-4000-8000-000000000001/role`, { data: { role: "editor" } });
   expect(unchanged.status()).toBe(409);
-  page.off("dialog", ownerReauthHandler);
   await roleSelect.selectOption("user");
   await expect(roleSelect).toHaveValue("user");
 
@@ -1036,10 +1048,10 @@ test("owner 修改普通用户角色，admin 只能管理普通用户状态", as
   await expect(page.getByLabel("修改 reviewer@example.test 的账号状态")).toHaveCount(0);
 
   const statusSelect = adminManagedRow.getByLabel("修改 browser-user@example.test 的账号状态");
-  const lockPrompts = ["安全测试锁定", "Release-A-operator-pass"];
-  const lockHandler = async (dialog) => dialog.accept(lockPrompts.shift() ?? "");
+  const lockHandler = async (dialog) => dialog.accept("安全测试锁定");
   page.on("dialog", lockHandler);
   await statusSelect.selectOption("locked");
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(statusSelect).toHaveValue("locked");
   page.off("dialog", lockHandler);
 
@@ -1149,10 +1161,10 @@ test("权利下架限制 editor 操作并从公开搜索撤下作品", async ({ 
   await expect(page).toHaveURL(`${opsURL}/`);
   await page.goto(`${opsURL}/rights`);
 
-  const completePrompts = ["权利请求已核验并完成公开撤下", "Release-A-operator-pass"];
-  const completeHandler = async (dialog) => dialog.accept(completePrompts.shift() ?? "");
+  const completeHandler = async (dialog) => dialog.accept("权利请求已核验并完成公开撤下");
   page.on("dialog", completeHandler);
   await page.getByRole("button", { name: "执行下架" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
   page.off("dialog", completeHandler);
 
@@ -1167,7 +1179,6 @@ test("权利下架限制 editor 操作并从公开搜索撤下作品", async ({ 
 async function openUsageManager(page, mode = "healthy", editor = false) {
   Object.assign(usageControl, { mode, state: mockUsageState(), reviews: [], requests: [] });
   await page.request.post(`${apiURL}/__test/reset-operations`);
-  page.on("dialog", (dialog) => dialog.accept(editor ? "Release-A-editor-pass" : "Release-A-owner-pass"));
   await page.goto(`${opsURL}/login`);
   await page.getByLabel("邮箱").fill(editor ? "editor@example.test" : "owner@example.test");
   await page.getByLabel("密码").fill(editor ? "Release-A-editor-pass" : "Release-A-owner-pass");
@@ -1183,6 +1194,7 @@ test("用量复核请求明确区分待处理和已处理，展示不越界", as
   await page.getByLabel("复核原因", { exact: true }).fill("核对统计恢复正常 <img src=x onerror=alert(1)>");
   await page.getByLabel("已核对账户与统计", { exact: false }).check();
   await page.getByRole("button", { name: "提交复核请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("尚未处理，更不代表已恢复图片");
   await expect(page.getByRole("region", { name: "最近复核记录" }).getByText("待处理", { exact: true })).toBeVisible();
   expect(usageControl.requests).toHaveLength(1);
@@ -1212,6 +1224,7 @@ test("用量复核缺失响应拒绝提交，冲突刷新且未知结果复用�
   await page.getByLabel("已核对账户与统计", { exact: false }).check();
   usageControl.mode = "conflict";
   await page.getByRole("button", { name: "提交复核请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("状态已变化");
   usageControl.mode = "healthy";
   await page.getByRole("button", { name: "刷新用量状态" }).click();
@@ -1245,6 +1258,7 @@ test("用量复核新账期必须明确填写，处理后仍保持保护", async
   await page.getByLabel("复核原因", { exact: true }).fill("已核对日本 Worker 账期，保持图片保护");
   await page.getByLabel("已核对账户与统计", { exact: false }).check();
   await page.getByRole("button", { name: "提交复核请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("等待 Worker 校验");
   const submitted = usageControl.requests[0];
   expect(submitted.action).toBe("rotate_period");
@@ -1277,7 +1291,6 @@ async function openUploadManager(page, mode = "healthy", role = "owner") {
   await page.request.post(`${apiURL}/__test/reset-operations`);
   const password = role === "editor" ? "Release-A-editor-pass" : role === "admin" ? "Release-A-operator-pass" : "Release-A-owner-pass";
   const email = role === "editor" ? "editor@example.test" : role === "admin" ? "operator@example.test" : "owner@example.test";
-  page.on("dialog", (dialog) => dialog.accept(password));
   await page.goto(`${opsURL}/login`);
   await page.getByLabel("邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
@@ -1325,6 +1338,7 @@ test("上传控制：暂停受理和真实回执在页面上分开显示", async
     await expect(page.getByRole("heading", { name: "保留原请求，先确认结果" })).toHaveCount(0);
     await expect(page.getByRole("status", { includeHidden: true })).toHaveText("");
   } finally { held.resolve(); }
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("请求已受理，尚未确认完成");
   await expect(page.getByText("待处理", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "最近确认：新上传已允许" })).toBeVisible();
@@ -1363,6 +1377,7 @@ test("上传控制：恢复需独立重新确认，拒绝不能显示为已允�
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath("upload-resume-confirmation.png"), fullPage: true });
   await page.getByRole("button", { name: "提交恢复请求" }).click();
+  await confirmRecentPassword(page, "Release-A-operator-pass");
   await expect(page.getByRole("status")).toContainText("请求已受理");
   expect(uploadControl.requests[0].mode).toBe("enabled");
   finishUpload("rejected", "control_resume_guard_denied");
@@ -1377,6 +1392,7 @@ test("上传控制：丢失响应或不完整回执后保留原请求重试", as
   await openUploadManager(page, "lost-response");
   await confirmUpload(page);
   await page.getByRole("button", { name: "提交暂停请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("heading", { name: "保留原请求，先确认结果" })).toBeVisible();
   await expect(page.getByRole("button", { name: "重试同一上传请求" })).toBeEnabled();
   const original = structuredClone(uploadControl.requests[0]);
@@ -1403,6 +1419,7 @@ test("上传控制：旧快照冲突后必须刷新和重新确认", async ({ pa
   await openUploadManager(page, "conflict");
   await confirmUpload(page);
   await page.getByRole("button", { name: "提交暂停请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("alert", { name: "上传控制错误" })).toContainText("状态已变化");
   await expect(page.getByRole("button", { name: "提交暂停请求" })).toHaveCount(0);
   expect(uploadControl.commands).toHaveLength(0);
@@ -1464,6 +1481,7 @@ test("上传控制：未知和被取代的回执不显示为执行成功", async
   await openUploadManager(page);
   await confirmUpload(page);
   await page.getByRole("button", { name: "提交暂停请求" }).click();
+  await confirmRecentPassword(page, "Release-A-owner-pass");
   await expect(page.getByRole("status")).toContainText("请求已受理");
   const c = uploadControl.commands[0];
   c.status = "uncertain";

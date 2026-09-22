@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "platform_api": "go test ./services/platform-api/... passed",
+  "database_contracts": "isolated PostgreSQL16 with28 migrations; ingest/source policy/review/archive contracts passed",
+  "collector_python_tests": 51,
+  "collector_javascript_tests": 8,
+  "collector_markdown_links": 93,
+  "ops_build": "passed",
+  "ops_lint": "passed",
+  "openapi_generated_types": "current",
+  "notes": "A separately preserved failed browser run found mobile overflow (fixed); second run raw test logout lacked browser Origin (test corrected to use real logout button). Final full run passed."
+}

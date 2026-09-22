@@ -26,7 +26,7 @@ export const VISUAL_CAPTURE_PLAN = Object.freeze([
     key: "display-home",
     surface: "display",
     route: "/",
-    heading: "按番号找到作品公开资料",
+    heading: "查询番号或名称，确认公开资料",
     desktopHeight: 900,
   }),
   Object.freeze({

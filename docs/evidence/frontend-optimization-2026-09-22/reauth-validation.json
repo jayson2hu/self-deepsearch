@@ -1,0 +1,148 @@
+{
+  "date": "2026-09-22",
+  "scope": "后台密码二次确认与既有运营动作回归",
+  "final_result": "passed",
+  "unit_tests": {
+    "command": "node --test scripts/tests/ops_reauth_client.test.mjs scripts/tests/media_upload_client.test.mjs",
+    "result": "passed",
+    "cases": 15,
+    "files": [
+      {
+        "path": "scripts/tests/ops_reauth_client.test.mjs",
+        "cases": 8,
+        "result": "passed"
+      },
+      {
+        "path": "scripts/tests/media_upload_client.test.mjs",
+        "cases": 7,
+        "result": "passed"
+      }
+    ],
+    "verified": [
+      "仅 REAUTH_REQUIRED 触发密码确认，取消及密码/网络失败不重放 mutation",
+      "成功后原请求只重放一次，保留 body、headers、幂等编号及调用方取消信号",
+      "并发请求共享确认，单个取消不影响其他请求，全部取消终止确认",
+      "较晚到达的并发 401 复用已完成确认结果",
+      "上传控制响应边界、快照时效、原请求重试及不完整回执处理"
+    ]
+  },
+  "standalone_browser": {
+    "command": "node scripts/test_ops_reauth_browser.mjs",
+    "runtime": "Chrome；直接转译当前 reauth-client/password-confirmation 源码；本地合成服务",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "result": "passed",
+    "passed": 9,
+    "failed": 0,
+    "scenarios": [
+      "success",
+      "cancel",
+      "escape",
+      "reject",
+      "transport",
+      "again",
+      "concurrent",
+      "abort_one",
+      "abort_all"
+    ],
+    "verified": [
+      "type=password 与 autocomplete=current-password，空密码不能提交",
+      "初始焦点、Tab/Shift+Tab 环绕和完成后的触发控件焦点恢复",
+      "取消/Escape/全部取消不执行 mutation，失败不重复执行 mutation",
+      "并发仅显示一个确认框，单个取消保留其他请求",
+      "390px 无页面横向溢出；密码不进入 DOM 文本或 Web Storage",
+      "成功确认设置 cookie，并完整重放原请求一次"
+    ],
+    "terminal_summary": "Password confirmation browser checks passed: 9"
+  },
+  "integration_browser": {
+    "test_file": "tests/e2e/release-a.spec.mjs",
+    "runtime": "当前已构建 Next standalone 前后台 + stateful 合成上游；不替代真实 Go API/collector 验收",
+    "result": "passed",
+    "unique_project_cases": 44,
+    "passed": 44,
+    "failed": 0,
+    "projects": [
+      {
+        "name": "desktop",
+        "viewport": {
+          "width": 1366,
+          "height": 900
+        },
+        "passed": 22
+      },
+      {
+        "name": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "hasTouch": true,
+        "isMobile": true,
+        "passed": 22
+      }
+    ],
+    "completed_runs": [
+      {
+        "command": "node_modules/.bin/playwright test tests/e2e/release-a.spec.mjs --project=desktop --grep '主图|邀请管理员|修改普通用户角色|用量复核|上传控制：|人工录入、审核|权利下架' --reporter=line --output=.cache/reauth-e2e-desktop-results",
+        "exit_code": 0,
+        "terminal_summary": "22 passed (1.2m)",
+        "log": ".cache/reauth-e2e-desktop.log",
+        "last_run_result": {
+          "status": "passed",
+          "failedTests": []
+        }
+      },
+      {
+        "command": "node_modules/.bin/playwright test tests/e2e/release-a.spec.mjs --project=mobile --grep '用量复核|上传控制：' --reporter=line --output=.cache/reauth-e2e-mobile-results",
+        "exit_code": 0,
+        "terminal_summary": "12 passed (34.2s)",
+        "log": ".cache/reauth-e2e-mobile.log",
+        "last_run_result": {
+          "status": "passed",
+          "failedTests": []
+        }
+      },
+      {
+        "command": "node_modules/.bin/playwright test tests/e2e/release-a.spec.mjs --project=mobile --grep '主图|邀请管理员|修改普通用户角色|人工录入、审核|权利下架' --reporter=line --output=.cache/reauth-e2e-mobile-actions-results",
+        "exit_code": 0,
+        "terminal_summary": "10 passed (37.6s)",
+        "log": ".cache/reauth-e2e-mobile-actions.log",
+        "last_run_result": {
+          "status": "passed",
+          "failedTests": []
+        }
+      }
+    ],
+    "initial_attempt": {
+      "result": "interrupted",
+      "exit_code": 143,
+      "error_context": "Error: write EPIPE",
+      "note": "首轮 44 例运行中断；随后分三组重跑并全部获得 exit 0。通过数仅统计后三组完整运行。"
+    },
+    "verified": [
+      "所有真正密码确认均显式调用同一命名 dialog helper，验证遮挡输入及 reauth HTTP 200",
+      "原生 prompt 仅用于各动作的业务理由/确认，不存在通配填密码 handler",
+      "邀请、受邀账号、角色与状态管理、人工审核发布及权利下架",
+      "主图登记/替换/冲突/不完整响应和编辑角色边界",
+      "用量复核待处理/已处理、账期轮换、冲突、同请求重试及编辑角色边界",
+      "上传暂停/恢复、丢失响应/不完整回执、快照冲突/过期、未知回执及权限边界"
+    ]
+  },
+  "static_checks": [
+    {
+      "command": "node --check tests/e2e/release-a.spec.mjs",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check -- tests/e2e/release-a.spec.mjs",
+      "result": "passed"
+    }
+  ],
+  "runtime_lifecycle": {
+    "result": "passed",
+    "observed": "ops static 在测试前已存在；prepareStandaloneAssets 只登记新建路径。三组测试完成后原常驻 ops static 仍存在。"
+  }
+}

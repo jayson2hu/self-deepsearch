@@ -1,0 +1,86 @@
+{
+  "status": "failed",
+  "checks": {
+    "anonymous_denied": true,
+    "real_role_matrix": true,
+    "nine_batches_and_pending_counts": true,
+    "all_4196_candidates_match_archive": true,
+    "detail_and_detail_permissions": true,
+    "search_empty_filters_and_invalid_inputs": true,
+    "public_api_excludes_staged_candidates": true,
+    "browser_pagination_search_empty": true,
+    "mobile_dimensions": {
+      "viewport": 390,
+      "document": 390,
+      "overflow": [
+        {
+          "tag": "TABLE",
+          "class": "collector-module__zkzY6q__table",
+          "right": 852
+        },
+        {
+          "tag": "THEAD",
+          "class": "",
+          "right": 852
+        },
+        {
+          "tag": "TR",
+          "class": "",
+          "right": 852
+        },
+        {
+          "tag": "TH",
+          "class": "",
+          "right": 488.109375
+        },
+        {
+          "tag": "TH",
+          "class": "",
+          "right": 553.859375
+        },
+        {
+          "tag": "TH",
+          "class": "",
+          "right": 669.3125
+        },
+        {
+          "tag": "TH",
+          "class": "",
+          "right": 759.921875
+        },
+        {
+          "tag": "TH",
+          "class": "",
+          "right": 852
+        },
+        {
+          "tag": "TBODY",
+          "class": "",
+          "right": 852
+        },
+        {
+          "tag": "TR",
+          "class": "",
+          "right": 852
+        },
+        {
+          "tag": "TD",
+          "class": "",
+          "right": 488.109375
+        },
+        {
+          "tag": "TD",
+          "class": "",
+          "right": 553.859375
+        }
+      ]
+    },
+    "real_browser_login_list_detail_desktop_mobile": {
+      "external_requests": 0,
+      "runtime_errors": 0
+    }
+  },
+  "failures": [
+    "Error: expect(page).toHaveURL(expected) failed\n\nExpected pattern: /\\/login/\nReceived string:  \"http://127.0.0.1:42051/collector\"\nTimeout: 5000ms\n\nCall log:\n  - Expect \"toHaveURL\" with timeout 5000ms\n    13 × locator resolved to <html lang=\"zh-CN\">…</html>\n       - unexpected value \"http://127.0.0.1:42051/collector\"\n\n    at captureRawStack (/root/project/pre/self-deepsearch/node_modules/playwright-core/lib/coreBundle.js:8588:17)\n    at callMatcherAsStep (/root/project/pre/self-deepsearch/node_modules/playwright/lib/matchers/expect.js:13310:57)\n    at Object.toHaveURL (/root/project/pre/self-deepsearch/node_modules/playwright/lib/matchers/expect.js:13302:23)\n    at /root/project/pre/self-deepsearch/scripts/test_collector_e2e_browser.mjs:114:110"
+  ]
+}

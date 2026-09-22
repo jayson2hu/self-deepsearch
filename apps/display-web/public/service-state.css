@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light dark;
+  --state-ink: #17191c;
+  --state-muted: #626970;
+  --state-canvas: #f2f4f5;
+  --state-surface: #fff;
+  --state-line: #d9dde1;
+  --state-accent: #bd3c35;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--state-ink); background: var(--state-canvas); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; line-height: 1.6; }
+.service-page { width: min(640px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 64px; }
+.service-brand { display: inline-flex; align-items: baseline; gap: 10px; color: var(--state-ink); font-size: 24px; font-weight: 800; text-decoration: none; }
+.service-brand span { color: var(--state-muted); font-size: 12px; font-weight: 400; }
+.service-card { margin-top: 40px; padding: 32px; border: 1px solid var(--state-line); border-radius: 12px; background: var(--state-surface); }
+.service-eyebrow { margin: 0 0 8px; color: var(--state-muted); font-size: 13px; font-weight: 700; }
+h1 { margin: 0; font-size: clamp(24px, 5vw, 30px); line-height: 1.3; }
+.service-copy { margin: 16px 0 0; color: var(--state-muted); font-size: 15px; }
+.service-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.service-actions form { margin: 0; }
+.service-actions a, .service-actions button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 9px 16px; border: 1px solid var(--state-line); border-radius: 6px; color: var(--state-ink); background: var(--state-surface); font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.service-actions button { border-color: var(--state-accent); color: #fff; background: var(--state-accent); }
+a:focus-visible, button:focus-visible { outline: 3px solid #166f68; outline-offset: 3px; }
+
+@media (max-width: 420px) {
+  .service-page { padding-top: 28px; }
+  .service-card { margin-top: 28px; padding: 24px 20px; }
+  .service-actions { gap: 10px; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --state-ink: #edf1f3;
+    --state-muted: #aeb7bf;
+    --state-canvas: #101418;
+    --state-surface: #1a2025;
+    --state-line: #384149;
+    --state-accent: #bd3c35;
+  }
+}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PerformerCard } from "../../components/performer-card";
 import { PersonalizedWorkGrid } from "../../components/personalized-work-grid";
 import { searchPerformers, searchStudios, searchWorks, type PerformerSearchResult, type SearchEntityType, type StudioSearchResult, type WorkSearchResult } from "../../lib/api";
+import styles from "./search.module.css";
 
 export const metadata: Metadata = { title: "资料搜索", robots: { index: false, follow: true } };
 
@@ -61,27 +62,32 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <main>
-      <section className="page-band">
-        <div className="shell page-band__inner">
-          <p className="eyebrow">作品资料查询</p>
-          <h1>资料搜索</h1>
-          <form className="primary-search" action="/search" method="get" role="search">
-            <label className="sr-only" htmlFor="result-query">输入作品番号、标题、人物艺名或厂牌</label>
-            <Search size={22} aria-hidden="true" />
-            <input id="result-query" name="q" defaultValue={query} placeholder={activeType === "performer" ? "输入艺名、曾用名或别名" : activeType === "studio" ? "输入厂牌名称" : "输入番号、标题或人物艺名"} autoComplete="off" />
-            {validType && activeType !== "work" ? <input type="hidden" name="type" value={activeType} /> : null}
-            <button type="submit">查询</button>
-          </form>
+      <section className="page-band" aria-labelledby="search-title">
+        <div className={`shell ${styles.hero}`}>
+          <div className={styles.intro}>
+            <p className="eyebrow">作品 · 人物 · 厂牌</p>
+            <h1 id="search-title">资料搜索</h1>
+            <p className={styles.introCopy}>从番号或名称出发，找到你要确认的公开资料。</p>
+          </div>
+          <div className={styles.queryPanel}>
+            <nav className={styles.typeNav} aria-label="搜索类型">
+              {searchTypes.map((option) => <Link href={searchHref(query, "", option.type)} key={option.type} aria-current={validType && option.type === activeType ? "page" : undefined}>{option.label}</Link>)}
+            </nav>
+            <form className={`primary-search ${styles.queryBar}`} action="/search" method="get" role="search">
+              <label className="sr-only" htmlFor="result-query">输入作品番号、标题、人物艺名或厂牌</label>
+              <Search size={22} aria-hidden="true" />
+              <input id="result-query" name="q" defaultValue={query} placeholder={activeType === "performer" ? "输入艺名、曾用名或别名" : activeType === "studio" ? "输入厂牌名称" : "输入番号、标题或人物艺名"} autoComplete="off" />
+              {validType && activeType !== "work" ? <input type="hidden" name="type" value={activeType} /> : null}
+              <button type="submit">查询</button>
+            </form>
+          </div>
         </div>
       </section>
       <div className="shell content-with-rails">
         <div className="content-column">
-          <section className="section-block" aria-labelledby="results-title">
+          <section className={`section-block ${styles.results}`} aria-labelledby="results-title">
             <div className="section-heading"><div><p className="section-kicker">{publishedTypeLabel}</p><h2 id="results-title">{query ? `“${displayedQuery}” 的结果` : "输入关键词开始查询"}</h2></div></div>
-            <nav className="filter-tabs" aria-label="搜索类型">
-              {searchTypes.map((option) => <Link className={validType && option.type === activeType ? "active" : ""} href={searchHref(query, "", option.type)} key={option.type} aria-current={validType && option.type === activeType ? "page" : undefined}>{option.label}</Link>)}
-            </nav>
-            <p className="search-scope-note">{scopeCopy}</p>
+            <p className={styles.scope}>{scopeCopy}</p>
             {result.status === "invalid_type" && (
               <div className="empty-state"><SearchX size={30} /><strong>搜索类型不符合要求</strong><span>没有向未知搜索端点发送请求；可返回作品、人物或厂牌类型重新查询。</span><Link className="button button--quiet" href={searchHref(query)}>返回作品搜索</Link></div>
             )}

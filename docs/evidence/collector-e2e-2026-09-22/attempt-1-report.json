@@ -1,0 +1,152 @@
+{
+  "status": "failed",
+  "checked_at": "2026-09-22T05:29:13.919928+00:00",
+  "checks": {
+    "archive_integrity": {
+      "manifest_sha256": "ddc94eaf953efe1bfbb42cbd550d09b7e97de0c3a1d01253e9246cc100fa109d",
+      "files_verified": 804,
+      "performers": 4196,
+      "avatars": 130,
+      "without_avatar": 4066,
+      "sqlite_integrity": "ok",
+      "source_data_commit": "95cac10a4579a4fd20f15575c2e77a351bb1284b"
+    },
+    "collector_head": "5e436b45a9426480379731e98afc1a88d68579eb",
+    "platform_head": "dc43c87b49660626eaa641364f690e39ca5e7967",
+    "collector_export": {
+      "schema_version": "collector.performers.manifest.v1",
+      "mode": "prepared-only",
+      "source_key": "jable_reference",
+      "source_id": "12345678-1234-1234-1234-123456789abc",
+      "source_url": "https://jable.tv",
+      "region": "japan",
+      "records": 4196,
+      "rights_status": "needs_review",
+      "publication_status": "staging",
+      "adult_status": "unknown",
+      "media_submitted": 0,
+      "batches": [
+        {
+          "file": "batch-001.json",
+          "records": 500,
+          "bytes": 154709,
+          "request_hash": "sha256:ed819c8df81a353646e071787b6552da05baaacc15b650609fe440f972d39f73",
+          "idempotency_key": "sqlite-a805a0028ecdada4fd0ff749d39c794b7946caf46f414fcd71fafb745d39f13d"
+        },
+        {
+          "file": "batch-002.json",
+          "records": 500,
+          "bytes": 154816,
+          "request_hash": "sha256:9090ed762dcd129ddf97ecf11b0d3c64fddc29e52b21ce8ffeacf763e59729ad",
+          "idempotency_key": "sqlite-ec19bc761beec96df2335a36871099c0058bc8c8c3565aeb87ad84956b04c9f3"
+        },
+        {
+          "file": "batch-003.json",
+          "records": 500,
+          "bytes": 154673,
+          "request_hash": "sha256:2a2a6e1edb05299e7fdb930103b4777f65102a93ae1ff736809ee376e54d5a1d",
+          "idempotency_key": "sqlite-b98b2ea088cc484319b2afb41733247bbee057c55d9015728db0d565fe000dad"
+        },
+        {
+          "file": "batch-004.json",
+          "records": 500,
+          "bytes": 154721,
+          "request_hash": "sha256:2e99765c481b7cdec3c7e9846d0ce3a21bce4ca73aa3446d861306478c457c75",
+          "idempotency_key": "sqlite-84c4d878eaf50312c47dd1979718b8f498fd426114b2aa8128a20af59f55aad4"
+        },
+        {
+          "file": "batch-005.json",
+          "records": 500,
+          "bytes": 154763,
+          "request_hash": "sha256:c62236788eb69a41381cb338026a5e4fbeceeeae9b0dd5c5ecac43c67dedb264",
+          "idempotency_key": "sqlite-623bc8f8e85411e46272f042d2150858194400f6e1289e4fbabeaa5e37dbe433"
+        },
+        {
+          "file": "batch-006.json",
+          "records": 500,
+          "bytes": 153784,
+          "request_hash": "sha256:3316be1cdf2e6d1ae99bd098b4b0fbcf5f703b75d71e6ec71a5569964b588f70",
+          "idempotency_key": "sqlite-34190c633838404a509c4b539f19e3f5823dbed663715f0c8f974b6d8d0b52a9"
+        },
+        {
+          "file": "batch-007.json",
+          "records": 500,
+          "bytes": 154618,
+          "request_hash": "sha256:8f74f7ed8aaaef3f687fddc6f1c534429dd75246ebf0dc21b626841018187d90",
+          "idempotency_key": "sqlite-d710f95e0d761adaade8cf3e39250eb0d131ae5c584e339b97784484c6e64012"
+        },
+        {
+          "file": "batch-008.json",
+          "records": 500,
+          "bytes": 154483,
+          "request_hash": "sha256:f2a7e6f9b4e5eba8cd4f314ccee85138186b6ff29bcccd01b790b479bcccbc3a",
+          "idempotency_key": "sqlite-260dbd2f46e3a479a81cd3275f9fccb2d2fe445fe58411a1ed4d23bd42e1946b"
+        },
+        {
+          "file": "batch-009.json",
+          "records": 196,
+          "bytes": 54116,
+          "request_hash": "sha256:f902a8142ba568b8e7c30cca7f201c2374111702098eace30bff88f8e923ce8c",
+          "idempotency_key": "sqlite-369016cfde350f4aa6e0f3b84fe6a73bdcdb3e1488bdeb8a9bfd965d63b7c9ec"
+        }
+      ]
+    },
+    "first_delivery": {
+      "status": "staged",
+      "source_id": "12345678-1234-1234-1234-123456789abc",
+      "manifest_hash": "sha256:116aaf94c3de1392244e1d6b5dbf2c036d614d5b148f138e5966c175b5f9a8d2",
+      "batches": 9,
+      "records": 4196,
+      "requests": 9,
+      "submitted": 9,
+      "skipped": 0,
+      "replayed": 0
+    },
+    "resumed_delivery": {
+      "status": "staged",
+      "source_id": "12345678-1234-1234-1234-123456789abc",
+      "manifest_hash": "sha256:116aaf94c3de1392244e1d6b5dbf2c036d614d5b148f138e5966c175b5f9a8d2",
+      "batches": 9,
+      "records": 4196,
+      "requests": 0,
+      "submitted": 0,
+      "skipped": 9,
+      "replayed": 0
+    },
+    "replayed_delivery": {
+      "status": "staged",
+      "source_id": "12345678-1234-1234-1234-123456789abc",
+      "manifest_hash": "sha256:116aaf94c3de1392244e1d6b5dbf2c036d614d5b148f138e5966c175b5f9a8d2",
+      "batches": 9,
+      "records": 4196,
+      "requests": 9,
+      "submitted": 9,
+      "skipped": 0,
+      "replayed": 9
+    },
+    "lost_receipt_recovery": {
+      "status": "staged",
+      "source_id": "12345678-1234-1234-1234-123456789abc",
+      "manifest_hash": "sha256:116aaf94c3de1392244e1d6b5dbf2c036d614d5b148f138e5966c175b5f9a8d2",
+      "batches": 9,
+      "records": 4196,
+      "requests": 1,
+      "submitted": 1,
+      "skipped": 8,
+      "replayed": 1
+    },
+    "wrong_credential_status": 401,
+    "same_key_changed_content_status": 409,
+    "database": {
+      "source_records": 4196,
+      "candidates": 4196,
+      "batches": 9,
+      "formal_performers": 0,
+      "publications": 0,
+      "media": 0,
+      "staged_media": 0,
+      "unsafe_candidates": 0
+    }
+  },
+  "failure": "node failed (exit 1); see browser.log"
+}

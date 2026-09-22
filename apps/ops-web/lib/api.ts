@@ -22,6 +22,9 @@ import type {
   UserSummary,
   TrafficReport,
   WorkImportBatchListResponse,
+  CollectorReviewBatchPage,
+  CollectorReviewCandidate,
+  CollectorReviewCandidatePage,
 } from "@self-deepsearch/api-contracts";
 import { cookies } from "next/headers";
 
@@ -163,4 +166,19 @@ export async function getFeedbackReviewQueue(): Promise<AdminFeedbackListRespons
 export async function getContentRevisions(entityType: string, entityID: string): Promise<ContentRevisionListResponse | null> {
   const response = await privateRequest(`/admin/v1/entities/${encodeURIComponent(entityID)}/revisions?entity_type=${encodeURIComponent(entityType)}`);
   return response?.ok ? ((await response.json()) as ContentRevisionListResponse) : null;
+}
+
+export async function getCollectorBatches(query = ""): Promise<CollectorReviewBatchPage | null> {
+  const response = await privateRequest(`/admin/v1/collector/batches?${query}`);
+  return response?.ok ? ((await response.json()) as CollectorReviewBatchPage) : null;
+}
+
+export async function getCollectorCandidates(query = ""): Promise<CollectorReviewCandidatePage | null> {
+  const response = await privateRequest(`/admin/v1/collector/candidates?${query}`);
+  return response?.ok ? ((await response.json()) as CollectorReviewCandidatePage) : null;
+}
+
+export async function getCollectorCandidate(id: string): Promise<{ item: CollectorReviewCandidate | null; missing: boolean }> {
+  const response = await privateRequest(`/admin/v1/collector/candidates/${encodeURIComponent(id)}`);
+  return { item: response?.ok ? ((await response.json()) as CollectorReviewCandidate) : null, missing: response?.status === 404 };
 }

@@ -1,0 +1,15 @@
+{
+  "status": "failed",
+  "checks": {
+    "anonymous_denied": true,
+    "real_role_matrix": true,
+    "nine_batches_and_pending_counts": true,
+    "all_4196_candidates_match_archive": true,
+    "detail_and_detail_permissions": true,
+    "search_empty_filters_and_invalid_inputs": true,
+    "public_api_excludes_staged_candidates": true
+  },
+  "failures": [
+    "AssertionError [ERR_ASSERTION]: mobile overflow\n    at file:///root/project/pre/self-deepsearch/scripts/test_collector_e2e_browser.mjs:97:10"
+  ]
+}

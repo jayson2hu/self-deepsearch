@@ -1,0 +1,82 @@
+{
+  "checked_at": "2026-09-22T06:49:27.803Z",
+  "scope": "first frontend optimization batch; remaining work in plan",
+  "builds": [
+    {
+      "app": "display-web",
+      "status": "passed",
+      "command": "npm run build --workspace @self-deepsearch/display-web",
+      "build_id": "N7W450Cgxp3_uLwcSXSuu",
+      "typescript": "passed as part of production build"
+    },
+    {
+      "app": "ops-web",
+      "status": "passed",
+      "command": "npm run build --workspace @self-deepsearch/ops-web",
+      "build_id": "E4yo95ffrOkmL8kEjGThm",
+      "typescript": "passed as part of production build"
+    }
+  ],
+  "lint": {
+    "status": "passed",
+    "command": "npm run lint --workspaces --if-present"
+  },
+  "node_regressions": {
+    "status": "passed",
+    "groups": [
+      "scripts/tests/redesign_home_contract.test.mjs",
+      "scripts/tests/redesign_work_search.test.mjs",
+      "scripts/tests/release_a_visual_capture.test.mjs",
+      "scripts/tests/ops_reauth_client.test.mjs",
+      "apps/ops-web/app/collector/navigation.test.mjs",
+      "npm run test:frontend:smoke"
+    ]
+  },
+  "browser_reports": [
+    {
+      "file": "browser-report.json",
+      "status": "passed"
+    },
+    {
+      "file": "public-browser-report.json",
+      "status": "passed"
+    },
+    {
+      "file": "direction-preview-report.json",
+      "status": "passed"
+    }
+  ],
+  "reauth_integration": {
+    "status": "passed",
+    "report": "reauth-validation.json",
+    "targeted_e2e_scenarios": 44,
+    "isolated_dialog_browser_scenarios": 9
+  },
+  "code_sha256": {
+    "apps/display-web/app/page.tsx": "d90cd027229db75f03201375400e59affcc5a98de1dd4691c0d82ddfdc5b009f",
+    "apps/display-web/app/latest/page.tsx": "43eca0056db296e19d6b0a19215cd8fc9f0c22833c4eaf750ef4596b6658526a",
+    "apps/display-web/app/search/page.tsx": "c90082c5ae1fcba12bfab8db12b02d6294522403bcfb5f3c86dc62854646ad4e",
+    "apps/display-web/app/search/loading.tsx": "39a410154abe35138cf131d609954fe60b245d71020e8227b855e114b1c11833",
+    "apps/display-web/app/search/search.module.css": "85d333cf3384050e287e87a8f28d334613e881616f3101934f3f11427a74a0d7",
+    "apps/display-web/proxy.ts": "162308e3b0fc8404b9df8c393aa0cffc3fa344f5b369f6bba123478fec97db32",
+    "apps/display-web/public/service-state.css": "1b05814681661d4d02d611b6b968b5d3b2d20413c12b45c47cc345569ef7d7ae",
+    "apps/ops-web/app/layout.tsx": "decc6ff510e8a4ab3e6fb9f6567fa4f6b0fcce47058a0a190e4bb4a952af5f19",
+    "apps/ops-web/app/password-confirmation.css": "4f0ada312eb804aec135d6fa71fcb2c14d2bc8a4eb617ce312a206707a3aa2c2",
+    "apps/ops-web/app/collector/page.tsx": "bb60c18b007c1bc39012341192ce288a2dfd1536191420d097a6909c36080371",
+    "apps/ops-web/app/collector/[candidateID]/page.tsx": "d76cea8a4bbe0fe7769bac9086a38ab6170df31650af37115e6fd8bfff157995",
+    "apps/ops-web/app/collector/collector.module.css": "2051a06746d775dec028d8aac91d87792ee6ad2d2785b28a9eae87340f77e1cc",
+    "apps/ops-web/app/collector/navigation.ts": "c001c20108c4eaa5dd15017f1238c2f29d14da8aab9047ee3f60056571f9563f",
+    "apps/ops-web/lib/password-confirmation.ts": "80ae3bd572ae0aec6f4a4ec58a89889a0ea26006338adf2b4c12ff3ec1780b7b",
+    "apps/ops-web/lib/reauth-client.ts": "bae6650512a01fd637d358cea59b684ebef81ad4708896d0b9f71f36b088a7e6",
+    "scripts/test_collector_e2e_browser.mjs": "38c4426fb7fb230e183820db7e2c59d09a1165b59f77b3550fa268f779ae7c17",
+    "scripts/test_frontend_public_optimization.mjs": "49e6dbb88a8933aa8c06ac52ae072fe5002357511b04d2495b687df89c97c7da",
+    "scripts/test_ops_reauth_browser.mjs": "9489b2e0b8be298f6dd2bfba2d6265cc21c7acd95d6444cb995d234899c68f3c",
+    "tests/e2e/release-a.spec.mjs": "67c6bd720c8e14cf871a225b071f0634db6a891244a02eb74e6680c92bbd8ab1"
+  },
+  "markdown_links": {
+    "status": "passed",
+    "markdown_files": 139,
+    "local_links": 905,
+    "missing": []
+  }
+}

@@ -8,6 +8,7 @@ const navigation: Array<{ href: string; label: string; icon: typeof Gauge; roles
   { href: "/traffic", label: "访问统计", icon: BarChart3, roles: ["admin", "owner"] },
   { href: "/works/new", label: "新建作品", icon: BookOpen },
   { href: "/imports", label: "CSV 导入", icon: FileUp },
+  { href: "/collector", label: "采集验收", icon: FileCheck2 },
   { href: "/catalog", label: "资料目录", icon: Library },
   { href: "/editorial", label: "编辑推荐", icon: Sparkles },
   { href: "/settings", label: "首页配置", icon: Settings2 },

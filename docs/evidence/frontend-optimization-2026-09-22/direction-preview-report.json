@@ -1,0 +1,87 @@
+{
+  "status": "passed",
+  "kind": "design-direction-only",
+  "viewports": [
+    {
+      "width": 320,
+      "panel": "公开站",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "panel": "运营后台",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "panel": "实施路线",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "panel": "公开站",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "panel": "运营后台",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "panel": "实施路线",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "panel": "公开站",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "panel": "运营后台",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "panel": "实施路线",
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "panel": "公开站",
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "panel": "运营后台",
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "panel": "实施路线",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "panel": "公开站",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "panel": "运营后台",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "panel": "实施路线",
+      "overflow": false
+    }
+  ],
+  "checks": [
+    "type_switch",
+    "literal_query_feedback",
+    "detail_preview",
+    "keyboard_tabs"
+  ]
+}

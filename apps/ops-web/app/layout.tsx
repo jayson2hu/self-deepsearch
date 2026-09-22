@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "./password-confirmation.css";
 
 export const metadata: Metadata = {
   title: "幕鉴运营后台",
@@ -11,4 +12,3 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return <html lang="zh-CN"><body>{children}</body></html>;
 }
-

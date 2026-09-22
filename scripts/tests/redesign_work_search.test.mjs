@@ -36,14 +36,14 @@ test("display search distinguishes query, cursor, empty result, and dependency s
     assert.match(api, new RegExp(`status: "${status}"`));
   }
   assert.match(page, /type: "work", label: "作品"/);
-  assert.match(page, /人物名称、人物别名或厂牌名称会返回关联作品/);
+  assert.match(page, /人物艺名、已收录别名或厂牌名称会返回关联作品/);
   assert.match(page, /const emptyResultLabel = `没有找到相关已发布\$\{typeLabel\}资料`/);
   assert.match(page, /这不是“没有结果”；可按原查询条件和类型重试/);
   assert.match(page, /searchHref\(query, cursor, activeType\)/);
   assert.match(page, /searchHref\(query, "", activeType\)\}>返回第一页/);
   assert.match(page, /method="get"/);
   assert.doesNotMatch(page, /name="cursor"/);
-  assert.match(loading, /正在查询作品资料/);
+  assert.match(loading, /正在查询资料/);
 });
 
 test("search API contract stays work-only and binds validation to query and cursor", async () => {

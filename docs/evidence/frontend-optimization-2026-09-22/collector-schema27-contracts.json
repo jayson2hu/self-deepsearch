@@ -1,0 +1,79 @@
+{
+  "status": "passed",
+  "postgres": "16-alpine",
+  "migrations": 27,
+  "archive": {
+    "mode": "prepared-only",
+    "source_id": "12345678-1234-1234-1234-123456789abc",
+    "archive": {
+      "manifest_sha256": "ddc94eaf953efe1bfbb42cbd550d09b7e97de0c3a1d01253e9246cc100fa109d",
+      "files_verified": 804,
+      "performers": 4196,
+      "avatars": 130,
+      "without_avatar": 4066,
+      "sqlite_integrity": "ok",
+      "source_data_commit": "95cac10a4579a4fd20f15575c2e77a351bb1284b"
+    },
+    "records": 4196,
+    "media_not_submitted": 130,
+    "batches": [
+      {
+        "file": "batch-001.json",
+        "records": 500,
+        "bytes": 152456,
+        "request_hash": "sha256:5fbe5b6fa0e973bde21d1c415bc208d5bb6b0faad4d585663995608b252ea8b8"
+      },
+      {
+        "file": "batch-002.json",
+        "records": 500,
+        "bytes": 153684,
+        "request_hash": "sha256:92e5b24a95c8bb3bfb9b1aabead21ece3b6307739e10c14797c507095bcab53c"
+      },
+      {
+        "file": "batch-003.json",
+        "records": 500,
+        "bytes": 154128,
+        "request_hash": "sha256:d9888c670d6ad17cbc537e60e27f003a7f050f86aab4fc57f366f0fb48d8e4ae"
+      },
+      {
+        "file": "batch-004.json",
+        "records": 500,
+        "bytes": 154127,
+        "request_hash": "sha256:265548c9df4accf1f0378824929dec3d8cd6c464f721c4fe3a5450f4ea943445"
+      },
+      {
+        "file": "batch-005.json",
+        "records": 500,
+        "bytes": 153688,
+        "request_hash": "sha256:0d313c9e7cef509223f5eed98bcd1b78734de3fd76d08c37c722d1d439a412b4"
+      },
+      {
+        "file": "batch-006.json",
+        "records": 500,
+        "bytes": 153911,
+        "request_hash": "sha256:9d210b5d7300d58bd9c2b6b304386f2995f2846960a6bf66cba7978a079b829f"
+      },
+      {
+        "file": "batch-007.json",
+        "records": 500,
+        "bytes": 154069,
+        "request_hash": "sha256:72f3bf66568c4ec95e092f3acfec482be39e31da46a4d4b0d7ef8cf80df2823a"
+      },
+      {
+        "file": "batch-008.json",
+        "records": 500,
+        "bytes": 154135,
+        "request_hash": "sha256:2678148779b263a32179d3b23840fae67167ba1bba54d92156eb5048b342a331"
+      },
+      {
+        "file": "batch-009.json",
+        "records": 196,
+        "bytes": 60539,
+        "request_hash": "sha256:e2b700136be72387a6b926866b3d4e05834f9242170902f7fd502bf2eebe9580"
+      }
+    ]
+  },
+  "transaction_test": "=== RUN   TestPostgresCollectorIngest\n--- PASS: TestPostgresCollectorIngest (0.21s)\n=== RUN   TestPostgresCollectorSourcePolicy\n=== RUN   TestPostgresCollectorSourcePolicy/paused_source\n=== RUN   TestPostgresCollectorSourcePolicy/blocked_source\n=== RUN   TestPostgresCollectorSourcePolicy/disabled_source\n=== RUN   TestPostgresCollectorSourcePolicy/restricted_rights\n=== RUN   TestPostgresCollectorSourcePolicy/takedown_rights\n=== RUN   TestPostgresCollectorSourcePolicy/fixture_source\n=== RUN   TestPostgresCollectorSourcePolicy/manual_source\n=== RUN   TestPostgresCollectorSourcePolicy/missing_base_URL\n=== RUN   TestPostgresCollectorSourcePolicy/unregistered_source\n=== RUN   TestPostgresCollectorSourcePolicy/foreign_host\n=== RUN   TestPostgresCollectorSourcePolicy/unregistered_subdomain\n=== RUN   TestPostgresCollectorSourcePolicy/unregistered_port\n--- PASS: TestPostgresCollectorSourcePolicy (0.06s)\n    --- PASS: TestPostgresCollectorSourcePolicy/paused_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/blocked_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/disabled_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/restricted_rights (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/takedown_rights (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/fixture_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/manual_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/missing_base_URL (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/unregistered_source (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/foreign_host (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/unregistered_subdomain (0.00s)\n    --- PASS: TestPostgresCollectorSourcePolicy/unregistered_port (0.00s)\n=== RUN   TestPostgresCollectorReview\n--- PASS: TestPostgresCollectorReview (0.06s)\nPASS\nok  \tself-deepsearch/services/platform-api/internal/database\t0.343s\n",
+  "archive_http_test": "=== RUN   TestPostgresCollectorArchiveHTTP\n2026/09/22 16:06:16 INFO http_request request_id=cbd544c8bd37ab919e8b357b2e5e7206 method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=568\n2026/09/22 16:06:16 INFO http_request request_id=f33b18fc8de91e993d1947c323e09b1b method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=21\n2026/09/22 16:06:16 INFO http_request request_id=74212133d312b1b5242cad6f1f33bd3d method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=544\n2026/09/22 16:06:16 INFO http_request request_id=d49dfde2d6f6c97ac47ad924b6823fe2 method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=17\n2026/09/22 16:06:17 INFO http_request request_id=7d635bdbeae2ae82e3398a546b729b91 method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=591\n2026/09/22 16:06:17 INFO http_request request_id=29e4ceebb58a8490499d862cad5ea8d4 method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=27\n2026/09/22 16:06:18 INFO http_request request_id=87fa08dcfa7a12aa347e0ee734381872 method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=560\n2026/09/22 16:06:18 INFO http_request request_id=25bc0ea21639a9e2e14e5c59f4d3db70 method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=23\n2026/09/22 16:06:18 INFO http_request request_id=09790c2381991d2fe85f1e9111ff407e method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=492\n2026/09/22 16:06:18 INFO http_request request_id=8c11fc26827aaacd8b1bc88fca37f36f method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=18\n2026/09/22 16:06:19 INFO http_request request_id=c298c038c241257c44cb8171394723dc method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=546\n2026/09/22 16:06:19 INFO http_request request_id=ca975231ccef1708092881d7568a230f method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=22\n2026/09/22 16:06:19 INFO http_request request_id=6bed1c6d19a98a75e835cf2c8835f058 method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=500\n2026/09/22 16:06:19 INFO http_request request_id=fc128646debb4aa1523b6190325d6b35 method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=13\n2026/09/22 16:06:20 INFO http_request request_id=23c24cd1531b5afaf2e83228f51da25d method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=491\n2026/09/22 16:06:20 INFO http_request request_id=448785828427550aa92b1eee6595aa1b method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=21\n2026/09/22 16:06:20 INFO http_request request_id=c839f912c471fcc411536d9e7a356c83 method=POST route=/internal/v1/collector/performer-batches status=201 duration_ms=204\n2026/09/22 16:06:20 INFO http_request request_id=0dee7f69d7fe1507410ff52df07fcf78 method=POST route=/internal/v1/collector/performer-batches status=200 duration_ms=12\n    collector_archive_contract_test.go:86: 4196 real archive records staged through authenticated HTTP; nine exact replays; no formal entities, publications or media\n--- PASS: TestPostgresCollectorArchiveHTTP (4.72s)\nPASS\nok  \tself-deepsearch/services/platform-api/internal/database\t4.732s\n",
+  "boundary": "disposable database only; review and production unchanged"
+}

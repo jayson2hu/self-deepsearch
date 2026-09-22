@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "checked_at": "2026-09-22T06:42:02.428Z",
+  "mode": "isolated-standalone-with-synthetic-api",
+  "boundary": "Production Next.js build and Chromium with an in-memory synthetic API on random loopback ports; no real collector records, production API, database, external media or existing preview service.",
+  "widths": [
+    320,
+    390,
+    768,
+    1440
+  ],
+  "checks": [
+    {
+      "name": "home_work_get_search",
+      "status": "passed",
+      "details": {
+        "query": "TEST-001",
+        "type": "work",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "home_performer_get_search",
+      "status": "passed",
+      "details": {
+        "query": "测试别名",
+        "type": "performer",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "home_studio_get_search",
+      "status": "passed",
+      "details": {
+        "query": "测试厂牌",
+        "type": "studio",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "submitted_query_type_switch_and_history_preserved",
+      "status": "passed",
+      "details": {
+        "scope": "submitted keyword and entity type; browser back returns to the same submitted query"
+      }
+    },
+    {
+      "name": "public_layout_320",
+      "status": "passed",
+      "details": {
+        "home": {
+          "viewport": 320,
+          "scroll_width": 320
+        },
+        "search": {
+          "viewport": 320,
+          "scroll_width": 320
+        }
+      }
+    },
+    {
+      "name": "public_layout_390",
+      "status": "passed",
+      "details": {
+        "home": {
+          "viewport": 390,
+          "scroll_width": 390
+        },
+        "search": {
+          "viewport": 390,
+          "scroll_width": 390
+        }
+      }
+    },
+    {
+      "name": "public_layout_768",
+      "status": "passed",
+      "details": {
+        "home": {
+          "viewport": 768,
+          "scroll_width": 768
+        },
+        "search": {
+          "viewport": 768,
+          "scroll_width": 768
+        }
+      }
+    },
+    {
+      "name": "public_layout_1440",
+      "status": "passed",
+      "details": {
+        "home": {
+          "viewport": 1440,
+          "scroll_width": 1440
+        },
+        "search": {
+          "viewport": 1440,
+          "scroll_width": 1440
+        }
+      }
+    },
+    {
+      "name": "latest_unavailable_is_503_retry_preserves_cursor",
+      "status": "passed",
+      "details": {
+        "status": 503,
+        "retry_method": "GET",
+        "retry_path": "/latest?cursor=unavailable",
+        "unrelated_parameters_dropped": true
+      }
+    },
+    {
+      "name": "invalid_cursor_is_400_and_returns_to_directory",
+      "status": "passed",
+      "details": {
+        "status": 400,
+        "return_path": "/latest"
+      }
+    },
+    {
+      "name": "browser_remains_local_and_has_no_runtime_errors",
+      "status": "passed",
+      "details": {
+        "external_requests": 0,
+        "page_errors": 0
+      }
+    }
+  ],
+  "screenshots": [
+    "public-home-320.png",
+    "public-search-320.png",
+    "public-home-390.png",
+    "public-search-390.png",
+    "public-home-768.png",
+    "public-search-768.png",
+    "public-home-1440.png",
+    "public-search-1440.png",
+    "public-latest-unavailable-320.png",
+    "public-latest-unavailable-390.png",
+    "public-latest-unavailable-768.png",
+    "public-latest-unavailable-1440.png",
+    "public-latest-invalid-cursor.png"
+  ],
+  "failures": [],
+  "build_id": "N7W450Cgxp3_uLwcSXSuu",
+  "finished_at": "2026-09-22T06:42:16.959Z"
+}

@@ -1,0 +1,125 @@
+{
+  "status": "passed",
+  "base_head": "dc43c87b49660626eaa641364f690e39ca5e7967",
+  "collector_commit": "150411ec3e224e1a00bee7edacfba212470f5406",
+  "scope": "Isolated snapshot of HEAD plus selected collector and frontend changes; unrelated visitor metrics and collection-demo changes excluded.",
+  "migration_count": 27,
+  "frontend_builds": [
+    {
+      "app": "display-web",
+      "status": "passed",
+      "build_id": "1-hDToLmSKqyMPIBxcOWf"
+    },
+    {
+      "app": "ops-web",
+      "status": "passed",
+      "build_id": "yvtzyGjscy39GcP21j6pb"
+    }
+  ],
+  "frontend_static": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "scripts/tests/ops_reauth_client.test.mjs",
+        "scripts/tests/media_upload_client.test.mjs",
+        "scripts/tests/redesign_home_contract.test.mjs",
+        "scripts/tests/redesign_work_search.test.mjs",
+        "apps/ops-web/app/collector/navigation.test.mjs"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "check:markdown-links"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "backend": {
+    "status": "passed",
+    "checked_at": "2026-09-22T08:05:14.110502+00:00",
+    "snapshot": "/tmp/frontend-submit-vffc1jre/snapshot",
+    "base_head": "dc43c87b49660626eaa641364f690e39ca5e7967",
+    "go_version": "go version go1.22.12 linux/amd64",
+    "gofmt": {
+      "status": "passed",
+      "files": [
+        "services/platform-api/cmd/api/main.go",
+        "services/platform-api/internal/config/config.go",
+        "services/platform-api/internal/httpapi/server.go"
+      ],
+      "snapshot_sha256": {
+        "services/platform-api/cmd/api/main.go": "0884a30643544f93ad20f9d37931bac8a912f25dac1a36722868d5f7ada71d3c",
+        "services/platform-api/internal/config/config.go": "a049876f4b873c9996a3789346eb8a91c8728a7e76958b5466216c6eafed23c7",
+        "services/platform-api/internal/httpapi/server.go": "ef52ab053a3b927c486198e6c3a42b61ab59863e2d252974a3576bdc0681dbc2"
+      }
+    },
+    "migration_count": 27,
+    "schema_28_present": false,
+    "checks": [
+      {
+        "name": "api-go-tests",
+        "command": [
+          "/tmp/self-deepsearch-acceptance-1aadfc4-Bok19V/.toolchains/go/bin/go",
+          "test",
+          "-count=1",
+          "./services/platform-api/..."
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "duration_seconds": 51.153,
+        "log": "/tmp/frontend-submit-vffc1jre/api-go-tests.log"
+      },
+      {
+        "name": "openapi-types",
+        "command": [
+          "python3",
+          "scripts/generate_openapi_types.py",
+          "--check"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "duration_seconds": 0.717,
+        "log": "/tmp/frontend-submit-vffc1jre/openapi-types.log"
+      },
+      {
+        "name": "collector-schema27",
+        "command": [
+          "python3",
+          "scripts/run_collector_ingest_contracts.py",
+          "--report",
+          "/tmp/frontend-submit-vffc1jre/collector-schema27-contracts.json"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "duration_seconds": 14.969,
+        "log": "/tmp/frontend-submit-vffc1jre/collector-schema27.log"
+      }
+    ],
+    "archive": {
+      "link": "/tmp/frontend-submit-vffc1jre/self-deepsearch-collector",
+      "target": "/root/project/pre/self-deepsearch-collector",
+      "usage": "read-only archive verification and batch preparation"
+    },
+    "collector_database": {
+      "status": "passed",
+      "migrations": 27,
+      "report": "/tmp/frontend-submit-vffc1jre/collector-schema27-contracts.json"
+    },
+    "finished_at": "2026-09-22T08:06:20.957223+00:00"
+  },
+  "database_report": "collector-schema27-contracts.json",
+  "browser_evidence": "Earlier frontend and collector browser reports are preserved as historical runs; this commit check reran builds, lint, unit/contracts, generated types and schema-27 database tests.",
+  "environment_setup": "Cross-filesystem hard links were unavailable; dependencies were copied and checks rerun successfully."
+}
