@@ -15,6 +15,7 @@ import (
 
 	"self-deepsearch/services/platform-api/internal/account"
 	"self-deepsearch/services/platform-api/internal/catalog"
+	"self-deepsearch/services/platform-api/internal/collectoringest"
 	"self-deepsearch/services/platform-api/internal/identity"
 	"self-deepsearch/services/platform-api/internal/operations"
 	"self-deepsearch/services/platform-api/internal/security"
@@ -44,6 +45,8 @@ type IdentityService interface {
 }
 
 type Options struct {
+	Collector                collectoringest.Repository
+	CollectorCredentials     collectoringest.Credentials
 	Service                  string
 	Version                  string
 	Environment              string
@@ -73,6 +76,8 @@ type Options struct {
 }
 
 type Server struct {
+	collector            collectoringest.Repository
+	collectorCredentials collectoringest.Credentials
 	service              string
 	version              string
 	environment          string
@@ -112,6 +117,8 @@ type routePatternState struct {
 
 func New(options Options) http.Handler {
 	server := &Server{
+		collector:            options.Collector,
+		collectorCredentials: options.CollectorCredentials,
 		service:              defaultString(options.Service, "platform-api"),
 		version:              defaultString(options.Version, "dev"),
 		environment:          defaultString(options.Environment, "development"),
@@ -220,6 +227,10 @@ func (s *Server) routes() http.Handler {
 	router := chi.NewRouter()
 	router.Use(s.captureRoutePatternMiddleware)
 	router.Use(s.recentAuthMiddleware)
+	router.Post(collectoringest.Path, s.ingestPerformers)
+	router.Get("/admin/v1/collector/batches", s.adminListCollectorBatches)
+	router.Get("/admin/v1/collector/candidates", s.adminListCollectorCandidates)
+	router.Get("/admin/v1/collector/candidates/{candidateID}", s.adminCollectorCandidate)
 	router.Get("/healthz", s.health)
 	router.Get("/readyz", s.readiness)
 	router.Get("/metrics", s.prometheusMetrics)
@@ -429,6 +440,15 @@ func recentAuthRequired(r *http.Request) bool {
 
 func (s *Server) originMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == collectoringest.Path && r.Method == http.MethodPost {
+			// Service credentials are checked by the handler; browser origins are forbidden.
+			if r.Header.Get("Origin") != "" {
+				writeError(w, r, 403, "ORIGIN_NOT_ALLOWED", "请求来源不被允许")
+				return
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
 			origin := strings.TrimSpace(r.Header.Get("Origin"))
 			if (s.secureCookies && origin == "") || (origin != "" && !slices.Contains(s.allowedOrigins, origin)) {

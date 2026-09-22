@@ -26,6 +26,10 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 	configuration := config.FromEnv()
+	if err := configuration.ValidateCollector(); err != nil {
+		logger.Error("collector_config_invalid")
+		os.Exit(1)
+	}
 	if err := configuration.ValidateSEOSchedule(); err != nil {
 		logger.Error("seo_schedule_config_invalid")
 		os.Exit(1)
@@ -91,6 +95,8 @@ func main() {
 	server := &http.Server{
 		Addr: configuration.Addr,
 		Handler: httpapi.New(httpapi.Options{
+			Collector:                store,
+			CollectorCredentials:     configuration.CollectorCredentials,
 			Service:                  "platform-api",
 			Version:                  configuration.BuildVersion,
 			Environment:              configuration.AppEnv,

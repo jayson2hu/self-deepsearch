@@ -9,11 +9,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"self-deepsearch/services/platform-api/internal/collectoringest"
 )
 
 var DefaultBuildVersion = "dev"
 
 type Config struct {
+	CollectorCredentials      collectoringest.Credentials
 	SEODailyScanEnabled       bool
 	SEODailyScanActorID       string
 	Addr                      string
@@ -42,6 +45,7 @@ type Config struct {
 
 func FromEnv() Config {
 	return Config{
+		CollectorCredentials:      collectoringest.Credentials{SourceID: os.Getenv("COLLECTOR_INGEST_SOURCE_ID"), Token: os.Getenv("COLLECTOR_INGEST_TOKEN")},
 		SEODailyScanEnabled:       envOr("SEO_DAILY_SCAN_ENABLED", "false") == "true",
 		SEODailyScanActorID:       strings.TrimSpace(os.Getenv("SEO_DAILY_SCAN_ACTOR_ID")),
 		Addr:                      envOr("API_ADDR", ":8080"),
@@ -194,4 +198,21 @@ func splitList(value string) []string {
 		}
 	}
 	return result
+}
+
+// ValidateCollector permits an entirely disabled endpoint, but rejects partial or shared credentials.
+func (configuration Config) ValidateCollector() error {
+	c := configuration.CollectorCredentials
+	if c.SourceID == "" && c.Token == "" {
+		return nil
+	}
+	if !c.Valid() || configuration.DatabaseURL == "" {
+		return fmt.Errorf("collector ingest requires a source UUID, dedicated token and database")
+	}
+	for _, other := range []string{configuration.AuthHMACSecret, configuration.MetricsToken, configuration.MediaEdgePolicyToken} {
+		if c.Token == strings.TrimSpace(other) {
+			return fmt.Errorf("collector ingest requires an independent credential")
+		}
+	}
+	return nil
 }
