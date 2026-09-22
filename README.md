@@ -2,6 +2,8 @@
 
 2026-09-22 [前端全面优化计划](./docs/FRONTEND_OPTIMIZATION_PLAN.md)覆盖公开站与运营后台的视觉、任务流程、移动端、无障碍和性能，配套[可交互视觉方向预览](./docs/frontend-optimization/index.html)。首批聚焦搜索表达、采集核对与密码确认；完整进度以计划中的实施记录为准。
 
+新增[资料供给设计与开发文档](./docs/data-acquisition/README.md)：包含 JavDB / Jable 来源核验、字段映射、完整采集任务、去重与审核、架构和实施计划。配套[数据工作台交互演示](./docs/collection-demo/README.md)可运行 `npm run build:collection-demo` 后执行 `npm run preview:collection-demo`，访问 `http://127.0.0.1:13003/`；提供 36 个合成作品及任务、冲突审核和资料查询。该演示使用合成数据，不写入正式平台。真实来源采集由同级独立仓库 `self-deepsearch-collector` 承担；[固定归档暂存联调](./docs/COLLECTOR_INTEGRATION_ACCEPTANCE.md)已完成，2026-09-22 新增[版本化人物批次接收](./docs/COLLECTOR_INGEST_V1.md)，已完成[双项目实际 HTTP 与后台浏览器验收](./docs/COLLECTOR_E2E_ACCEPTANCE.md)，独立验收环境可供查看；正式审核发布链路仍待开发。
+
 `Release A` 是面向 18 岁以上用户的作品与人物公开资料索引测试站。网站只展示可追溯的文字和图片资料，不提供、存储或跳转到视频、音频、磁力、种子、网盘或下载资源。
 
 产品边界见 [PRODUCT_PLAN.md](./PRODUCT_PLAN.md)，服务与部署边界见 [ARCHITECTURE.md](./ARCHITECTURE.md)，实施和验收项见 [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)。自动采集属于 Release B，广告联盟属于 Release C，两者在当前版本均关闭。

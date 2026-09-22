@@ -2,6 +2,10 @@
 
 日期：2026-09-19。结论：**真实数据暂存联调通过；正式产品发布链路未通过、尚待开发。** 范围：`self-deepsearch` 与同级 `self-deepsearch-collector` 的归档交接、测试库暂存、受保护预览。
 
+2026-09-22 续作：已新增[人物元数据接收 v1](COLLECTOR_INGEST_V1.md)，完成版本化合同、来源凭据、批次幂等及隔离 PostgreSQL 验收；默认关闭、未部署，正式实体映射和审核发布仍待开发。下文保留 2026-09-19 固定归档测试工具的历史范围。
+
+当前验收入口：2026-09-22 已完成用户确认的[数据接收与后台验收](COLLECTOR_E2E_ACCEPTANCE.md)，采集项目客户端 → 实际 API → 数据库 → 后台浏览器整链路通过；下文旧预览与固定归档导入记录继续保留。
+
 ## 基线与边界
 
 - 采集代码基线：`129dba2d72ccdfeef1da89416e2bbab0ae2556c6`，数据基线：`95cac10a4579a4fd20f15575c2e77a351bb1284b`。
@@ -73,7 +77,7 @@
 | 浏览器第 1 次 | 统计缺省图时把已关闭详情弹窗也算入，24→25；选择器限定到列表 | [原始失败](evidence/collector-integration-2026-09-19/browser-attempt-1.json)，完整重跑通过 |
 | 浏览器第 2 次 | Next 流式加载阶段出现两个 main，测试严格选择器报错；定位最终 main | [原始失败](evidence/collector-integration-2026-09-19/browser-attempt-2.json)，完整重跑通过 |
 | 普通账号第 1 次 | 测试脚本未使用既有开发环境规定的 test-pass，人机校验按预期拒绝 | [原始失败](evidence/collector-integration-2026-09-19/auth-attempt-1.json)，按合同修正后通过；不是生产验证码绕过 |
-| 采集捕获测试命令 | Node 22 不支持 package 脚本中的 --test-isolation=none | 直接运行测试文件，3 用例通过；上游 npm 命令兼容性仍待修复 |
+| 采集捕获测试命令 | Node 22 不支持 package 脚本中的 --test-isolation=none | 初次以直接执行文件通过 3 用例；2026-09-19 续作已在 collector 提交 `5e436b4` 修复 npm 入口，`npm run test:jable-capture` 3/3 通过，未重采或修改归档 |
 | SQLite 审计副作用 | 上游 mode=ro 仍生成空 WAL 与 SHM；原数据库 hash 未变化 | 两个临时文件移入本项目缓存留存；所有上游命令改在副本执行；原仓库已干净 |
 | 公网联调预览 | 最初安全审核拒绝；随后用户明确批准带登录保护的公网访问 | 已开放 13004；13005 保持 loopback；匿名不可读取资料 |
 | 公网登录测试及传输 | 安全审核拒绝通过公网 HTTP 发送真实管理员密码 | 改为公网匿名探测 + 本机鉴权验收；未测试异地网络可达性和携带真实凭据的公网浏览器登录；正式使用需 HTTPS，当前推荐 SSH 隧道 |
