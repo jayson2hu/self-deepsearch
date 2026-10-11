@@ -4,11 +4,13 @@ COPY package.json package-lock.json ./
 COPY apps/display-web/package.json ./apps/display-web/package.json
 COPY apps/ops-web/package.json ./apps/ops-web/package.json
 COPY packages/api-contracts/package.json ./packages/api-contracts/package.json
+COPY packages/web-runtime/package.json ./packages/web-runtime/package.json
 RUN npm ci
 
 FROM dependencies AS build
 COPY tsconfig.base.json ./
 COPY packages/api-contracts/ ./packages/api-contracts/
+COPY packages/web-runtime/ ./packages/web-runtime/
 COPY apps/display-web/ ./apps/display-web/
 RUN npm run build --workspace @self-deepsearch/display-web
 

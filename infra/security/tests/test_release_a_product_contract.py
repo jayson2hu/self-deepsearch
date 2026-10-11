@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 import yaml
+from schema_contract import SCHEMA_VERSION
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -67,7 +68,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
     def test_invitation_sql_contract_uses_safe_repeatable_restricted_fixtures(self) -> None:
         contract = (ROOT / "services" / "platform-api" / "internal" / "database" / "invitation_store_test.go").read_text(encoding="utf-8")
         self.assertIn("validIdentityContractURL(databaseURL)", contract)
-        self.assertIn("schemaVersion != 26", contract)
+        self.assertIn(f"schemaVersion != {SCHEMA_VERSION}", contract)
         self.assertIn("NOT rolsuper AND NOT rolbypassrls", contract)
         self.assertIn("identity.NewSessionToken()", contract)
         self.assertNotIn("DELETE FROM", contract)
@@ -83,6 +84,15 @@ class ReleaseAProductContractTests(unittest.TestCase):
             (method.upper(), normalize(path))
             for method, path in re.findall(r'router\.(Get|Post|Put|Patch|Delete)\("([^"]+)"', server)
         }
+        # The signed ingest route shares its path with the HMAC verifier.
+        # Resolve constant registrations instead of silently dropping them.
+        ingest = (ROOT / "services/platform-api/internal/collectoringest/contract.go").read_text(encoding="utf-8")
+        ingest_path = re.search(r'const Path = "([^"]+)"', ingest)
+        self.assertIsNotNone(ingest_path)
+        constant_paths = {"collectoringest.Path": ingest_path.group(1)}
+        for method, expression in re.findall(r'router\.(Get|Post|Put|Patch|Delete)\(([^\",\s][^,]*),', server):
+            self.assertIn(expression, constant_paths, f"unresolved route constant: {expression}")
+            router_operations.add((method.upper(), normalize(constant_paths[expression])))
         openapi_operations = {
             (method.upper(), normalize(path))
             for path, definition in spec["paths"].items()
@@ -90,7 +100,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
             if method.lower() in {"get", "post", "put", "patch", "delete"}
         }
 
-        self.assertEqual(len(router_operations), 107)
+        self.assertTrue(router_operations, "router discovery must not silently return an empty set")
         self.assertSetEqual(router_operations, openapi_operations)
 
         def resolve_local_reference(value: dict) -> dict:
@@ -123,9 +133,9 @@ class ReleaseAProductContractTests(unittest.TestCase):
                     f"{method.upper()} {path} path parameters do not match",
                 )
 
-        self.assertEqual(len(operation_ids), 107)
+        self.assertEqual(len(operation_ids), len(openapi_operations))
         self.assertNotIn(None, operation_ids)
-        self.assertEqual(len(set(operation_ids)), 107)
+        self.assertEqual(len(set(operation_ids)), len(operation_ids), "operationIds must be unique")
 
     def test_openapi_recent_auth_contract_matches_go_high_risk_policy(self) -> None:
         spec = yaml.safe_load((ROOT / "packages" / "api-contracts" / "openapi.yaml").read_text(encoding="utf-8"))
@@ -231,8 +241,8 @@ class ReleaseAProductContractTests(unittest.TestCase):
             self.assertIn(threshold, alerts)
 
     def test_performer_aliases_are_editable_searchable_and_public(self) -> None:
-        handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "operations_handlers.go").read_text(encoding="utf-8")
-        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_store.go").read_text(encoding="utf-8")
+        handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "operations_catalog_handlers.go").read_text(encoding="utf-8")
+        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_revision_store.go").read_text(encoding="utf-8")
         public_store = (ROOT / "services" / "platform-api" / "internal" / "database" / "store.go").read_text(encoding="utf-8")
         create_form = (ROOT / "apps" / "ops-web" / "components" / "new-performer-form.tsx").read_text(encoding="utf-8")
         revision_form = (ROOT / "apps" / "ops-web" / "components" / "revision-editor.tsx").read_text(encoding="utf-8")
@@ -325,7 +335,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertIn("status IN ('active', 'paused', 'removed')", migration)
 
         alerts = (ROOT / "infra" / "monitoring" / "alerts.yml").read_text(encoding="utf-8")
-        self.assertIn("self_deepsearch_schema_version != 26", alerts)
+        self.assertIn(f"self_deepsearch_schema_version != {SCHEMA_VERSION}", alerts)
         self.assertNotIn("self_deepsearch_schema_version != 10", alerts)
 
     def test_hidden_work_contract_is_private_and_complete(self) -> None:
@@ -346,7 +356,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
 
     def test_latest_and_search_follow_confirmed_product_semantics(self) -> None:
         store = (ROOT / "services" / "platform-api" / "internal" / "database" / "store.go").read_text(encoding="utf-8")
-        publication = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_store.go").read_text(encoding="utf-8")
+        publication = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_publication_store.go").read_text(encoding="utf-8")
         handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "handlers.go").read_text(encoding="utf-8")
         client = (ROOT / "apps" / "display-web" / "lib" / "api.ts").read_text(encoding="utf-8")
         self.assertIn("WHERE work.release_date IS NOT NULL", store)
@@ -542,7 +552,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertNotIn("fallbackHome", api)
         self.assertNotIn('code: "TEST-', api)
         self.assertNotIn("当前展示本地合成数据", api + home)
-        self.assertIn("目录服务暂时不可用", home)
+        self.assertIn("资料服务暂时不可用", home)
         for source in (home, robots, sitemap):
             self.assertIn('dynamic = "force-dynamic"', source)
         self.assertIn('dynamic = "force-dynamic"', layout)
@@ -770,7 +780,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
 
     def test_admin_user_management_revokes_sessions_without_bypassing_verification(self) -> None:
         spec = yaml.safe_load((ROOT / "packages" / "api-contracts" / "openapi.yaml").read_text(encoding="utf-8"))
-        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_store.go").read_text(encoding="utf-8")
+        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_users_store.go").read_text(encoding="utf-8")
         manager = (ROOT / "apps" / "ops-web" / "components" / "user-manager.tsx").read_text(encoding="utf-8")
 
         self.assertIn("/admin/v1/users/{user_id}/status", spec["paths"])
@@ -858,7 +868,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         )
 
         server = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "server.go").read_text(encoding="utf-8")
-        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_store.go").read_text(encoding="utf-8")
+        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_review_store.go").read_text(encoding="utf-8")
         page = (ROOT / "apps" / "ops-web" / "app" / "catalog" / "[entityType]" / "[entityID]" / "page.tsx").read_text(encoding="utf-8")
         actions = (ROOT / "apps" / "ops-web" / "components" / "review-task-actions.tsx").read_text(encoding="utf-8")
         self.assertIn('router.Post("/admin/v1/review-tasks/{taskID}/reassign"', server)
@@ -886,7 +896,7 @@ class ReleaseAProductContractTests(unittest.TestCase):
         self.assertEqual(spec["components"]["schemas"]["AuditLogListResponse"]["properties"]["items"]["maxItems"], 200)
 
         server = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "server.go").read_text(encoding="utf-8")
-        handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "operations_handlers.go").read_text(encoding="utf-8")
+        handler = (ROOT / "services" / "platform-api" / "internal" / "httpapi" / "operations_system_handlers.go").read_text(encoding="utf-8")
         page = (ROOT / "apps" / "ops-web" / "app" / "audit" / "page.tsx").read_text(encoding="utf-8")
         navigation = (ROOT / "apps" / "ops-web" / "components" / "admin-shell.tsx").read_text(encoding="utf-8")
         mock_upstream = (ROOT / "scripts" / "release_a_frontend_smoke.mjs").read_text(encoding="utf-8")

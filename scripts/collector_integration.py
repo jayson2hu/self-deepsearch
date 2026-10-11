@@ -7,15 +7,15 @@ import hashlib
 import http.cookies
 import json
 import os
-from pathlib import Path
 import re
 import sqlite3
 import subprocess
-import uuid
 import unicodedata
-from functools import lru_cache
+import uuid
 from datetime import datetime, timezone
+from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import ProxyHandler, Request, build_opener
 

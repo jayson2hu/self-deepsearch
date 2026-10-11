@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +15,9 @@ func TestPostgresSEOIssueWorkflowContract(t *testing.T) {
 	databaseURL := os.Getenv("SEO_WORKFLOW_TEST_DATABASE_URL")
 	if databaseURL == "" {
 		t.Skip("SEO_WORKFLOW_TEST_DATABASE_URL is not set")
+	}
+	if !validIdentityContractURL(databaseURL) {
+		t.Fatal("requires isolated migration test database with restricted role")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -29,12 +33,14 @@ func TestPostgresSEOIssueWorkflowContract(t *testing.T) {
 	if err := store.pool.QueryRow(ctx, `SELECT user_id::text FROM platform.users WHERE account_status='active' AND user_id<>$1::uuid ORDER BY user_id LIMIT 1`, actorID).Scan(&reviewerID); err != nil || actorID == reviewerID {
 		t.Fatalf("requires two synthetic active users: %v", err)
 	}
-	const workID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
-	const revisionID = "ffffffff-ffff-4fff-8fff-ffffffffffff"
+	var workID, revisionID string
+	if err := store.pool.QueryRow(ctx, `SELECT gen_random_uuid()::text,gen_random_uuid()::text`).Scan(&workID, &revisionID); err != nil {
+		t.Fatal(err)
+	}
+	code := "SEO-" + strings.ReplaceAll(workID, "-", "")
 	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
-	scanIDs := make([]string, 0, 3)
 	if _, err := store.pool.Exec(ctx, `INSERT INTO platform.works(work_id,canonical_code,compact_code,title,publication_status)
-VALUES ($1::uuid,'SEO-CYCLE-001','SEOCYCLE001','SEO 闭环测试','published')`, workID); err != nil {
+VALUES ($1::uuid,$2,$3,'SEO 闭环测试','published')`, workID, code, compactIdentifier(code)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.pool.Exec(ctx, `INSERT INTO platform.content_revisions(revision_id,entity_type,entity_id,version,payload,revision_status,author_id,reviewer_id,reason,submitted_at,reviewed_at)
@@ -42,41 +48,34 @@ VALUES ($2::uuid,'work',$1::uuid,1,'{}','approved',$3::uuid,$4::uuid,'SEO workfl
 		t.Fatal(err)
 	}
 	if _, err := store.pool.Exec(ctx, `INSERT INTO platform.publications(entity_type,entity_id,current_revision_id,publication_status,canonical_slug,published_at)
-VALUES ('work',$1::uuid,$2::uuid,'published','seo-cycle-001',$3)`, workID, revisionID, now); err != nil {
+VALUES ('work',$1::uuid,$2::uuid,'published',$4,$3)`, workID, revisionID, now, strings.ToLower(code)); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		cleanup := context.Background()
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.seo_issue_events WHERE issue_id IN (SELECT issue_id FROM platform.seo_issues WHERE entity_id=$1::uuid)`, workID)
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.seo_issues WHERE entity_id=$1::uuid`, workID)
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.seo_scan_runs WHERE scan_id=ANY($1::uuid[])`, scanIDs)
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.publications WHERE entity_type='work' AND entity_id=$1::uuid`, workID)
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.content_revisions WHERE revision_id=$1::uuid`, revisionID)
-		_, _ = store.pool.Exec(cleanup, `DELETE FROM platform.works WHERE work_id=$1::uuid`, workID)
-	}()
+	// Keep append-only evidence in this disposable DB; never broaden runtime
+	// privileges for test cleanup. Random identifiers make reruns independent.
 
 	first, err := store.RunSEOScan(ctx, actorID, "seo-contract-first", now)
 	if err != nil || first.IssueCount < 1 || first.ScannedCount > 1000 {
 		t.Fatalf("first bounded scan: %+v %v", first, err)
 	}
-	scanIDs = append(scanIDs, first.ID)
-	repeated, err := store.RunSEOScan(ctx, actorID, "seo-contract-repeat", now.Add(time.Minute))
+	_, err = store.RunSEOScan(ctx, actorID, "seo-contract-repeat", now.Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
-	scanIDs = append(scanIDs, repeated.ID)
-	issues, err := store.ListSEOIssues(ctx, "open", 100)
+	// A large catalog may put this fixture beyond the first 100 issues.
+	var issueID string
+	var issueCount int
+	if err := store.pool.QueryRow(ctx, `SELECT min(issue_id::text),count(*) FROM platform.seo_issues WHERE entity_id=$1::uuid AND status='open'`, workID).Scan(&issueID, &issueCount); err != nil || issueCount != 1 {
+		t.Fatalf("active issue was not deduplicated: count=%d err=%v", issueCount, err)
+	}
+	tx, err := store.pool.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var issue operations.SEOIssue
-	for _, candidate := range issues {
-		if candidate.EntityID == workID {
-			issue = candidate
-		}
-	}
-	if issue.ID == "" || issue.RuleCode != "SEO_CLASSIFICATION_UNKNOWN" {
-		t.Fatalf("active issue was not deduplicated: %+v", issue)
+	issue, err := loadSEOIssue(ctx, tx, issueID)
+	_ = tx.Rollback(ctx)
+	if err != nil || issue.RuleCode != "SEO_CLASSIFICATION_UNKNOWN" {
+		t.Fatalf("unexpected issue: %+v err=%v", issue, err)
 	}
 	update := operations.SEOIssueUpdate{Status: "in_progress", AssigneeID: &actorID, Note: "开始修复分类"}
 	issue, err = store.UpdateSEOIssue(ctx, issue.ID, update, actorID, "seo-contract-progress", now.Add(2*time.Minute))
@@ -107,11 +106,10 @@ VALUES ('work',$1::uuid,$2::uuid,'published','seo-cycle-001',$3)`, workID, revis
 	if _, err := store.pool.Exec(ctx, `UPDATE platform.publications SET content_classification='unknown',seo_quality_status='unknown',seo_reviewed_at=NULL,seo_reviewed_by=NULL WHERE entity_id=$1::uuid`, workID); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := store.RunSEOScan(ctx, actorID, "seo-contract-reopen", now.Add(7*time.Minute))
+	_, err = store.RunSEOScan(ctx, actorID, "seo-contract-reopen", now.Add(7*time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
-	scanIDs = append(scanIDs, reopened.ID)
 	var total, active int
 	if err := store.pool.QueryRow(ctx, `SELECT count(*),count(*) FILTER (WHERE status<>'closed') FROM platform.seo_issues WHERE entity_id=$1::uuid`, workID).Scan(&total, &active); err != nil || total != 2 || active != 1 {
 		t.Fatalf("rediscovery did not preserve closed history: total=%d active=%d err=%v", total, active, err)

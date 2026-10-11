@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import yaml
+from schema_contract import SCHEMA_VERSION
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -62,7 +63,7 @@ def test_usage_sql_contract_is_guarded_and_serially_wired() -> None:
     assert step["env"]["MEDIA_USAGE_CONTRACT_ADMIN_DATABASE_URL"] == step["env"]["WORKER_CONTRACT_ADMIN_DATABASE_URL"]
     assert step["run"].index("internal/mediainspect") < step["run"].index("internal/mediausage")
     contract = read("services/platform-worker/internal/mediausage/postgres_contract_test.go")
-    for marker in ("validUsageContractURL", "version != 26", "waiting == 2", "winners != 1 || notDue != 1", "SET LOCAL ROLE", "usage_interrupted"):
+    for marker in ("validUsageContractURL", f"version != {SCHEMA_VERSION}", "waiting == 2", "winners != 1 || notDue != 1", "SET LOCAL ROLE", "usage_interrupted"):
         assert marker in contract
 
 

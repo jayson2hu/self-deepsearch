@@ -319,9 +319,8 @@ jobs:
         run: npm run check:markdown-links
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:preflight
+      - run: npm run test:unit
       - run: npm run build
-      - run: npm run test:frontend:smoke
       - run: npm run smoke:frontend:release-a
       - name: Verify real Go to Next cache invalidation
         run: npm run test:cache:release-a -- --output docs/evidence/release-a-cache-contract-ci.json

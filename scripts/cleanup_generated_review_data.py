@@ -1,49 +1,85 @@
 #!/usr/bin/env python3
 """Precisely remove known review fixtures; retain real imports and immutable audits."""
+
 import argparse
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTAINER = 'self-deepsearch-review-postgres-1'
-OWNER = '62123194-4b40-44cc-bbe1-17187afc1ef5'
-REAL_SOURCE = '6e3efba4-6939-5e47-8bfd-16c07ddc68fc'
-FIXTURE_SOURCE = '80000000-0000-4000-8000-000000000001'
-WORKS = [f'10000000-0000-4000-8000-{i:012d}' for i in range(1,101)]
-PERFORMERS = [f'60000000-0000-4000-8000-{i:012d}' for i in range(1,31)]
-STUDIOS = ['70000000-0000-4000-8000-000000000001']
+CONTAINER = "self-deepsearch-review-postgres-1"
+OWNER = "62123194-4b40-44cc-bbe1-17187afc1ef5"
+REAL_SOURCE = "6e3efba4-6939-5e47-8bfd-16c07ddc68fc"
+FIXTURE_SOURCE = "80000000-0000-4000-8000-000000000001"
+WORKS = [f"10000000-0000-4000-8000-{i:012d}" for i in range(1, 101)]
+PERFORMERS = [f"60000000-0000-4000-8000-{i:012d}" for i in range(1, 31)]
+STUDIOS = ["70000000-0000-4000-8000-000000000001"]
 USERS = [
-    '90000000-0000-4000-8000-000000000001','90000000-0000-4000-8000-000000000002',
-    'eb7b11a2-b1e5-4d37-8246-97ab17406ddb','777a7898-20a7-41ae-9a8f-d1352176bd37',
-    'bea2f9c3-3c37-41a9-a44f-3af3da4160ee','31eb5497-d959-42e2-99ac-642888c275b8',
-    '41772e77-8184-44c8-992b-907ffad11c28',
+    "90000000-0000-4000-8000-000000000001",
+    "90000000-0000-4000-8000-000000000002",
+    "eb7b11a2-b1e5-4d37-8246-97ab17406ddb",
+    "777a7898-20a7-41ae-9a8f-d1352176bd37",
+    "bea2f9c3-3c37-41a9-a44f-3af3da4160ee",
+    "31eb5497-d959-42e2-99ac-642888c275b8",
+    "41772e77-8184-44c8-992b-907ffad11c28",
 ]
-ADS = ['746e1ec7-d005-4d3c-9d9e-d65208b08555','2b9a5d87-5d1c-4d64-9e80-69f286b2319c',
- '75c84db0-78f3-47c1-9faa-8746e4f09470','d06d91b0-d35e-4f4f-8a7f-e9a40682d011',
- 'ceff7cf1-3ebe-4a5e-b8c3-022db2876e96','849122e2-e8d7-4fcb-aa6d-2a80c5f49c0f',
- '2e6bd9d8-7dc5-4654-8273-9ff8b22c1d94','dc5b137b-cd7d-43c2-b555-f60ad0a08654',
- '5e1a0ea8-ada3-40a8-bb3e-68c45f94a2d1','86d1c7d4-298a-41cc-8e9a-bb08adb5385e',
- '194d0be2-123d-473c-b09e-3a905d395b55','1bf5f09b-ff4c-40be-810f-7c75a79909d7',
- 'd5cab002-c1df-4ba0-b733-55915a1b7edf','61f8cf16-62b2-48db-8ff9-e1c243a41492',
- '9f9293dd-9af9-4d55-98a8-8fc68cf6e534','d74c2269-2802-41b6-ac33-326526a61775',
- '2a74a66a-330a-4e86-b087-ad2175521d8c','bc73e630-199e-4518-9bab-6fd7987dab07',
- '7d092899-7518-4735-b665-019ff4fdf823','4a072385-171c-4130-87f2-8aaa52744995',
- '9ac14336-2e55-4263-908e-b3973e9c71a0']
+ADS = [
+    "746e1ec7-d005-4d3c-9d9e-d65208b08555",
+    "2b9a5d87-5d1c-4d64-9e80-69f286b2319c",
+    "75c84db0-78f3-47c1-9faa-8746e4f09470",
+    "d06d91b0-d35e-4f4f-8a7f-e9a40682d011",
+    "ceff7cf1-3ebe-4a5e-b8c3-022db2876e96",
+    "849122e2-e8d7-4fcb-aa6d-2a80c5f49c0f",
+    "2e6bd9d8-7dc5-4654-8273-9ff8b22c1d94",
+    "dc5b137b-cd7d-43c2-b555-f60ad0a08654",
+    "5e1a0ea8-ada3-40a8-bb3e-68c45f94a2d1",
+    "86d1c7d4-298a-41cc-8e9a-bb08adb5385e",
+    "194d0be2-123d-473c-b09e-3a905d395b55",
+    "1bf5f09b-ff4c-40be-810f-7c75a79909d7",
+    "d5cab002-c1df-4ba0-b733-55915a1b7edf",
+    "61f8cf16-62b2-48db-8ff9-e1c243a41492",
+    "9f9293dd-9af9-4d55-98a8-8fc68cf6e534",
+    "d74c2269-2802-41b6-ac33-326526a61775",
+    "2a74a66a-330a-4e86-b087-ad2175521d8c",
+    "bc73e630-199e-4518-9bab-6fd7987dab07",
+    "7d092899-7518-4735-b665-019ff4fdf823",
+    "4a072385-171c-4130-87f2-8aaa52744995",
+    "9ac14336-2e55-4263-908e-b3973e9c71a0",
+]
 
 
 def ids(values):
-    return ','.join("'"+value+"'::uuid" for value in values)
+    return ",".join("'" + value + "'::uuid" for value in values)
 
 
 def sql(query):
-    result = subprocess.run(['docker','exec','-i',CONTAINER,'psql','-X','-q','-A','-t','-v','ON_ERROR_STOP=1',
-                             '-U','platform','-d','self_deepsearch'], input=query,text=True,capture_output=True)
+    result = subprocess.run(
+        [
+            "docker",
+            "exec",
+            "-i",
+            CONTAINER,
+            "psql",
+            "-X",
+            "-q",
+            "-A",
+            "-t",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "platform",
+            "-d",
+            "self_deepsearch",
+        ],
+        input=query,
+        text=True,
+        capture_output=True,
+    )
     if result.returncode:
-        raise RuntimeError('SQL transaction failed/rolled back: '+result.stderr[-2000:])
+        raise RuntimeError("SQL transaction failed/rolled back: " + result.stderr[-2000:])
     return json.loads(result.stdout) if result.stdout.strip() else None
 
 
@@ -62,8 +98,8 @@ def snapshot():
 
 
 def cleanup_query():
-    entities = ids(WORKS+PERFORMERS+STUDIOS)
-    users,ads = ids(USERS),ids(ADS)
+    entities = ids(WORKS + PERFORMERS + STUDIOS)
+    users, ads = ids(USERS), ids(ADS)
     return f"""BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='30s';
@@ -122,41 +158,61 @@ COMMIT;"""
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--apply',action='store_true')
-    parser.add_argument('--confirm',default='')
-    args=parser.parse_args()
-    project=subprocess.check_output(['docker','inspect','--format','{{index .Config.Labels "com.docker.compose.project"}}',CONTAINER],text=True).strip()
-    assert project=='self-deepsearch-review'
-    before=snapshot()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--confirm", default="")
+    args = parser.parse_args()
+    project = subprocess.check_output(
+        ["docker", "inspect", "--format", '{{index .Config.Labels "com.docker.compose.project"}}', CONTAINER], text=True
+    ).strip()
+    assert project == "self-deepsearch-review"
+    before = snapshot()
     if not args.apply:
-        print(json.dumps(before,indent=2));return
-    assert args.confirm=='delete-known-generated-review-fixtures'
-    assert before['owner_active']==1 and before['real_records']==4196 and before['real_media']==130
-    backup_dir=ROOT/'.cache/cleanup-generated-2026-09-19'
-    backup_dir.mkdir(mode=0o700,exist_ok=True);backup_dir.chmod(0o700)
-    stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    backup=backup_dir/f'before-{stamp}.dump'
-    with backup.open('xb') as stream:
-        os.chmod(backup,0o600)
-        subprocess.run(['docker','exec',CONTAINER,'pg_dump','-U','platform','-d','self_deepsearch','-Fc'],stdout=stream,check=True)
-    assert backup.stat().st_size>10000
+        print(json.dumps(before, indent=2))
+        return
+    assert args.confirm == "delete-known-generated-review-fixtures"
+    assert before["owner_active"] == 1 and before["real_records"] == 4196 and before["real_media"] == 130
+    backup_dir = ROOT / ".cache/cleanup-generated-2026-09-19"
+    backup_dir.mkdir(mode=0o700, exist_ok=True)
+    backup_dir.chmod(0o700)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup = backup_dir / f"before-{stamp}.dump"
+    with backup.open("xb") as stream:
+        os.chmod(backup, 0o600)
+        subprocess.run(
+            ["docker", "exec", CONTAINER, "pg_dump", "-U", "platform", "-d", "self_deepsearch", "-Fc"],
+            stdout=stream,
+            check=True,
+        )
+    assert backup.stat().st_size > 10000
     # pg_restore list proves this is a readable custom-format backup before any deletion.
-    with backup.open('rb') as stream:
-        subprocess.run(['docker','exec','-i',CONTAINER,'pg_restore','--list'],stdin=stream,stdout=subprocess.DEVNULL,check=True)
-    counts=sql(cleanup_query())
-    after=snapshot()
-    for key in ['real_records','real_normalized','real_media','owner_active','audit_rows','login_audit_rows']:
-        assert before[key]==after[key],key
-    report={'checked_at':datetime.now(timezone.utc).isoformat(),'status':'passed','before':before,'deleted':counts,'after':after,
-            'backup_relative_path':str(backup.relative_to(ROOT)),'backup_bytes':backup.stat().st_size,
-            'backup_sha256':hashlib.sha256(backup.read_bytes()).hexdigest(),
-            'retained_reason':'Append-only field provenance and its revision snapshots/source remain as historical evidence; referenced test users are closed anonymized tombstones. No audit trigger was disabled.'}
-    evidence=ROOT/'docs/evidence/cleanup-search-traffic-2026-09-19'
-    evidence.mkdir(parents=True,exist_ok=True)
-    (evidence/'cleanup-report.json').write_text(json.dumps(report,indent=2)+'\n')
-    print(json.dumps(report,indent=2))
+    with backup.open("rb") as stream:
+        subprocess.run(
+            ["docker", "exec", "-i", CONTAINER, "pg_restore", "--list"],
+            stdin=stream,
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )
+    counts = sql(cleanup_query())
+    after = snapshot()
+    for key in ["real_records", "real_normalized", "real_media", "owner_active", "audit_rows", "login_audit_rows"]:
+        assert before[key] == after[key], key
+    report = {
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "status": "passed",
+        "before": before,
+        "deleted": counts,
+        "after": after,
+        "backup_relative_path": str(backup.relative_to(ROOT)),
+        "backup_bytes": backup.stat().st_size,
+        "backup_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
+        "retained_reason": "Append-only field provenance and its revision snapshots/source remain as historical evidence; referenced test users are closed anonymized tombstones. No audit trigger was disabled.",
+    }
+    evidence = ROOT / "docs/evidence/cleanup-search-traffic-2026-09-19"
+    evidence.mkdir(parents=True, exist_ok=True)
+    (evidence / "cleanup-report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report, indent=2))
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     main()

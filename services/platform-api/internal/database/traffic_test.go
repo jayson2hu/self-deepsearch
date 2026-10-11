@@ -13,30 +13,47 @@ import (
 )
 
 // This test intentionally writes only to an explicitly named disposable clone.
-// Restore a review backup into self_deepsearch_traffic_test_20260919 first.
+// Populate it with synthetic fixtures and supply a matching admin URL solely
+// for clearing fixture metrics; reporting itself uses the restricted API role.
 func TestTrafficPostgresContract(t *testing.T) {
 	dsn := os.Getenv("TRAFFIC_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("requires disposable PostgreSQL clone")
 	}
 	u, err := url.Parse(dsn)
-	if err != nil || u.Hostname() != "127.0.0.1" || u.Path != "/self_deepsearch_traffic_test_20260919" {
+	if err != nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Path != "/self_deepsearch_traffic_test_20260919" || u.User == nil || u.User.Username() != "platform_api_login" || u.RawQuery != "" || u.Fragment != "" {
 		t.Fatal("refusing writes outside exact disposable local test database")
 	}
-	ctx := context.Background()
+	adminURL := os.Getenv("TRAFFIC_ADMIN_DATABASE_URL")
+	adminParsed, err := url.Parse(adminURL)
+	if err != nil || adminParsed.Scheme != u.Scheme || adminParsed.Host != u.Host || adminParsed.Path != u.Path || adminParsed.User == nil || adminParsed.User.Username() != "platform" || adminParsed.RawQuery != "" || adminParsed.Fragment != "" {
+		t.Fatal("requires matching isolated admin URL for fixture cleanup")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 	store, err := Open(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer store.Close()
+	admin, err := Open(ctx, adminURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer admin.Close()
+	clearFixtureMetrics := func() {
+		t.Helper()
+		if _, err := admin.pool.Exec(ctx, `DELETE FROM platform.content_metrics_hourly; DELETE FROM platform.view_history`); err != nil {
+			t.Fatal(err)
+		}
+	}
 	exec := func(sql string, args ...any) {
 		t.Helper()
 		if _, err := store.pool.Exec(ctx, sql, args...); err != nil {
 			t.Fatal(err)
 		}
 	}
-	exec(`DELETE FROM platform.content_metrics_hourly`)
-	exec(`DELETE FROM platform.view_history`)
+	clearFixtureMetrics()
 	now := time.Date(2026, 9, 19, 4, 0, 0, 0, time.UTC)
 	var work, performer, studio string
 	for _, entry := range []struct {
@@ -97,8 +114,7 @@ func TestTrafficPostgresContract(t *testing.T) {
 		}
 		t.Logf("range=%s PV=%d today=%d registeredViews=%d activeRegistered=%d dailyRows=%d hotRows=%d UV=0", test.period, report.PageViews, report.TodayPageViews, report.LoggedInUserViews, report.ActiveRegisteredUsers, len(report.Daily), len(report.HotContent))
 	}
-	exec(`DELETE FROM platform.content_metrics_hourly`)
-	exec(`DELETE FROM platform.view_history`)
+	clearFixtureMetrics()
 	report, err := store.TrafficReport(ctx, "7d", now)
 	if err != nil {
 		t.Fatal(err)

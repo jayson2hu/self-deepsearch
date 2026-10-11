@@ -155,9 +155,12 @@ class NginxContractTests(unittest.TestCase):
         display_proxy = (ROOT / "apps" / "display-web" / "lib" / "platform-proxy.ts").read_text(encoding="utf-8")
         ops_proxy = (ROOT / "apps" / "ops-web" / "lib" / "platform-proxy.ts").read_text(encoding="utf-8")
         self.assertEqual(display_proxy, ops_proxy)
-        self.assertIn('const maximumBodyBytes = 2 * 1024 * 1024', display_proxy)
-        self.assertIn('redirect: "manual"', display_proxy)
-        self.assertIn('outgoing.set("cache-control", "no-store")', display_proxy)
+        self.assertIn('from "@self-deepsearch/web-runtime/platform-proxy"', display_proxy)
+        self.assertIn("return forwardPlatformRequest(request,", display_proxy)
+        shared_proxy = (ROOT / "packages/web-runtime/src/platform-proxy.ts").read_text(encoding="utf-8")
+        self.assertIn('maximumBytes = 2 * 1024 * 1024', shared_proxy)
+        self.assertIn('redirect: "manual"', shared_proxy)
+        self.assertIn('new Headers({ "cache-control": "no-store" })', shared_proxy)
         self.assertFalse((ROOT / "apps" / "display-web" / "app" / "admin").exists())
         self.assertTrue((ROOT / "apps" / "ops-web" / "app" / "admin" / "v1" / "[...path]" / "route.ts").is_file())
 
@@ -165,16 +168,15 @@ class NginxContractTests(unittest.TestCase):
         self.assertEqual(self.config.count("proxy_set_header CF-Connecting-IP $forwarded_client_ip;"), 3)
         for host in ("DISPLAY_HOST", "API_HOST", "OPS_HOST"):
             self.assertIn("proxy_set_header CF-Connecting-IP $forwarded_client_ip;", self.server(host))
-        for relative in ("apps/display-web/lib/platform-proxy.ts", "apps/ops-web/lib/platform-proxy.ts"):
-            source = (ROOT / relative).read_text(encoding="utf-8")
-            self.assertIn('"cf-connecting-ip"', source)
+        source = (ROOT / "packages/web-runtime/src/platform-proxy.ts").read_text(encoding="utf-8")
+        self.assertIn('"cf-connecting-ip"', source)
 
     def test_frontend_proxy_local_errors_are_no_store(self) -> None:
-        for relative in ("apps/display-web/lib/platform-proxy.ts", "apps/ops-web/lib/platform-proxy.ts"):
-            source = (ROOT / relative).read_text(encoding="utf-8")
-            self.assertIn("function proxyError", source)
-            self.assertIn('response.headers.set("cache-control", "no-store")', source)
-            self.assertIn('proxyError("API_UNAVAILABLE"', source)
+        source = (ROOT / "packages/web-runtime/src/platform-proxy.ts").read_text(encoding="utf-8")
+        error_helper = source.split("function proxyError", 1)[1].split("async function readBody", 1)[0]
+        self.assertIn('headers: { "cache-control": "no-store" }', error_helper)
+        for code in ("API_UNAVAILABLE", "BODY_TOO_LARGE", "INVALID_BODY"):
+            self.assertIn(f'proxyError("{code}"', source)
 
 
 if __name__ == "__main__":

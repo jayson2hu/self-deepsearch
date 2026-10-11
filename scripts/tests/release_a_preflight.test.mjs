@@ -114,6 +114,6 @@ test("optional browser performance probe runs after HTTP smoke and before E2E", 
 test("unified preflight executes its release tooling contracts", async () => {
   const source = await import("node:fs/promises").then(({ readFile }) => readFile(new URL("../release_a_preflight.mjs", import.meta.url), "utf8"));
   assert.match(source, /runNpm\("Markdown local link check", \["run", "check:markdown-links"\]\)/);
-  assert.match(source, /runNpm\("Release tooling contract tests", \["run", "test:preflight"\]\)/);
+  assert.match(source, /runNpm\("All Node unit and contract tests", \["run", "test:unit"\]\)/);
   assert.match(source, /"--profile", "edge", "--profile", "monitoring", "--profile", "tools"/);
 });

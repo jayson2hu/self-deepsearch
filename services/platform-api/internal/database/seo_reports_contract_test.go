@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -15,6 +16,9 @@ func TestPostgresSEOReportImportIsIdempotentAndSeparatesDatasetKind(t *testing.T
 	if databaseURL == "" {
 		t.Skip("SEO_WORKFLOW_TEST_DATABASE_URL is not set")
 	}
+	if !validIdentityContractURL(databaseURL) {
+		t.Fatal("requires isolated migration test database with restricted role")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	store, err := Open(ctx, databaseURL)
@@ -27,7 +31,7 @@ func TestPostgresSEOReportImportIsIdempotentAndSeparatesDatasetKind(t *testing.T
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 9, 17, 13, 0, 0, 0, time.UTC)
-	input := operations.SEOReportImportInput{ReportType: "performance", DatasetKind: "demo", PropertyURI: "sc-domain:example.test",
+	input := operations.SEOReportImportInput{ReportType: "performance", DatasetKind: "demo", PropertyURI: fmt.Sprintf("sc-domain:seo-report-%d.example.test", time.Now().UnixNano()),
 		PeriodStart: now.AddDate(0, 0, -7), PeriodEnd: now, ExportedAt: now, FileSHA256: strings.Repeat("a", 64),
 		Rows: []operations.SEOReportRow{{Dimensions: map[string]string{"query": "幕鉴", "page": "https://example.test/works/a"},
 			Metrics: map[string]float64{"clicks": 1, "impressions": 10, "ctr": 0.1, "position": 2.5}}}}
@@ -35,10 +39,6 @@ func TestPostgresSEOReportImportIsIdempotentAndSeparatesDatasetKind(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		_, _ = store.pool.Exec(context.Background(), `DELETE FROM platform.seo_report_rows WHERE import_id=$1::uuid`, first.ID)
-		_, _ = store.pool.Exec(context.Background(), `DELETE FROM platform.seo_report_imports WHERE import_id=$1::uuid`, first.ID)
-	}()
 	second, err := store.ImportSEOReport(ctx, input, actorID, "seo-report-contract-repeat", now.Add(time.Minute))
 	if err != nil || second.ID != first.ID {
 		t.Fatalf("repeat import was not idempotent: first=%s second=%s err=%v", first.ID, second.ID, err)
@@ -53,10 +53,6 @@ FROM platform.seo_report_imports WHERE import_id=$1::uuid`, first.ID).Scan(&impo
 	if err != nil || real.ID == first.ID {
 		t.Fatalf("real/demo datasets were not separated: demo=%s real=%s err=%v", first.ID, real.ID, err)
 	}
-	if _, err := store.pool.Exec(ctx, `DELETE FROM platform.seo_report_rows WHERE import_id=$1::uuid`, real.ID); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := store.pool.Exec(ctx, `DELETE FROM platform.seo_report_imports WHERE import_id=$1::uuid`, real.ID); err != nil {
-		t.Fatal(err)
-	}
+	// Retain synthetic records until the disposable database is removed. The
+	// runtime API role intentionally cannot delete imported reports or audit data.
 }

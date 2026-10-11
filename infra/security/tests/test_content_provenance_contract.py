@@ -18,11 +18,14 @@ class ContentProvenanceProductContractTests(unittest.TestCase):
         self.assertEqual(schemas["SourceEvidenceInput"]["properties"]["source_url"]["type"], ["string", "null"])
 
     def test_provenance_persistence_is_transactional_and_publish_gated(self) -> None:
-        store = (ROOT / "services" / "platform-api" / "internal" / "database" / "operations_store.go").read_text(encoding="utf-8")
+        database = ROOT / "services" / "platform-api" / "internal" / "database"
+        store = (database / "operations_provenance_store.go").read_text(encoding="utf-8")
+        publication = (database / "operations_publication_store.go").read_text(encoding="utf-8")
         self.assertIn("insertRevisionProvenance", store)
         self.assertIn("copyRevisionProvenance", store)
         self.assertIn("revisionProvenanceComplete", store)
-        self.assertIn("return operations.Entity{}, operations.ErrConflict", store)
+        self.assertIn("revisionProvenanceComplete", publication)
+        self.assertIn("return operations.Entity{}, operations.ErrConflict", publication)
         self.assertIn("INSERT INTO platform.field_provenance", store)
 
     def test_operations_ui_collects_and_displays_source_evidence(self) -> None:

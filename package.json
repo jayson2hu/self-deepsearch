@@ -4,9 +4,11 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/api-contracts"
+    "packages/api-contracts",
+    "packages/web-runtime"
   ],
   "scripts": {
+    "test:unit": "node scripts/run_node_tests.mjs",
     "build:collection-demo": "node scripts/build_collection_demo.mjs",
     "preview:collection-demo": "node scripts/run_python.mjs scripts/serve_collection_demo.py",
     "test:collection-demo": "node scripts/test_collection_demo.mjs",

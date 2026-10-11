@@ -1,11 +1,11 @@
 """Regression coverage for the bounded integration tool (no real DB writes)."""
 import io
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, Mock
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import collector_integration as subject

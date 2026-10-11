@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import yaml
+from schema_contract import SCHEMA_VERSION
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -57,7 +58,7 @@ def test_review_path_is_authenticated_asynchronous_and_current_schema_guarded() 
     runner = read("services/platform-worker/internal/mediausage/runner.go")
     assert runner.index("r.Reviews.ProcessReviews") < runner.index("r.Repository.Prepare")
     contract = read("services/platform-worker/internal/mediausage/reviews_contract_test.go")
-    for marker in ("CONFIRM_MEDIA_USAGE_CONTRACT", "validUsageContractURL", "version != 26", "SET LOCAL ROLE platform_api", "receipt committed without matching state transition"):
+    for marker in ("CONFIRM_MEDIA_USAGE_CONTRACT", "validUsageContractURL", f"version != {SCHEMA_VERSION}", "SET LOCAL ROLE platform_api", "receipt committed without matching state transition"):
         assert marker in contract
 
 

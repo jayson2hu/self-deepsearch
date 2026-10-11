@@ -1,5 +1,7 @@
 # 幕鉴资料展示平台
 
+2026-10-11 [项目架构梳理与第一轮重构](./docs/REFACTORING_2026-10-11.md)：共享两站代理、流式请求限额、后台按业务拆分、全量测试自动发现与验收可靠性修复。当前 Schema 28；本轮未替换在线审核环境。
+
 2026-09-22 [前端全面优化计划](./docs/FRONTEND_OPTIMIZATION_PLAN.md)覆盖公开站与运营后台的视觉、任务流程、移动端、无障碍和性能，配套[可交互视觉方向预览](./docs/frontend-optimization/index.html)。首批聚焦搜索表达、采集核对与密码确认；完整进度以计划中的实施记录为准。
 
 新增[资料供给设计与开发文档](./docs/data-acquisition/README.md)：包含 JavDB / Jable 来源核验、字段映射、完整采集任务、去重与审核、架构和实施计划。配套[数据工作台交互演示](./docs/collection-demo/README.md)可运行 `npm run build:collection-demo` 后执行 `npm run preview:collection-demo`，访问 `http://127.0.0.1:13003/`；提供 36 个合成作品及任务、冲突审核和资料查询。该演示使用合成数据，不写入正式平台。真实来源采集由同级独立仓库 `self-deepsearch-collector` 承担；[固定归档暂存联调](./docs/COLLECTOR_INTEGRATION_ACCEPTANCE.md)已完成，2026-09-22 新增[版本化人物批次接收](./docs/COLLECTOR_INGEST_V1.md)，已完成[双项目实际 HTTP 与后台浏览器验收](./docs/COLLECTOR_E2E_ACCEPTANCE.md)，独立验收环境可供查看；正式审核发布链路仍待开发。
@@ -20,7 +22,7 @@
 - `services/platform-worker`：日本 Go Worker，租约处理发布 outbox，使用独立 HMAC 调用公开站失效缓存和北京媒体删除服务；`media_delete` 只有在远端确认 S3 与北京副本均不可访问后才完成；
 - `workers/collector-python`：只处理 fixture 的采集合约骨架，不访问真实来源；
 - `workers/media-python`：受控人工图片处理、WebP 母版/三档派生、S3/R2 上传验证、两桶当前对象与未完成 multipart 部件容量准入（默认 10 GiB、单次扫描最多 256 个列表请求）、共享上传锁/中断保护、北京副本及签名删除服务；不下载来源 URL；
-- `db`：日本单 PostgreSQL，使用 `collector`、`platform`、`audit` 三个 Schema 和 21 个迁移；第 13 个迁移加入管理员邀请，第 14-16 个迁移分别加入来源证据、邮件守卫和搜索小时聚合，第 17 个迁移收紧图片所属资料的公开发布边界，第 18 个迁移保存每日图片检查证据，第 19 个迁移保存账户用量观察状态与审计，第 20 个迁移加入用量复核与账期切换回执，第 21 个迁移加入上传控制队列与可信执行回执。数据库引擎仍为 PostgreSQL 16。
+- `db`：日本单 PostgreSQL 16，使用 `collector`、`platform`、`audit` 三个 Schema 和 28 个迁移；覆盖身份、来源证据、审核发布、媒体与上传控制，以及后续 SEO、采集和访客统计增量。具体结构以 `db/migrations` 为准，较早验收文档保留其当时版本。
 - `docker-bake.hcl`：统一构建 API、Worker、公开站、运营后台和媒体服务 5 个镜像；镜像写入 OCI 版本/源码 revision 标签，CI 构建后保留 image inspect 清单但不自动推送。
 
 当前进度和未验收项见 [docs/PROGRESS.md](./docs/PROGRESS.md)，本地联调和运营流程见 [docs/RELEASE_A_RUNBOOK.md](./docs/RELEASE_A_RUNBOOK.md)。
@@ -134,6 +136,7 @@ go vet ./services/platform-api/... ./services/platform-worker/...
 node scripts/run_python.mjs scripts/generate_openapi_types.py --check
 npm run lint
 npm run typecheck
+npm run test:unit
 npm run audit:production
 npm run build
 docker compose config --quiet

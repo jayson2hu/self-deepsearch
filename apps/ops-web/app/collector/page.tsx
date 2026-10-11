@@ -9,6 +9,8 @@ import { formatDateTime } from "../../lib/date-time";
 import { candidateStatuses, collectorCandidateHref, collectorListHref, readCollectorSearch, type CollectorSearch, type CollectorSearchInput } from "./navigation";
 import styles from "./collector.module.css";
 
+const countFormatter = new Intl.NumberFormat("zh-CN");
+
 export default async function CollectorPage({ searchParams }: { searchParams: Promise<CollectorSearchInput> }) {
   const operator = await getOperator();
   if (!operator) redirect("/login");
@@ -27,8 +29,8 @@ export default async function CollectorPage({ searchParams }: { searchParams: Pr
       <Link className={styles.secondaryButton} href={collectorListHref(search, {}, "batches")}><Database size={16} aria-hidden="true" />接收批次<ArrowDown size={15} aria-hidden="true" /></Link>
     </header>
     <div className={styles.overview} aria-label="采集验收概况">
-      <div><span>{filtered ? "筛选结果" : "人物候选"}</span><strong>{candidates ? candidates.total.toLocaleString("zh-CN") : "暂不可用"}</strong><small>{filtered ? "符合当前条件" : "文字资料 · 暂存区"}</small></div>
-      <div><span>接收批次</span><strong>{batches ? batches.total.toLocaleString("zh-CN") : "暂不可用"}</strong><small>查看输入、新增与重复</small></div>
+      <div><span>{filtered ? "筛选结果" : "人物候选"}</span><strong>{candidates ? countFormatter.format(candidates.total) : "暂不可用"}</strong><small>{filtered ? "符合当前条件" : "文字资料 · 暂存区"}</small></div>
+      <div><span>接收批次</span><strong>{batches ? countFormatter.format(batches.total) : "暂不可用"}</strong><small>查看输入、新增与重复</small></div>
       <div className={styles.boundarySummary}><CheckCheck size={20} aria-hidden="true" /><div><strong>仅接收与核对</strong><small>暂存资料尚未发布，头像尚未导入。</small></div></div>
     </div>
     <section id="candidates" className={styles.panel} aria-labelledby="candidates-title">
@@ -42,7 +44,7 @@ export default async function CollectorPage({ searchParams }: { searchParams: Pr
       </form>
       {search.batch_id ? <div className={styles.activeFilter}><span>当前批次 <code>{search.batch_id}</code></span><Link href={collectorListHref(search, { batch_id: undefined, offset: undefined })}>移除批次筛选</Link></div> : null}
       {candidates ? <>
-        <div className={styles.resultSummary}><span>共 <strong>{candidates.total.toLocaleString("zh-CN")}</strong> 条</span><span>{candidates.items.length ? `第 ${offset + 1}–${offset + candidates.items.length} 条` : "当前没有匹配结果"}</span></div>
+        <div className={styles.resultSummary}><span>共 <strong>{countFormatter.format(candidates.total)}</strong> 条</span><span>{candidates.items.length ? `第 ${offset + 1}–${offset + candidates.items.length} 条` : "当前没有匹配结果"}</span></div>
         {candidates.items.length ? <>
           <div className={styles.desktopTable}><table className={styles.table}><thead><tr><th scope="col">人物 / 别名</th><th scope="col">来源 / 来源编号</th><th scope="col">状态</th><th scope="col">采集时间</th><th scope="col"><span className="sr-only">操作</span></th></tr></thead><tbody>{candidates.items.map((item) => <tr key={item.candidate_id}><td><strong className={styles.personName}>{item.name}</strong><small>{item.aliases.join("、") || "无别名"}</small></td><td>{item.source_name}<small>{item.external_id}</small></td><td><CandidateBadge status={item.candidate_status} /><small>公开状态：{publicationLabel(item.publication_status)}</small></td><td><time dateTime={item.checked_at}>{formatDateTime(item.checked_at)}</time></td><td><Link className={styles.rowLink} href={collectorCandidateHref(item.candidate_id, search)}>核对资料<ArrowRight size={15} aria-hidden="true" /></Link></td></tr>)}</tbody></table></div>
           <div className={styles.mobileCards}>{candidates.items.map((item) => <CandidateCard key={item.candidate_id} item={item} search={search} />)}</div>

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Real review DB checks, including transaction rollback and review-state preservation."""
 import json
-from datetime import datetime, timezone
 import os
-from pathlib import Path
+from datetime import datetime, timezone
 
 import collector_integration as tool
 

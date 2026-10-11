@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
-  transpilePackages: ["@self-deepsearch/api-contracts"],
+  transpilePackages: ["@self-deepsearch/api-contracts", "@self-deepsearch/web-runtime"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

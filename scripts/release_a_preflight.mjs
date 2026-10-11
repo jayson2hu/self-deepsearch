@@ -105,6 +105,7 @@ function runPythonChecks(options, executed, skipped) {
     "scripts/release_a_email_e2e.py",
     "scripts/release_a_catalog_e2e.py",
     "scripts/release_a_core_e2e.py",
+    "scripts/release_a_real_stack_e2e.py",
   ]);
   executed.push("Python mypy");
   run("Python pytest", python, ["-m", "pytest", "-q"], { PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1" });
@@ -150,10 +151,8 @@ export function main(argv = process.argv.slice(2)) {
   runNpm("Production dependency audit", ["run", "audit:production"]);
   executed.push("Production dependency audit");
   runPythonChecks(options, executed, skipped);
-  runNpm("Release tooling contract tests", ["run", "test:preflight"]);
-  executed.push("Release tooling contract tests");
-  runNpm("Frontend smoke unit tests", ["run", "test:frontend:smoke"]);
-  executed.push("Frontend smoke unit tests");
+  runNpm("All Node unit and contract tests", ["run", "test:unit"]);
+  executed.push("All Node unit and contract tests");
   if (options.build) {
     runNpm("Next.js production build", ["run", "build"]);
     executed.push("Next.js production build");
