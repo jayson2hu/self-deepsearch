@@ -8,6 +8,10 @@
     "packages/web-runtime"
   ],
   "scripts": {
+    "preview:design": "node scripts/run_python.mjs scripts/serve_design_review.py",
+    "test:design": "node --test scripts/tests/design_review.test.mjs",
+    "test:design:browser": "node scripts/test_design_review.mjs",
+    "capture:design": "node scripts/test_design_review.mjs --mode capture",
     "test:unit": "node scripts/run_node_tests.mjs",
     "build:collection-demo": "node scripts/build_collection_demo.mjs",
     "preview:collection-demo": "node scripts/run_python.mjs scripts/serve_collection_demo.py",

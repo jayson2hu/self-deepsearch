@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Self Deepsearch · 20 套设计审核台</title>
+  <link rel="stylesheet" href="review.css">
+  <script type="module" src="review.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">跳到审核内容</a>
+  <header class="lab-header">
+    <a class="lab-brand" href="index.html"><span class="monogram">sd.</span><span>Self Deepsearch<span class="brand-detail">设计审核室 / Design review</span></span></a>
+    <nav aria-label="审核视图"><button id="gallery-tab" aria-pressed="true">20 套总览</button><button id="review-tab" aria-pressed="false">页面审核</button><button id="launch-tab" aria-pressed="false">上线前检查</button></nav>
+    <span class="review-edition">2026.10 <span>概念设计，非生产环境</span></span>
+  </header>
+  <main id="workspace" tabindex="-1">
+    <section id="gallery-view">
+      <div class="gallery-heading"><div><span class="section-label">一套产品，二十种表达</span><h1>先找到气质，<br>再决定每个细节。</h1><p>公开站与运营后台，一起审阅。每套方案都能切换现有全部页面，并查看真实响应式手机布局。</p></div><aside class="review-brief"><strong>本轮审核范围</strong><dl><div><dt>设计方向</dt><dd>20 套</dd></div><div><dt>已有页面模板</dt><dd>51 个</dd></div><div><dt>新增信任页面提案</dt><dd>3 个</dd></div><div><dt>预览尺寸</dt><dd>桌面 / 手机</dd></div></dl><p>英文产品界面 · 中文审核工具<br>合成数据，不接入业务 API</p></aside></div>
+      <div class="gallery-toolbar"><div id="family-filters" class="filter-chips" role="group" aria-label="风格分类"></div><label class="gallery-mode-label">总览截图<select id="gallery-mode" aria-label="总览截图"><option value="public">公开站桌面</option><option value="ops">运营后台桌面</option><option value="mobile">公开站手机</option></select></label><label class="favorite-filter"><input id="favorites-only" type="checkbox">只看候选收藏 <span id="favorite-count">0</span></label></div>
+      <div id="theme-gallery" class="theme-gallery"></div>
+      <p id="gallery-empty" class="empty-message" hidden>还没有收藏。点击方案卡片上的“收藏”，即可加入候选。</p>
+      <section class="decision-note"><h2>不必一次选定全部。</h2><p>可以选一套公开站风格，再选另一套后台风格。进入页面审核后，先看首页、搜索、详情和采集审阅，再检查手机与异常状态。意见可逐页保存并导出。</p><button class="primary" id="begin-review">开始逐页审核</button></section>
+    </section>
+    <section id="review-view" hidden>
+      <div class="review-layout">
+        <aside class="inspector" aria-label="审核控制台">
+          <div class="controls-block">
+          <div class="inspector-title"><span>正在审核</span><h1 id="theme-title"></h1></div>
+          <label>主方案<select id="theme-select"></select></label>
+          <label>产品端<select id="surface-select"><option value="public">公开站 / Public</option><option value="ops">运营后台 / Operations</option></select></label>
+          <label>页面模板<select id="page-select"></select></label>
+          <p id="route-label" class="route-label"></p>
+          <div class="control-row"><label>设备<select id="viewport-select"><option value="desktop">桌面 1440px</option><option value="mobile">手机 390px</option></select></label><label>页面状态<select id="state-select"></select></label></div>
+          <label class="checkbox-row"><input id="compare-toggle" type="checkbox">并排比较第二套</label>
+          <label id="compare-control" hidden>对比方案<select id="compare-select"></select></label>
+          <p class="control-help">桌面视口会缩放适配画布；手机是独立响应式布局。支持在预览内继续点击导航。</p>
+          <div class="inspector-actions"><button id="favorite-current">收藏方案</button><a id="open-preview" target="_blank" rel="noopener">原尺寸打开 ↗</a></div>
+          </div>
+          <section class="note-panel"><h2>当前页面意见</h2><p id="note-context"></p><label>结论<select id="rating-select"></select></label><label>建议<textarea id="note-text" rows="5" maxlength="4000" placeholder="例如：保留首页分屏，手机卡片希望更紧凑……"></textarea></label><p id="save-status" role="status">意见仅保存在此浏览器。</p></section>
+          <div class="export-actions"><button class="primary" id="export-review">导出全部审核意见</button><button id="import-review">导入并合并意见</button><input id="import-file" type="file" accept="application/json,.json" hidden></div>
+          <p class="control-help review-import-help">导入会合并收藏；同一页面、尺寸、状态的意见以导入文件为准。切换浏览器前请导出。</p>
+        </aside>
+        <div class="review-canvas"><div class="canvas-meta"><span id="canvas-description"></span><span id="canvas-status">交互原型 · 非真实业务</span></div><div id="preview-panes" class="preview-panes"></div><div class="canvas-foot"><span>预览内所有记录与操作均为演示。</span><span>建议先审：总览 → 搜索 → 详情 → 账户 → 运营审阅</span></div></div>
+      </div>
+    </section>
+    <section id="launch-view" hidden>
+      <div class="launch-heading"><span class="section-label">设计能支持合规，不能代替合规</span><h1>公开访问前，<br>还有这些关口。</h1><p>“海外成人网站标准”不是一项通用认证。需要按目标国家、内容类型和运营主体逐项确认。以下是设计与上线准备清单，不是法律意见。</p></div>
+      <div class="launch-warning">当前没有完成真实年龄核验、投诉受理、身份/授权核实、法律文件审批或生产安全验收。页面中的入口与状态只是提案。审核稿不应直接当作生产站公开。</div>
+      <div class="launch-grid">
+        <article><span>范围确认</span><h2>先明确在哪里、向谁开放</h2><p>确认国家/州、主体、内容边界和访问限制。目前按英文 18+ 元数据索引设计，不提供音视频或下载。</p><strong>待站点所有者确认</strong></article>
+        <article><span>年龄与隐私</span><h2>证明符合年龄条件，不收集多余身份</h2><p>在适用情形接入有效年龄核验；验证失败或服务不可用时不放行受限内容。仅点“18+”不能代表实现了法定核验。</p><button data-launch-page="age">查看核验状态提案</button></article>
+        <article><span>内容权利</span><h2>来源、成年与同意有据可查</h2><p>按内容与角色要求核实权利、授权及成年/同意证据。公开抓取并不等于拥有再发布许可；不能用合成材料替代证据。</p><strong>需业务流程与法务核实</strong></article>
+        <article><span>投诉与安全</span><h2>无需登录，也能报告问题</h2><p>为非自愿内容、疑似未成年、版权和错误资料提供入口、分级受理、移除/限制及申诉流程，按适用规则配置时限。</p><button data-launch-page="report">查看报告页面提案</button></article>
+        <article><span>隐私选择</span><h2>明确告知，默认少收集</h2><p>完善真实隐私告知、保留期限、处理方清单和数据权利渠道。可选追踪默认关闭，拒绝与同意同样易用。</p><button data-launch-page="cookies">查看隐私选择提案</button></article>
+        <article><span>无障碍与安全</span><h2>可读、可操作、可退出</h2><p>检查键盘、对比度、焦点、320px 重排、错误状态；上线前另验 HTTPS、权限隔离、私有页禁止缓存与索引、日志脱敏和供应商政策。</p><strong>设计检查 ≠ 完整 WCAG 或安全认证</strong></article>
+      </div>
+      <div class="source-note"><h2>核查依据与限制</h2><p>设计参考 <a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" rel="noopener noreferrer">W3C WCAG 2.2</a> 和 <a href="https://digital-strategy.ec.europa.eu/en/policies/eu-age-verification" target="_blank" rel="noopener noreferrer">欧盟委员会年龄核验说明</a>（2026-10-15 可读取）。Ofcom 与 FTC 页面本次返回 403，未据此宣称核实其具体门槛或时限。美国州法、英国、日本及其他国家规则需在市场范围确定后另行核实。</p><p>本稿先做可审核的安全与隐私体验；生产发布应由熟悉目标地区的合资格专业人员审核。</p></div>
+    </section>
+  </main>
+  <footer class="lab-footer"><span>Self Deepsearch / Design review 2026.10</span><span>现有测试站不受影响 · 无外部字体、广告或追踪请求</span></footer>
+  <div id="lab-message" class="lab-message" role="status" aria-live="polite"></div>
+  <noscript>审核台需要 JavaScript。它不连接业务数据库。</noscript>
+</body>
+</html>
