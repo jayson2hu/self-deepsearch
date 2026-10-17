@@ -11,7 +11,7 @@ import { standalonePaths } from "../release_a_frontend_smoke.mjs";
 
 test("cache contract targets a sitemap leaf instead of the pagination redirect", () => {
   assert.equal(CACHE_SITEMAP_PATH, "/sitemaps/works/1");
-  assert.equal(CACHE_SITE_URL, "https://cache-contract.example.test");
+  assert.equal(CACHE_SITE_URL, "https://cache-contract.example.com");
 });
 
 test("isolated standalone uses independent writable copies and guarded cleanup", async () => {

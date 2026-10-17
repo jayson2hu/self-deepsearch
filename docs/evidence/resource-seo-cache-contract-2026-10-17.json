@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "generated_at": "2026-10-16T16:44:11.739Z",
+  "boundary": "Real Go processor and production Next.js; synthetic in-memory catalog; no PostgreSQL, dispatcher, SMTP, S3 or Cloudflare",
+  "checks": [
+    {
+      "name": "prime-real-next-cache",
+      "status": "failed"
+    }
+  ],
+  "failure": "Contract failed; inspect the local test output. No response bodies or credentials are stored."
+}

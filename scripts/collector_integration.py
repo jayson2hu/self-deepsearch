@@ -75,7 +75,7 @@ def load_archive(root):
         datetime.fromisoformat(person['checked_at'].replace('Z', '+00:00'))
         by_id[pid] = person
         external_ids.add(person['external_id'])
-    media_ids, owners = set(), set()
+    media_ids, owners, media_by_id = set(), set(), {}
     for item in media:
         mid = item['media_candidate_id']
         require(bool(re.fullmatch('[a-f0-9]{64}', mid)) and mid not in media_ids, 'duplicate or invalid media ID')
@@ -91,12 +91,14 @@ def load_archive(root):
         item['staging_id'] = str(uuid.uuid5(uuid.NAMESPACE_URL, 'jable_reference:media:' + mid))
         owner['avatar'] = {key: item[key] for key in ['media_candidate_id', 'sha256', 'width', 'height', 'byte_size']}
         media_ids.add(mid)
+        media_by_id[mid] = item
         owners.add(item['performer_id'])
     require(len(sqlite_people) == len(people), 'SQLite count mismatch')
     exported_media = jsonl(root / 'selfdeepsearch-export/performer_media_staging.jsonl')
-    require({m['media_candidate_id'] for m in exported_media} == media_ids, 'media export mismatch')
+    require(len(exported_media) == len(media_ids) and
+            {m['media_candidate_id'] for m in exported_media} == media_ids, 'media export mismatch')
     for item in exported_media:
-        candidate = next(m for m in media if m['media_candidate_id'] == item['media_candidate_id'])
+        candidate = media_by_id[item['media_candidate_id']]
         require(item['entity_id'] == candidate['performer_id'] and item['content_hash'] == 'sha256:' + candidate['sha256'], 'media export relation mismatch')
     return people, media, {'manifest_sha256': digest(raw_manifest), 'files_verified': len(manifest['files']),
                            'performers': len(people), 'avatars': len(media), 'without_avatar': len(people) - len(media),

@@ -2,24 +2,29 @@ import { NextResponse } from "next/server";
 import { getHome, getLatestWorks, getPerformers, getRecentlyAddedWorks, getSitemapEntries, getStudios } from "./api";
 import { seoReleaseEnabled } from "./seo-policy";
 import { siteURL } from "./site";
-import { sitemapPageSize, sitemapWithinLimits, type SitemapEntity } from "./sitemap-policy";
+import { sitemapEntityPath, sitemapPageSize, sitemapWithinLimits, type SitemapEntity } from "./sitemap-policy";
 
 export { sitemapPageSize, type SitemapEntity } from "./sitemap-policy";
 
 export async function entitySitemapResponse(entity: SitemapEntity, page: number) {
   if (!seoReleaseEnabled()) return unavailableSitemap();
-  if (!Number.isInteger(page) || page < 1) return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+  if (!Number.isSafeInteger(page) || page < 1) return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   const entityType = ({ works: "work", performers: "performer", studios: "studio" } as const)[entity];
   const response = await getSitemapEntries(entityType, page, sitemapPageSize);
-  if (!response) return new NextResponse("Sitemap source unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
+  if (!response) return sitemapSourceUnavailable();
   if (response.page !== page || response.page_size !== sitemapPageSize || page > response.total_pages) {
     return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   }
-  const path = entityType === "work" ? "works" : entityType === "performer" ? "performers" : "studios";
-  return sitemapResponse(response.items.map((entry) => ({
-    location: new URL(`/${path}/${entry.slug}`, siteURL()).toString(),
-    lastModified: entry.updated_at,
-  })));
+  const base = siteURL();
+  try {
+    return sitemapResponse(response.items.map((entry) => ({
+      location: new URL(sitemapEntityPath(entity, entry.slug), base).toString(),
+      lastModified: entry.updated_at,
+    })));
+  } catch {
+    // An upstream path must never inject queries, fragments or another entity.
+    return sitemapSourceUnavailable();
+  }
 }
 
 export async function fixedPagesSitemapResponse() {
@@ -55,8 +60,8 @@ export function unavailableSitemap() {
   return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" } });
 }
 
-function sitemapSourceUnavailable() {
-  return new NextResponse("Sitemap source unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
+export function sitemapSourceUnavailable(message = "Sitemap source unavailable") {
+  return new NextResponse(message, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
 }
 
 export function escapeXML(value: string) {

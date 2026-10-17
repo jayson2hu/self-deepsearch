@@ -16,7 +16,7 @@ const GO_TIMEOUT_MS = 60_000;
 const CACHE_WINDOW_MS = 240_000; // Fail before the normal 300-second TTL could mask missing invalidation.
 const BOUNDARY = "Real Go processor and production Next.js; synthetic in-memory catalog; no PostgreSQL, dispatcher, SMTP, S3 or Cloudflare";
 export const CACHE_SITEMAP_PATH = "/sitemaps/works/1";
-export const CACHE_SITE_URL = "https://cache-contract.example.test";
+export const CACHE_SITE_URL = "https://cache-contract.example.com";
 
 export function parseCacheArgs(argv) {
   const options = { build: false, help: false, output: "docs/evidence/release-a-cache-contract-local.json" };

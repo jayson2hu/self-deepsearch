@@ -12,7 +12,7 @@ import { PublicUpdatedAt } from "../../../components/public-updated-at";
 import { ViewStats } from "../../../components/view-stats";
 import { SafeImage } from "../../../components/safe-image";
 import { getPerformer, getPerformerWorks } from "../../../lib/api";
-import { canonicalWithCursor, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
+import { canonicalWithCursor, externalImagePreviewAllowed, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ cursor?: string }> }): Promise<Metadata> {
@@ -23,7 +23,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
 	const seo = resolvePublicSEOProfile(result.status === "ok" ? result.data.seo : null);
 	const pageIndexable = seo.indexable && (!cursor || works?.status === "ok" && works.data.items.length > 0);
 	const canonical = canonicalWithCursor(`/performers/${slug}`, pageIndexable ? cursor : "");
-	const primaryImage = result.status === "ok" ? result.data.images.find((item) => item.external_preview_allowed) : undefined;
+	const primaryImage = result.status === "ok" && externalImagePreviewAllowed(seo) ? result.data.images.find((item) => item.external_preview_allowed) : undefined;
 	const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
 	const image = result.status === "ok" ? socialImage?.url ?? null : null;
 	return result.status === "ok" ? {
@@ -49,7 +49,7 @@ export default async function PerformerDetailPage({ params, searchParams }: { pa
   return <main><JsonLD data={{
     "@context": "https://schema.org", "@type": "Person", "@id": canonicalURL, url: canonicalURL,
     name: performer.name, alternateName: [performer.name_original, performer.romanized_name, ...performer.aliases].filter((value): value is string => Boolean(value)),
-    image: primaryImage?.external_preview_allowed ? primary ?? undefined : undefined,
+    image: externalImagePreviewAllowed(seo) && primaryImage?.external_preview_allowed ? primary ?? undefined : undefined,
     height: performer.height_cm ? { "@type": "QuantitativeValue", value: performer.height_cm, unitCode: "CMT" } : undefined,
     memberOf: performer.agency ? { "@type": "Organization", name: performer.agency } : undefined,
     mainEntityOfPage: canonicalURL, isFamilyFriendly: seo.adult_rating ? false : undefined,

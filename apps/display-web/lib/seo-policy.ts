@@ -24,9 +24,9 @@ export function resolvePublicSEOProfile(value: unknown): PublicSEOProfile {
   }
   return {
     indexable: profile.indexable,
-    sitemap_eligible: profile.sitemap_eligible,
+    sitemap_eligible: profile.indexable && profile.sitemap_eligible,
     adult_rating: profile.adult_rating ?? null,
-    image_preview_mode: profile.image_preview_mode as "standard" | "none",
+    image_preview_mode: profile.indexable && profile.adult_rating !== "adult" ? profile.image_preview_mode as "standard" | "none" : "none",
   };
 }
 
@@ -39,11 +39,21 @@ export function seoReleaseEnabled(environment: Environment = process.env): boole
     if (!value) return false;
     const origin = new URL(value);
     const originOnly = origin.pathname === "/" && !origin.search && !origin.hash && !origin.username && !origin.password;
-    const loopback = origin.hostname === "localhost" || origin.hostname === "127.0.0.1" || origin.hostname === "[::1]";
-    return originOnly && origin.protocol === "https:" && !loopback;
+    // Index only a DNS origin, never a staging IP, IPv6 literal or internal name.
+    // URL normalizes alternative IPv4 spellings (127.1, integer and hex forms).
+    const host = origin.hostname.toLowerCase();
+    const dnsName = host.length <= 253 && host.includes(".") && host.split(".").every(
+      (label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label),
+    );
+    const internal = /(?:^|\.)(?:localhost|local|internal|test|invalid|example)$/.test(host) || /(?:^|\.)home\.arpa$/.test(host);
+    return originOnly && origin.protocol === "https:" && dnsName && !internal && !/^[\d.]+$/.test(host);
   } catch {
     return false;
   }
+}
+
+export function externalImagePreviewAllowed(profile: PublicSEOProfile): boolean {
+  return seoReleaseEnabled() && profile.indexable && profile.adult_rating !== "adult" && profile.image_preview_mode === "standard";
 }
 
 export function pageRobots(indexable: boolean, imagePreview: "standard" | "none" = "standard"): Metadata["robots"] {

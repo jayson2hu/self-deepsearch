@@ -13,6 +13,8 @@
     "test:design:browser": "node scripts/test_design_review.mjs",
     "capture:design": "node scripts/test_design_review.mjs --mode capture",
     "test:unit": "node scripts/run_node_tests.mjs",
+    "organize:resources": "node scripts/run_python.mjs scripts/organize_resources.py",
+    "test:seo:http": "node scripts/test_resource_seo_http.mjs",
     "build:collection-demo": "node scripts/build_collection_demo.mjs",
     "preview:collection-demo": "node scripts/run_python.mjs scripts/serve_collection_demo.py",
     "test:collection-demo": "node scripts/test_collection_demo.mjs",

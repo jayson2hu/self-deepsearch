@@ -12,7 +12,8 @@ import { WorkActions } from "../../../components/work-actions";
 import { ViewStats } from "../../../components/view-stats";
 import { SafeImage } from "../../../components/safe-image";
 import { getWork } from "../../../lib/api";
-import { pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
+import { workMetadataDescription } from "../../../lib/seo-content";
+import { externalImagePreviewAllowed, pageRobots, resolvePublicSEOProfile } from "../../../lib/seo-policy";
 import { siteURL } from "../../../lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -20,17 +21,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 	const result = await getWork(slug);
   if (result.status !== "ok") return { title: "作品资料", robots: { index: false, follow: false } };
   const seo = resolvePublicSEOProfile(result.data.seo);
-  const primaryImage = result.data.images.find((image) => image.external_preview_allowed);
+  const description = workMetadataDescription(result.data);
+  const primaryImage = externalImagePreviewAllowed(seo) ? result.data.images.find((image) => image.external_preview_allowed) : undefined;
   const socialImage = primaryImage?.renditions?.find((rendition) => rendition.rendition === "w960") ?? primaryImage;
 	return {
 		title: `${result.data.code} ${result.data.title}`,
-		description: `${result.data.code} 的公开发行与人物资料。`,
+		description,
 		alternates: { canonical: `/works/${slug}` },
 		robots: pageRobots(seo.indexable, seo.image_preview_mode),
 		other: seo.adult_rating ? { rating: seo.adult_rating } : undefined,
 		openGraph: {
 			type: "article", url: `/works/${slug}`, title: `${result.data.code} ${result.data.title}`,
-			description: `${result.data.code} 的公开发行与人物资料。`,
+			description,
 			images: socialImage ? [{ url: socialImage.url, width: socialImage.width, height: socialImage.height }] : undefined,
 		},
 	};
@@ -62,7 +64,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 		alternateName: work.title_original ?? undefined,
 		description: work.summary ?? `${work.code} 的公开发行与人物资料。`,
 		datePublished: work.release_date ?? undefined,
-		image: images.filter((image) => image.external_preview_allowed).map((image) => image.url),
+    image: externalImagePreviewAllowed(seo) ? images.filter((image) => image.external_preview_allowed).map((image) => image.url) : undefined,
 		publisher: (work.studio?.name ?? work.studio_name) ? { "@type": "Organization", name: work.studio?.name ?? work.studio_name } : undefined,
 		contributor: work.performers.map((performer) => ({ "@type": "Person", name: performer.name })),
 		isFamilyFriendly: seo.adult_rating ? false : undefined,

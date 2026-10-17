@@ -1,0 +1,38 @@
+{
+  "schema_version": "seo.references.v1",
+  "verified_on": "2026-10-17",
+  "timezone": "Asia/Shanghai",
+  "scope": "Official technical references, not content licenses, legal advice or search-index submission.",
+  "resources": [
+    {
+      "id": "google-explicit-content",
+      "title": "Google Search Central: 包含露骨内容的网站的指南",
+      "url": "https://developers.google.cn/search/docs/specialty/explicit/guidelines?hl=zh-cn",
+      "http_status": 200,
+      "page_updated_utc": "2026-09-23",
+      "sha256": "03a56e72b6cb22d1ee5d38ad91e8f6e8c8d55fa77af4e97067eaa1d81bf1e2a0",
+      "local_cache_file": "google-explicit.html",
+      "application": "Preserve reviewed rating=adult metadata; never infer permission, age or rights from successful collection."
+    },
+    {
+      "id": "google-canonical-urls",
+      "title": "Google Search Central: 指定规范网址",
+      "url": "https://developers.google.cn/search/docs/crawling-indexing/consolidate-duplicate-urls?hl=zh-cn",
+      "http_status": 200,
+      "page_updated_utc": "2026-07-15",
+      "sha256": "8f0301923815b45f7b16d7c8362b29463594ff35f21253bb687ab731d8730be3",
+      "local_cache_file": "google-canonical.html",
+      "application": "Keep absolute canonical URLs and sitemap locations consistent; keep real cursor pages distinct."
+    },
+    {
+      "id": "sitemaps-protocol",
+      "title": "Sitemaps XML protocol",
+      "url": "https://www.sitemaps.org/protocol.html",
+      "http_status": 200,
+      "page_updated_utc": null,
+      "sha256": "5e7570590fcb92d473d7015c88940a830383b6a61bc6c16be4df51e97f471654",
+      "local_cache_file": "sitemaps-protocol.html",
+      "application": "Enforce 50,000 URL/index entries, 52,428,800 uncompressed bytes, UTF-8 and XML escaping."
+    }
+  ]
+}
